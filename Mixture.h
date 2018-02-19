@@ -59,10 +59,10 @@ public:
 	std::vector<Model> & models();
 	
 	/// Returns the minimum root filter size (<tt>rows x cols</tt>).
-	std::pair<int, int> minSize() const;
+    triple<int, int, int> minSize() const;
 	
 	/// Returns the maximum root filter size (<tt>rows x cols</tt>).
-	std::pair<int, int> maxSize() const;
+    triple<int, int, int> maxSize() const;
 	
 	/// Trains the mixture.
 	/// @param[in] scenes Scenes to use for training.
@@ -78,7 +78,7 @@ public:
 	/// @param[in] overlap Minimum overlap in latent positive search.
 	/// @returns The final SVM loss.
 	/// @note The magic constants come from Felzenszwalb's implementation.
-	double train(const std::vector<Scene> & scenes, Object::Name name, int padx = 12, int pady = 12,
+    double train(const std::vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad = Eigen::Vector3i( 12, 12, 12),
 				 int interval = 5, int nbRelabel = 5, int nbDatamine = 10, int maxNegatives = 24000,
 				 double C = 0.002, double J = 2.0, double overlap = 0.7);
 	
@@ -105,12 +105,12 @@ public:
 private:
 	// Extracts all the positives
 	void posLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
-						 int padx, int pady, int interval, double overlap,
+                         Eigen::Vector3i pad, int interval, double overlap,
 						 std::vector<std::pair<Model, int> > & positives) const;
 	
 	// Bootstraps negatives with a non zero loss
 	void negLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
-						 int padx, int pady, int interval, int maxNegatives,
+                         Eigen::Vector3i pad, int interval, int maxNegatives,
 						 std::vector<std::pair<Model, int> > & negatives) const;
 	
 	// Trains the mixture from positive and negative samples with fixed latent variables
@@ -125,7 +125,7 @@ private:
 				  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
 	
 	// Computes the size of the roots of the models
-	static std::vector<std::pair<int, int> > FilterSizes(int nbComponents,
+    static std::vector<triple<int, int, int> > FilterSizes(int nbComponents,
 														 const std::vector<Scene> & scenes,
 														 Object::Name name);
 	

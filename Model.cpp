@@ -37,7 +37,7 @@ Model::Model() : parts_(1), bias_(0.0)
 	parts_[0].deformation.setZero();
 }
 
-Model::Model(pair<int, int> rootSize, int nbParts, pair<int, int> partSize) : parts_(1), bias_(0.0)
+Model::Model(triple<int, int, int> rootSize, int nbParts, triple<int, int, int> partSize) : parts_(1), bias_(0.0)
 {
 	parts_[0].offset.setZero();
 	parts_[0].deformation.setZero();
@@ -97,25 +97,27 @@ double & Model::bias()
 	return bias_;
 }
 
-pair<int, int> Model::rootSize() const
+triple<int, int, int> Model::rootSize() const
 {
-	return pair<int, int>(static_cast<int>(parts_[0].filter.rows()),
-						  static_cast<int>(parts_[0].filter.cols()));
+    return triple<int, int, int>(static_cast<int>(parts_[0].filter.dimension(0)),
+                                 static_cast<int>(parts_[0].filter.dimension(1)),
+                                 static_cast<int>(parts_[0].filter.dimension(2)));
 }
 
-pair<int, int> Model::partSize() const
+triple<int, int, int> Model::partSize() const
 {
 	if (parts_.size() > 1)
-		return pair<int, int>(static_cast<int>(parts_[1].filter.rows()),
-							  static_cast<int>(parts_[1].filter.cols()));
+        return triple<int, int, int>(static_cast<int>(parts_[1].filter.dimension(0)),
+                                     static_cast<int>(parts_[1].filter.dimension(1)),
+                                     static_cast<int>(parts_[1].filter.dimension(2)));
 	else
-		return pair<int, int>(0, 0);
+        return triple<int, int, int>(0, 0, 0);
 }
 
-void Model::initializeParts(int nbParts, pair<int, int> partSize)
+void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 {
 	// The model stay unmodified if any of the parameter is invalid
-	if (empty() || (nbParts <= 0) || (partSize.first <= 0) || (partSize.second <= 0)) {
+    if (empty() || (nbParts <= 0) || (partSize.first <= 0) || (partSize.second <= 0) || (partSize.third <= 0)) {
 		cerr << "Attempting to initialize parts in an empty model" << endl;
 		return;
 	}
@@ -123,6 +125,7 @@ void Model::initializeParts(int nbParts, pair<int, int> partSize)
 	// Upsample the root filter by a factor 2 using bicubic interpolation
 	const HOGPyramid::Level & root = parts_[0].filter;
 	
+    //TODO
 	HOGPyramid::Level root2x = HOGPyramid::Level::Constant(2 * root.rows(), 2 * root.cols(),
 														   HOGPyramid::Cell::Zero());
 	

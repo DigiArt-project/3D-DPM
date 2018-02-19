@@ -24,6 +24,8 @@ IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: None (CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel." FORCE)
 ENDIF()
 
+add_compile_options(-std=c++11)
+
 # Also list the headers so that they are displayed along the .cpp files in the IDE
 SET(HEADERS HOGPyramid.h Intersector.h JPEGImage.h LBFGS.h Mixture.h Model.h Object.h Patchwork.h Rectangle.h Scene.h SimpleOpt.h)
 SET(SOURCES HOGPyramid.cpp JPEGImage.cpp LBFGS.cpp Mixture.cpp Model.cpp Object.cpp Patchwork.cpp Rectangle.cpp Scene.cpp)

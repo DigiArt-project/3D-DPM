@@ -21,7 +21,7 @@
 
 #ifndef FFLD_MODEL_H
 #define FFLD_MODEL_H
-
+#include <tuple>
 #include "HOGPyramid.h"
 
 namespace FFLD
@@ -45,6 +45,23 @@ public:
 	
 	/// Type of a 3d quadratic deformation (dx^2 dx dy^2 dy dz^2 dz).
 	typedef Eigen::Matrix<double, 6, 1> Deformation;
+
+    template< typename T1, typename T2, typename T3>
+    struct triple : std::tuple<T1, T2, T3>{
+        triple( std::tuple<T1, T2, T3> t){
+            first = get<0>(t);
+            second = get<1>(t);
+            third = get<2>(t);
+        }
+        triple( T1 t1, T2 t2, T3 t3){
+            first = t1;
+            second = t2;
+            third = t3;
+        }
+        T1 first;
+        T2 second;
+        T3 third;
+    };
 	
 	/// The part structure stores all the information about a part (or the root).
 	struct Part

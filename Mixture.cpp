@@ -50,7 +50,7 @@ cached_(false), zero_(true)
 	}
 	
 	// Compute the root filters' sizes using Felzenszwalb's heuristic
-	const vector<pair<int, int> > sizes = FilterSizes(nbComponents, scenes, name);
+    const vector<triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name);
 	
 	// Early return in case the root filters' sizes could not be determined
 	if (sizes.size() != nbComponents)
@@ -80,9 +80,9 @@ vector<Model> & Mixture::models()
 	return models_;
 }
 
-pair<int, int> Mixture::minSize() const
+triple<int, int, int> Mixture::minSize() const
 {
-	pair<int, int> size(0, 0);
+    triple<int, int, int> size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
@@ -90,15 +90,16 @@ pair<int, int> Mixture::minSize() const
 		for (int i = 1; i < models_.size(); ++i) {
 			size.first = min(size.first, models_[i].rootSize().first);
 			size.second = min(size.second, models_[i].rootSize().second);
+            size.third = min(size.third, models_[i].rootSize().third);
 		}
 	}
 	
 	return size;
 }
 
-pair<int, int> Mixture::maxSize() const
+triple<int, int, int> Mixture::maxSize() const
 {
-	pair<int, int> size(0, 0);
+    triple<int, int, int> size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
@@ -106,17 +107,18 @@ pair<int, int> Mixture::maxSize() const
 		for (int i = 1; i < models_.size(); ++i) {
 			size.first = max(size.first, models_[i].rootSize().first);
 			size.second = max(size.second, models_[i].rootSize().second);
+            size.third = max(size.third, models_[i].rootSize().third);
 		}
 	}
 	
 	return size;
 }
 
-double Mixture::train(const vector<Scene> & scenes, Object::Name name, int padx, int pady,
+double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
 					  int interval, int nbRelabel, int nbDatamine, int maxNegatives, double C,
 					  double J, double overlap)
 {
-	if (empty() || scenes.empty() || (padx < 1) || (pady < 1) || (interval < 1) ||
+    if (empty() || scenes.empty() || (pad.x < 1) || (pad.y < 1) || (pad.z < 1) || (interval < 1) ||
 		(nbRelabel < 1) || (nbDatamine < 1) || (maxNegatives < models_.size()) || (C <= 0.0) ||
 		(J <= 0.0) || (overlap <= 0.0) || (overlap >= 1.0)) {
 		cerr << "Invalid training parameters" << endl;
@@ -135,7 +137,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, int padx,
 		// Sample all the positives
 		vector<pair<Model, int> > positives;
 		
-		posLatentSearch(scenes, name, padx, pady, interval, overlap, positives);
+        posLatentSearch(scenes, name, pad, interval, overlap, positives);
 		
 		// Left-right clustering at the first iteration
 		if (zero_)
@@ -159,7 +161,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, int padx,
 			negatives.resize(j);
 			
 			// Sample new hard negatives
-			negLatentSearch(scenes, name, padx, pady, interval, maxNegatives, negatives);
+            negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
 			
 			// Stop if there are no new hard negatives
 			if (datamine && (negatives.size() == j))
@@ -249,7 +251,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, int padx,
 	return loss;
 }
 
-void Mixture::initializeParts(int nbParts, pair<int, int> partSize)
+void Mixture::initializeParts(int nbParts, triple<int, int, int> partSize)
 {
 	for (int i = 0; i < models_.size(); i += 2) {
 		models_[i].initializeParts(nbParts, partSize);
@@ -366,11 +368,11 @@ static inline void clipBndBox(Rectangle & bndbox, const Scene & scene, double al
 		bndbox.setBottom(scene.height() - 1 + (bndbox.bottom() - scene.height() + 1) * alpha + 0.5);
 }
 
-void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, int padx, int pady,
+void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
 							  int interval, double overlap,
 							  vector<pair<Model, int> > & positives) const
 {
-	if (scenes.empty() || (padx < 1) || (pady < 1) || (interval < 1) || (overlap <= 0.0) ||
+    if (scenes.empty() || (pad.x < 1) || (pad.y < 1) || (pad.z < 1) || (interval < 1) || (overlap <= 0.0) ||
 		(overlap >= 1.0)) {
 		positives.clear();
 		cerr << "Invalid training paramters" << endl;
@@ -397,7 +399,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, i
 			return;
 		}
 		
-		const HOGPyramid pyramid(image, padx, pady, interval);
+        const HOGPyramid pyramid(image, pad, interval);
 		
 		if (pyramid.empty()) {
 			positives.clear();
@@ -530,12 +532,12 @@ static inline bool operator<(const Model & a, const Model & b)
 			    ((a.parts()[0].deformation(1) < b.parts()[0].deformation(1))))))));
 }
 
-void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, int padx, int pady,
+void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
 							  int interval, int maxNegatives,
 							  vector<pair<Model, int> > & negatives) const
 {
 	// Sample at most (maxNegatives - negatives.size()) negatives with a score above -1.0
-	if (scenes.empty() || (padx < 1) || (pady < 1) || (interval < 1) || (maxNegatives <= 0) ||
+    if (scenes.empty() || (pad.x < 1) || (pad.y < 1) || (pad.z < 1) || (interval < 1) || (maxNegatives <= 0) ||
 		(negatives.size() >= maxNegatives)) {
 		negatives.clear();
 		cerr << "Invalid training paramters" << endl;
@@ -563,7 +565,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, i
 			return;
 		}
 		
-		const HOGPyramid pyramid(image, padx, pady, interval);
+        const HOGPyramid pyramid(image, pad, interval);
 		
 		if (pyramid.empty()) {
 			negatives.clear();
@@ -939,12 +941,12 @@ void Mixture::convolve(const HOGPyramid & pyramid,
 #endif
 }
 
-vector<pair<int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
+vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
 											 Object::Name name)
 {
 	// Early return in case the filters or the dataset are empty
 	if ((nbComponents <= 0) || scenes.empty())
-		return vector<pair<int, int> >();
+        return vector<triple<int, int, int> >();
 	
 	// Sort the aspect ratio of all the (non difficult) samples
 	vector<double> ratios;
@@ -960,7 +962,7 @@ vector<pair<int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scen
 	
 	// Early return if there is no object
 	if (ratios.empty())
-		return vector<pair<int, int> >();
+        return vector<triple<int, int, int> >();
 	
 	// Sort the aspect ratio of all the samples
 	sort(ratios.begin(), ratios.end());
@@ -992,7 +994,7 @@ vector<pair<int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scen
 	}
 	
 	// For each component in reverse order
-	vector<pair<int, int> > sizes(nbComponents);
+    vector<triple<int, int, int> > sizes(nbComponents);
 	
 	for (int i = nbComponents - 1; i >= 0; --i) {
 		if (!areas[i].empty()) {
