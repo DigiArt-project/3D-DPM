@@ -13,6 +13,12 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 PROJECT(FFLD)
 
+SET(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-DEIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET -Winconsistent-missing-override ")
+
+add_compile_options(-std=c++11 -stdlib=libc++)
+set(CMAKE_C_COMPILER clang-omp CACHE STRING "C compiler" FORCE)
+set(CMAKE_CXX_COMPILER clang-omp++ CACHE STRING "C++ compiler" FORCE)
+
 # The build options
 OPTION(FFLD_HOGPYRAMID_DOUBLE "Use doubles instead of floats (slower, uses twice more memory, and the increase in precision is not necessarily useful)." OFF)
 OPTION(FFLD_HOGPYRAMID_EXTRA_FEATURES "Use extra features (LBP + color) in addition to HOG." OFF)
@@ -25,10 +31,11 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF()
 
 # Also list the headers so that they are displayed along the .cpp files in the IDE
-SET(HEADERS HOGPyramid.h Intersector.h JPEGImage.h LBFGS.h Mixture.h Model.h Object.h Patchwork.h Rectangle.h Scene.h SimpleOpt.h)
-SET(SOURCES HOGPyramid.cpp JPEGImage.cpp LBFGS.cpp Mixture.cpp Model.cpp Object.cpp Patchwork.cpp Rectangle.cpp Scene.cpp)
+SET(HEADERS HOGPyramid.h Intersector.h JPEGImage.h LBFGS.h Mixture.h Model.h Object.h Patchwork.h Rectangle.h Scene.h SimpleOpt.h GSHOTPyramid.hpp typedefs.hpp PointCloud.hpp)
+SET(SOURCES HOGPyramid.cpp JPEGImage.cpp LBFGS.cpp Mixture.cpp Model.cpp Object.cpp Patchwork.cpp Rectangle.cpp Scene.cpp GSHOTPyramid.cpp PointCloud.cpp)
 ADD_EXECUTABLE(train ${HEADERS} ${SOURCES} train.cpp)
 ADD_EXECUTABLE(test ${HEADERS} ${SOURCES} test.cpp)
+ADD_EXECUTABLE(test_pyramid ${HEADERS} ${SOURCES} test_pyramid.cpp)
 
 # Define the options
 IF(FFLD_HOGPYRAMID_DOUBLE)
@@ -51,7 +58,7 @@ IF(FFLD_MIXTURE_STANDARD_CONVOLUTION)
   ADD_DEFINITIONS(-DFFLD_MIXTURE_STANDARD_CONVOLUTION)
 ENDIF()
 
-SET( EIGEN3_INCLUDE_DIR "/usr/local/Cellar/eigen/3.3.4/include/eigen3" )
+SET( EIGEN3_INCLUDE_DIR "/usr/local/include/eigen3" )
 IF( NOT EIGEN3_INCLUDE_DIR )
     MESSAGE( FATAL_ERROR "Please point the environment variable EIGEN3_INCLUDE_DIR to the include directory of your Eigen3 installation.")
 ENDIF()
@@ -96,12 +103,22 @@ MESSAGE("COUCOU")
 MESSAGE(${FFTW3_LIBRARIES})
 TARGET_LINK_LIBRARIES(train "${FFTW3_LIBRARIES}/libfftw3f.a")
 TARGET_LINK_LIBRARIES(test "${FFTW3_LIBRARIES}/libfftw3f.a")
+TARGET_LINK_LIBRARIES(test_pyramid "${FFTW3_LIBRARIES}/libfftw3f.a")
+
+FIND_PACKAGE(PCL 1.8 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+target_link_libraries(train ${PCL_LIBRARIES})
+target_link_libraries(test ${PCL_LIBRARIES})
+target_link_libraries(test_pyramid ${PCL_LIBRARIES})
 
 FIND_PACKAGE(JPEG REQUIRED)
 IF(JPEG_FOUND)
   INCLUDE_DIRECTORIES(${JPEG_INCLUDE_DIR})
   TARGET_LINK_LIBRARIES(train ${JPEG_LIBRARIES})
   TARGET_LINK_LIBRARIES(test ${JPEG_LIBRARIES})
+  TARGET_LINK_LIBRARIES(test_pyramid ${JPEG_LIBRARIES})
 ENDIF()
 
 FIND_PACKAGE(LibXml2 REQUIRED)
@@ -109,6 +126,7 @@ IF(LIBXML2_FOUND)
   INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
   TARGET_LINK_LIBRARIES(train ${LIBXML2_LIBRARIES})
   TARGET_LINK_LIBRARIES(test ${LIBXML2_LIBRARIES})
+  TARGET_LINK_LIBRARIES(test_pyramid ${LIBXML2_LIBRARIES})
   ADD_DEFINITIONS(${LIBXML2_DEFINITIONS})
 ENDIF()
 
