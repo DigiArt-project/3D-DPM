@@ -24,6 +24,31 @@ GSHOTPyramid::~GSHOTPyramid()
     height_ = 0;
 }
 
+
+void GSHOTPyramid::test() const
+{
+    
+    //Tensor = pile de matrice
+    //Init array of float 32 x 1
+    ArrayXf a = ArrayXf::Random(32,1);
+    //Type,row,col
+    //Create a cell with the array created before, corresponding to descriptors
+    Eigen::Array<float, 32, 1> cell_test(a);
+    std::cout << cell_test.size() << std::endl;
+    //Rank 1 row = 2 col = 2
+    //Ligne colomne et depth
+    Tensor<Eigen::Array<float, 32, 1> > Level(2,2,2);
+    Level.setValues({{{cell_test, cell_test}, {cell_test, cell_test}},
+        {{cell_test, cell_test}, {cell_test, cell_test}}
+    });
+    
+    // Result is a zero dimension tensor
+    
+    //m_Level
+}
+
+
+
 GSHOTPyramid::GSHOTPyramid(typename pcl::PointCloud<PointType>::Ptr input, int octaves, int interval, float starting_resolution, float starting_kp_grid_reso, float starting_descr_rad): _octaves(octaves), _original_resolution(starting_resolution)
 {
     interval_ = interval;
@@ -68,15 +93,15 @@ GSHOTPyramid::GSHOTPyramid(typename pcl::PointCloud<PointType>::Ptr input, int o
     float resolution;
     float kp_resolution;
     float descr_rad;
-    
+
     for(unsigned int i=1;i<=octaves;i++){
-        
+        std::cout << "OCTAVE NUMBER " << i <<  std::endl;
         resolution = starting_resolution*pow(2,i-1);
         kp_resolution = starting_kp_grid_reso*i;
         descr_rad = starting_descr_rad*i;
         
         for(unsigned int j=0;j<=interval;j++){
-            
+            std::cout << "INTERVAL NUMBER " << j <<  std::endl;
             typename pcl::PointCloud<PointType>::Ptr subspace(new typename pcl::PointCloud<PointType>());
             float subresolution = resolution;
             float sub_kp_resolution = kp_resolution;
@@ -96,6 +121,7 @@ GSHOTPyramid::GSHOTPyramid(typename pcl::PointCloud<PointType>::Ptr input, int o
         }
     }
     height_ = _descriptors->size();
+    
 }
 
 /*
@@ -211,6 +237,8 @@ bool GSHOTPyramid::empty() const
 {
     //return levels().empty();
 }
+
+
 
 void GSHOTPyramid::toString()
 {

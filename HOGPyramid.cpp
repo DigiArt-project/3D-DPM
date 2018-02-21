@@ -59,8 +59,9 @@ pady_(0), interval_(0)
 	
 #pragma omp parallel for
 	for (int i = 0; i < interval; ++i) {
+		//Scale factor
 		const double scale = pow(2.0, -static_cast<double>(i) / interval);
-		
+		//Rescale the image. For example Scale factor  1.10 --> downsize both dimension by 10%
 		JPEGImage scaled = image.rescale(scale);
 		
 		// First octave at twice the image resolution

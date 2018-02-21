@@ -1,4 +1,5 @@
 #include "GSHOTPyramid.hpp"
+
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -10,21 +11,10 @@
 
 using namespace FFLD;
 using namespace std;
+using namespace Eigen;
 
 
-int getMilliCount(){
-    timeb tb;
-    ftime(&tb);
-    int nCount = tb.millitm + (tb.time & 0xfffff) * 1000;
-    return nCount;
-}
 
-int getMilliSpan(int nTimeStart){
-    int nSpan = getMilliCount() - nTimeStart;
-    if(nSpan < 0)
-    nSpan += 0x100000 * 1000;
-    return nSpan;
-}
 
 //Read point cloud from a path
 int
@@ -61,10 +51,17 @@ main (int argc, char *argv[]){
     
     //Testing parameters
     int octaves = 3;//Etage
-    int intervals = 2; // nombre de section à chaque octa
+    int intervals = 5; // nombre de section à chaque octa
     float starting_resolution = 0.01;
     float starting_kp_reso = 0.2;
     float starting_descriptor_radius = 0.4;
+    
+    //Constructor Tensor<data_type, rank>(size0, size1, ...)
+    Tensor<float, 3> t_3d(2, 3, 4);
+    
+ 
+
+   
   
 
         pcl::PointCloud<PointType>::Ptr object(new pcl::PointCloud<PointType>);
@@ -81,15 +78,16 @@ main (int argc, char *argv[]){
         boost::filesystem::path p(cloud_path);
         std::string filename =  p.filename().c_str();
 
-        int start = getMilliCount();
-        
         GSHOTPyramid* pyr(new GSHOTPyramid(object, octaves, intervals, starting_resolution, starting_kp_reso, starting_descriptor_radius));
-        
-        int milliSecondsElapsed = getMilliSpan(start);
-        
+    
+    std::cout << "\n ####TEST " << std::endl;
+    //pyr->test();
+    
+    std::cout << "\n ####END TEST " << std::endl;
+    
         pyr->toString();
     
-        
+        /*
         std::cout << std::endl;
         std::cout << "Time elapsed for building the feature pyramid : " << milliSecondsElapsed << " ms." << std::endl;
         
@@ -132,6 +130,6 @@ main (int argc, char *argv[]){
         }
         
         return 0;
-    
+    */
 }
 

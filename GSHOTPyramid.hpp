@@ -38,18 +38,9 @@ namespace FFLD
         public:
         /// Number of HOG features (guaranteed to be even). Fixed at compile time for both ease of use
         /// and optimal performance.
-#ifndef FFLD_HOGPYRAMID_EXTRA_FEATURES
-        static const int NbFeatures = 32;
-#else
-        static const int NbFeatures = 48;
-#endif
-        
-        /// Type of a scalar value.
-#ifndef FFLD_HOGPYRAMID_DOUBLE
+        static const int NbFeatures = 352;
         typedef float Scalar;
-#else
-        typedef double Scalar;
-#endif
+
         
         /// Type of a matrix.
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
@@ -57,6 +48,7 @@ namespace FFLD
         template <typename Type>
         struct Tensor : Eigen::Tensor<Type, 3, Eigen::RowMajor>{
             Tensor( int s1, int s2, int s3) : Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3){}
+            //row d'une matrice --> renvoie ligne de la matrice
             
             Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> row( int i) const{
                 Eigen::Matrix<Type, this->dimension(0), this->dimension(1), Eigen::RowMajor> res;
@@ -72,6 +64,7 @@ namespace FFLD
         typedef Tensor<Cell> Level;
         
         
+        void test() const;
         /// Constructs an empty pyramid. An empty pyramid has no level.
         GSHOTPyramid();
         
