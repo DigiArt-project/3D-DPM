@@ -89,17 +89,36 @@ namespace FFLD
         // Destructor
         ~GSHOTPyramid();
 
-        /** CONSTRUCTORS **/
+        /** GETTERS AND SETTER **/
         
         /// Returns whether the pyramid is empty. An empty pyramid has no level.
         bool isEmpty() const;
         
         /// Returns the number of levels per octave in the pyramid.
-        int numberInterval() const;
+        int getNumberInterval() const;
         
         /// Returns the pyramid levels.
         /// @note Scales are given by the following formula: 2^(1 - @c index / @c interval).
         const Tensor<Cell> getLevels() const;
+        //Get keypoints at a given level
+        Eigen::Vector3i getLayerTopology(int i);
+        pcl::PointCloud<DescriptorType> get_descriptors_layer(unsigned int);
+        pcl::PointCloud<PointType> get_keypoints_layer(unsigned int);
+        int get_octaves();
+        int get_sub_between_octaves();
+        int get_height();
+        float get_original_resolution();
+        float get_layer_resolution (int i);
+        
+        //Type accessors
+        static const char* get_descriptor_type();
+        static const char* get_point_type();
+        
+        // Pyramid informations
+        void toString();
+        
+        /** OTHERS **/
+    
         
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
@@ -118,21 +137,7 @@ namespace FFLD
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
         static const Eigen::Map<const Matrix, Eigen::Aligned> Map(const Level & level);
         
-        // Getters
-        pcl::PointCloud<DescriptorType> get_descriptors_layer(unsigned int);
-        pcl::PointCloud<PointType> get_keypoints_layer(unsigned int);
-        int get_octaves();
-        int get_sub_between_octaves();
-        int get_height();
-        float get_original_resolution();
-        float get_layer_resolution (int i);
         
-        //Type accessors
-        static const char* get_descriptor_type();
-        static const char* get_point_type();
-        
-        // Pyramid informations
-        void toString();
         
         private:
         
@@ -148,16 +153,14 @@ namespace FFLD
         // Container of the different keypoint layers from 0 (original resolution) to n (lowest resolution, last octave)
         std::vector<typename pcl::PointCloud<PointType>::Ptr >* _keypoints;
         
-        int _octaves;
-        float _original_resolution;
 
         // Computes the 2D convolution of a pyramid level with a filter
         static void Convolve(const Level & x, const Level & y, Matrix & z);
         
-
-        
-        int padx_;
-        int pady_;
+        // Number of keypoints per dimension (needed for the sliding box process)
+        std::vector<Eigen::Vector3i,Eigen::aligned_allocator<Eigen::Vector3i> > topology;
+        int _octaves;
+        float _original_resolution;
         int interval_;
         int height_;
         Tensor<Cell> levels_;

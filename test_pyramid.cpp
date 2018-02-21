@@ -78,14 +78,17 @@ main (int argc, char *argv[]){
         boost::filesystem::path p(cloud_path);
         std::string filename =  p.filename().c_str();
 
-        GSHOTPyramid* pyr(new GSHOTPyramid(object, octaves, intervals, starting_resolution, starting_kp_reso, starting_descriptor_radius));
+        GSHOTPyramid* model_pyramid(new GSHOTPyramid(object, octaves, intervals, starting_resolution, starting_kp_reso, starting_descriptor_radius));
     
     std::cout << "\n ####TEST " << std::endl;
-    //pyr->test();
+    //model_pyramid->test();
     
     std::cout << "\n ####END TEST " << std::endl;
     
-        pyr->toString();
+        model_pyramid->toString();
+    
+         Eigen::Vector3i BB_size = model_pyramid->getLayerTopology(0);
+        std::cout<<"Size of the boxes : ("<<BB_size[0]<<" "<<BB_size[1]<<" "<<BB_size[2]<<")"<<std::endl;
     
         /*
         std::cout << std::endl;

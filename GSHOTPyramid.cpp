@@ -165,6 +165,10 @@ typename pcl::PointCloud<PointType>::Ptr GSHOTPyramid::compute_keypoints(typenam
     int pt_nb_y = (int)((max.y-min.y)/grid_reso+1);
     int pt_nb_z = (int)((max.z-min.z)/grid_reso+1);
     int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
+    
+    Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_x, pt_nb_y, pt_nb_z);
+    topology.push_back(topo);
+    
     typename pcl::PointCloud<PointType>::Ptr keypoints (new pcl::PointCloud<PointType> (pt_nb,1,PointType()));
     
     unsigned int i;
@@ -225,6 +229,11 @@ float GSHOTPyramid::get_original_resolution()
     return _original_resolution;
 }
 
+Eigen::Vector3i GSHOTPyramid::getLayerTopology(int i){
+    
+    return topology[i];
+}
+
 float GSHOTPyramid::get_layer_resolution(int i)
 {
     int oct = (int) (i/get_octaves());
@@ -247,7 +256,7 @@ const char* GSHOTPyramid::get_point_type()
     return "XRZRGB";
 }
 
-int GSHOTPyramid::numberInterval() const
+int GSHOTPyramid::getNumberInterval() const
 {
     return interval_;
 }
