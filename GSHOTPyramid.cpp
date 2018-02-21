@@ -5,16 +5,100 @@ using namespace Eigen;
 using namespace FFLD;
 using namespace std;
 
+//TODO Constructors for levels
 
-GSHOTPyramid::GSHOTPyramid(): _octaves(0), _original_resolution(0),height_(0)
+/** CONSTRUCTORS**/
+#pragma mark -  CONSTRUCTORS METHODS
+
+GSHOTPyramid::GSHOTPyramid(): _octaves(0), _original_resolution(0),height_(0),levels_(0,0,0)
 {
     _descriptors = new std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >();
     _keypoints = new std::vector<typename pcl::PointCloud<PointType>::Ptr >();
+
 }
 
-GSHOTPyramid::GSHOTPyramid(const GSHOTPyramid &fp)
+GSHOTPyramid::GSHOTPyramid(const GSHOTPyramid &fp):levels_(0,0,0)
 {
     *this = fp;
+}
+
+GSHOTPyramid::GSHOTPyramid(typename pcl::PointCloud<PointType>::Ptr input, int octaves, int interval, float starting_resolution, float starting_kp_grid_reso, float starting_descr_rad): _octaves(octaves), _original_resolution(starting_resolution),levels_(0,0,0)
+{
+    interval_ = interval;
+    
+    if(octaves < 0 || interval < 0 || starting_resolution < 0) {
+        std::cerr << "Arguments of the constructor cannot be negative!" << std::endl;
+        exit(0);
+    }
+    if(octaves ==0) {
+        std::cerr << "Not very useful to build a pyramid with no octaves..." << std::endl;
+        exit(0);
+    }
+    
+    _descriptors = new std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >();
+    _keypoints = new std::vector<typename pcl::PointCloud<PointType>::Ptr >();
+    
+    PointType min;
+    PointType max;
+    
+    typename pcl::PointCloud<PointType>::Ptr normalized_input(new pcl::PointCloud<PointType>());
+    
+    //Define a resolution standard. Not advised to use full resolution.
+    if(starting_resolution>0) {
+        
+        pcl::UniformSampling<PointType> pre_sampling;
+        pre_sampling.setInputCloud (input);
+        pre_sampling.setRadiusSearch (starting_resolution);
+        pre_sampling.filter (*normalized_input);
+        
+        pcl::getMinMax3D(*normalized_input,min,max);
+        
+        _keypoints->push_back(this->compute_keypoints(normalized_input, starting_kp_grid_reso, min, max));
+        pcl::PointCloud<DescriptorType>::Ptr desc = this->compute_space(normalized_input,_keypoints->at(0),starting_descr_rad);
+        _descriptors->push_back(desc);
+    }
+    else {
+        typename pcl::PointCloud<PointType>::Ptr normalized_input = input;
+        
+        pcl::getMinMax3D(*normalized_input,min,max);
+        
+        _keypoints->push_back(this->compute_keypoints(normalized_input, starting_kp_grid_reso, min, max));
+        pcl::PointCloud<DescriptorType>::Ptr desc = this->compute_space(normalized_input,_keypoints->at(0),starting_descr_rad);
+        _descriptors->push_back(desc);
+    }
+    float resolution;
+    float kp_resolution;
+    float descr_rad;
+    
+    for(unsigned int i=1;i<=octaves;i++){
+        std::cout << "OCTAVE NUMBER " << i <<  std::endl;
+        resolution = starting_resolution*pow(2,i-1);
+        kp_resolution = starting_kp_grid_reso*i;
+        descr_rad = starting_descr_rad*i;
+        
+        for(unsigned int j=0;j<=interval;j++){
+            std::cout << "INTERVAL NUMBER " << j <<  std::endl;
+            typename pcl::PointCloud<PointType>::Ptr subspace(new typename pcl::PointCloud<PointType>());
+            float subresolution = resolution;
+            float sub_kp_resolution = kp_resolution;
+            float sub_descr_rad = descr_rad;
+            pcl::UniformSampling<PointType> sampling;
+            
+            subresolution += (j+1)*resolution/(interval+1);
+            sub_kp_resolution += (j+1)*kp_resolution/(interval+1);
+            sub_descr_rad += (j+1)*descr_rad/(interval+1);
+            
+            sampling.setInputCloud(normalized_input);
+            sampling.setRadiusSearch (subresolution);
+            sampling.filter(*subspace);
+            
+            _keypoints->push_back(compute_keypoints(normalized_input, sub_kp_resolution, min, max));
+            pcl::PointCloud<DescriptorType>::Ptr desc = compute_space(subspace,_keypoints->back(),sub_descr_rad);
+            _descriptors->push_back(desc);
+        }
+    }
+    height_ = _descriptors->size();
+    
 }
 
 GSHOTPyramid::~GSHOTPyramid()
@@ -49,80 +133,7 @@ void GSHOTPyramid::test() const
 
 
 
-GSHOTPyramid::GSHOTPyramid(typename pcl::PointCloud<PointType>::Ptr input, int octaves, int interval, float starting_resolution, float starting_kp_grid_reso, float starting_descr_rad): _octaves(octaves), _original_resolution(starting_resolution)
-{
-    interval_ = interval;
-    if(octaves < 0 || interval < 0 || starting_resolution < 0) {
-        std::cerr << "Arguments of the constructor cannot be negative!" << std::endl;
-        exit(0);
-    }
-    if(octaves ==0) {
-        std::cerr << "Not very useful to build a pyramid with no octaves..." << std::endl;
-        exit(0);
-    }
-    
-    _descriptors = new std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >();
-    _keypoints = new std::vector<typename pcl::PointCloud<PointType>::Ptr >();
-    
-    PointType min;
-    PointType max;
-    
-    typename pcl::PointCloud<PointType>::Ptr normalized_input(new pcl::PointCloud<PointType>());
-    
-    //Define a resolution standard. Not advised to use full resolution.
-    if(starting_resolution>0) {
-        
-        pcl::UniformSampling<PointType> pre_sampling;
-        pre_sampling.setInputCloud (input);
-        pre_sampling.setRadiusSearch (starting_resolution);
-        pre_sampling.filter (*normalized_input);
-        
-        pcl::getMinMax3D(*normalized_input,min,max);
-        
-        _keypoints->push_back(this->compute_keypoints(normalized_input, starting_kp_grid_reso, min, max));
-        _descriptors->push_back(this->compute_space(normalized_input,_keypoints->at(0),starting_descr_rad));
-    }
-    else {
-        typename pcl::PointCloud<PointType>::Ptr normalized_input = input;
-        
-        pcl::getMinMax3D(*normalized_input,min,max);
-        
-        _keypoints->push_back(this->compute_keypoints(normalized_input, starting_kp_grid_reso, min, max));
-        _descriptors->push_back(this->compute_space(normalized_input,_keypoints->at(0),starting_descr_rad));
-    }
-    float resolution;
-    float kp_resolution;
-    float descr_rad;
 
-    for(unsigned int i=1;i<=octaves;i++){
-        std::cout << "OCTAVE NUMBER " << i <<  std::endl;
-        resolution = starting_resolution*pow(2,i-1);
-        kp_resolution = starting_kp_grid_reso*i;
-        descr_rad = starting_descr_rad*i;
-        
-        for(unsigned int j=0;j<=interval;j++){
-            std::cout << "INTERVAL NUMBER " << j <<  std::endl;
-            typename pcl::PointCloud<PointType>::Ptr subspace(new typename pcl::PointCloud<PointType>());
-            float subresolution = resolution;
-            float sub_kp_resolution = kp_resolution;
-            float sub_descr_rad = descr_rad;
-            pcl::UniformSampling<PointType> sampling;
-            
-            subresolution += (j+1)*resolution/(interval+1);
-            sub_kp_resolution += (j+1)*kp_resolution/(interval+1);
-            sub_descr_rad += (j+1)*descr_rad/(interval+1);
-            
-            sampling.setInputCloud(normalized_input);
-            sampling.setRadiusSearch (subresolution);
-            sampling.filter(*subspace);
-            
-            _keypoints->push_back(compute_keypoints(normalized_input, sub_kp_resolution, min, max));
-            _descriptors->push_back(compute_space(subspace,_keypoints->back(),sub_descr_rad));
-        }
-    }
-    height_ = _descriptors->size();
-    
-}
 
 /*
  * WARNING : need to build a sub structure to partially specialize the pyramid
@@ -177,6 +188,9 @@ typename pcl::PointCloud<PointType>::Ptr GSHOTPyramid::compute_keypoints(typenam
     return keypoints;
 }
 
+/** GETTER AND SETTERS **/
+#pragma mark -  GETTERS AND SETTER METHODS
+
 pcl::PointCloud<DescriptorType> GSHOTPyramid::get_descriptors_layer(unsigned int i)
 {
     return *(_descriptors->at(i));
@@ -185,6 +199,11 @@ pcl::PointCloud<DescriptorType> GSHOTPyramid::get_descriptors_layer(unsigned int
 pcl::PointCloud<PointType> GSHOTPyramid::get_keypoints_layer(unsigned int i)
 {
     return *(_keypoints->at(i));
+}
+
+const GSHOTPyramid::Tensor<GSHOTPyramid::Cell> GSHOTPyramid::getLevels() const{
+    
+    return levels_;
 }
 
 int GSHOTPyramid::get_octaves()
@@ -228,12 +247,12 @@ const char* GSHOTPyramid::get_point_type()
     return "XRZRGB";
 }
 
-int GSHOTPyramid::interval() const
+int GSHOTPyramid::numberInterval() const
 {
     return interval_;
 }
 
-bool GSHOTPyramid::empty() const
+bool GSHOTPyramid::isEmpty() const
 {
     //return levels().empty();
 }

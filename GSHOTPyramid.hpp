@@ -36,6 +36,8 @@ namespace FFLD
     class GSHOTPyramid
     {
         public:
+        /** DEFINITION OF TYPES **/
+        
         /// Number of HOG features (guaranteed to be even). Fixed at compile time for both ease of use
         /// and optimal performance.
         static const int NbFeatures = 352;
@@ -65,54 +67,39 @@ namespace FFLD
         
         
         void test() const;
+        
+        /** CONSTRUCTORS **/
+        
         /// Constructs an empty pyramid. An empty pyramid has no level.
         GSHOTPyramid();
         
         // Copy constructor
         GSHOTPyramid(const GSHOTPyramid&);
         
-        /*
-         * Main constructor, using the point cloud input, the descriptor applied, the number of octaves and the number of subsections by octave.
-         * We use a starting resolution to pre sample the point cloud, in order to reduce computation and define a standard.
-         * Need to take a container of parameters instead of the descr_rad to generalize to different descriptors.
-         */
+
+        /// Constructs a pyramid from a given point cloud data.
+        /// @param[in] input The PointCloud data
+        /// @param[in] octave Amount of Octaves in the pyramid (An octave can have muliples subsections/intervals)
+        /// @param[in] interval Number of intervals in each octave/Nuber of levels per octave in the pyramid
+        /// @param[in] starting_resolution Starting resolution for the point cloud. So that we can pre sample the point cloud, in order to reduce computation and define a standard.
+        /// @param[in] starting_kp_grid_reso Resolution keypoint
+        /// @note TODO Need to take a container of parameters instead of the descr_rad to generalize to different descriptors.
         GSHOTPyramid(typename pcl::PointCloud<PointType>::Ptr input,  int octaves, int interval, float starting_resolution, float starting_kp_grid_reso, float descr_rad);
         
         // Destructor
         ~GSHOTPyramid();
-        
-        /// Constructs a pyramid from the JPEGImage of a Scene.
-        /// @param[in] image The JPEGImage of the Scene.
-        /// @param[in] padx Amount of horizontal zero padding (in cells).
-        /// @param[in] pady Amount of vertical zero padding (in cells).
-        /// @param[in] interval Number of levels per octave in the pyramid.
-        /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const JPEGImage & image, int padx, int pady, int interval = 5);
-        
-        /// Constructs a pyramid from parameters and a list of levels.
-        /// @param[in] padx Amount of horizontal zero padding (in cells).
-        /// @param[in] pady Amount of vertical zero padding (in cells).
-        /// @param[in] interval Number of levels per octave in the pyramid.
-        /// @param[in] levels List of pyramid levels.
-        /// @note The amount of padding and the interval must both be at least 1.
-        /// @note The input levels are swapped with empty ones on exit.
-        GSHOTPyramid(int padx, int pady, int interval, std::vector<Level> & levels);
+
+        /** CONSTRUCTORS **/
         
         /// Returns whether the pyramid is empty. An empty pyramid has no level.
-        bool empty() const;
-        
-        /// Returns the amount of horizontal zero padding (in cells).
-        int padx() const;
-        
-        /// Returns the amount of vertical zero padding (in cells).
-        int pady() const;
+        bool isEmpty() const;
         
         /// Returns the number of levels per octave in the pyramid.
-        int interval() const;
+        int numberInterval() const;
         
         /// Returns the pyramid levels.
         /// @note Scales are given by the following formula: 2^(1 - @c index / @c interval).
-        const std::vector<Level> & levels() const;
+        const Tensor<Cell> getLevels() const;
         
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
@@ -163,12 +150,7 @@ namespace FFLD
         
         int _octaves;
         float _original_resolution;
-        // Efficiently computes Histogram of Oriented Gradient (HOG) features
-        // Code to compute HOG features as described in "Object Detection with Discriminatively Trained
-        // Part Based Models" by Felzenszwalb, Girshick, McAllester and Ramanan, PAMI 2010
-        static void Hog(const JPEGImage & image, Level & level, int padx = 1, int pady = 1,
-                        int cellSize = 8);
-        
+
         // Computes the 2D convolution of a pyramid level with a filter
         static void Convolve(const Level & x, const Level & y, Matrix & z);
         
@@ -178,7 +160,7 @@ namespace FFLD
         int pady_;
         int interval_;
         int height_;
-        std::vector<Level> levels_;
+        Tensor<Cell> levels_;
     };
     
     /// Serializes a pyramid to a stream.
