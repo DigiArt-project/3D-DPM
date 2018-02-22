@@ -2,3 +2,5 @@
 *.jpeg
 build
 CMakeLists.txt
+*.files
+*.includes

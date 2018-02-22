@@ -61,7 +61,71 @@ GSHOTPyramid::GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::V
 
 
 
+void GSHOTPyramid::convolve(const Level & filter, vector<Tensor> & convolutions) const
+{
+    convolutions.resize(levels_.size());
 
+#pragma omp parallel for
+    for (int i = 0; i < levels_.size(); ++i)
+        Convolve(levels_[i], filter, convolutions[i]);
+}
+
+//TODO
+void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
+{
+    // Nothing to do if x is smaller than y
+    if ((x.rows() < y.rows()) || (x.cols() < y.cols())) {
+        z = Tensor();
+        return;
+    }
+
+    z = Tensor::Zero(x.rows() - y.rows() + 1, x.cols() - y.cols() + 1, );
+
+    for (int i = 0; i < z.rows(); ++i) {
+        for (int j = 0; j < y.rows(); ++j) {
+            const Eigen::Map<const Matrix, Aligned, OuterStride<NbFeatures> >
+                mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(), y.cols() * NbFeatures);
+
+                const Eigen::Map<const RowVectorXf, Aligned>
+
+                mapy(reinterpret_cast<const Scalar *>(y.row(j).data()), y.cols() * NbFeatures);
+
+            z.row(i).noalias() += mapy * mapx.transpose();
+        }
+    }
+}
+
+//TODO: do we need the flip function ?
+GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
+{
+    //TODO: adapt
+    // Symmetric features
+    const int symmetry[NbFeatures] =
+    {
+        9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 17, 16, 15, 14, 13, 12, 11, 10, // Contrast-sensitive
+        18, 26, 25, 24, 23, 22, 21, 20, 19, // Contrast-insensitive
+        28, 27, 30, 29, // Texture
+#ifndef FFLD_HOGPYRAMID_EXTRA_FEATURES
+        31 // Truncation
+#else
+        31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // Uniform LBP
+        41, 42, 43, 44, 45, 46, // Color
+        47 // Truncation
+#endif
+    };
+
+    // Symmetric filter
+    GSHOTPyramid::Level result(level.rows(), level.cols(), level.depths());
+
+    for (int y = 0; y < level.rows(); ++y)
+        for (int x = 0; x < level.cols(); ++x)
+            for (int z = 0; z < level.depths(); ++z)
+                for (int i = 0; i < NbFeatures; ++i)
+                    //TODO
+                    result(y, x, z)(i) = level(y, level.cols() - 1 - x, )(symmetry[i]);
+
+    return result;
+}
 
 
 

@@ -54,6 +54,16 @@ namespace FFLD
                 Eigen::Matrix<Type, this->dimension(0), this->dimension(1), Eigen::RowMajor> res;
                 return res.setZero();
             }
+
+            int rows(){
+                return *this->dimension(0);
+            }
+            int cols(){
+                return *this->dimension(1);
+            }
+            int depths(){
+                return *this->dimension(2);
+            }
             
         };
         
@@ -98,30 +108,30 @@ namespace FFLD
         /** GETTERS AND SETTER **/
         
         /// Returns whether the pyramid is empty. An empty pyramid has no level.
-        bool isEmpty() const;
+        bool empty() const;
         
         /// Returns the number of levels per octave in the pyramid.
-        int getNumberInterval() const;
+        int interval() const;
         
         /// Returns the pyramid levels.
         /// @note Scales are given by the following formula: 2^(1 - @c index / @c interval).
         const std::vector<Level> & levels() const;
-        //Get keypoints at a given level
-        Eigen::Vector3i getLayerTopology(int i);
-        pcl::PointCloud<DescriptorType> get_descriptors_layer(unsigned int);
-        pcl::PointCloud<PointType> get_keypoints_layer(unsigned int);
-        int get_octaves();
-        int get_sub_between_octaves();
-        int get_height();
-        float get_original_resolution();
-        float get_layer_resolution (int i);
+//        //Get keypoints at a given level
+//        Eigen::Vector3i getLayerTopology(int i);
+//        pcl::PointCloud<DescriptorType> get_descriptors_layer(unsigned int);
+//        pcl::PointCloud<PointType> get_keypoints_layer(unsigned int);
+//        int get_octaves();
+//        int get_sub_between_octaves();
+//        int get_height();
+//        float get_original_resolution();
+//        float get_layer_resolution (int i);
         
-        //Type accessors
-        static const char* get_descriptor_type();
-        static const char* get_point_type();
+//        //Type accessors
+//        static const char* get_descriptor_type();
+//        static const char* get_point_type();
         
-        // Pyramid informations
-        void toString();
+//        // Pyramid informations
+//        void toString();
         
         /** OTHERS **/
     
@@ -177,6 +187,7 @@ namespace FFLD
         // Represent a vector of 3D scene of descriptors computed at different resolution
         //from 0 (original resolution) to n (lowest resolution, last octave)
         std::vector<Level> levels_;
+        //TODO: I don't think we need it
         // The corresponding positions of the descriptors in the space for each level
         std::vector<PointCloudPtr > _keypoints;
     };
