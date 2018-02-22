@@ -1,5 +1,5 @@
 GSHOTPyramid.cpp
-GSHOTPyramid.hpp
+GSHOTPyramid.h
 HOGPyramid.cpp
 HOGPyramid.h
 Intersector.h
