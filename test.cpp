@@ -30,6 +30,8 @@
 #include <iomanip>
 #include <iostream>
 
+#include "GSHOTPyramid.hpp"
+
 #ifndef _WIN32
 #include <sys/time.h>
 
@@ -542,6 +544,7 @@ int main(int argc, char ** argv)
 		}
 		
 		// Compute the HOG features
+        //Start the timer
 		start();
 		
 		HOGPyramid pyramid(image, padding, padding, interval);

@@ -21,6 +21,7 @@
 
 #ifndef FFLD_HOGPYRAMID_H
 #define FFLD_HOGPYRAMID_H
+//TODO CHANGE PADX PADY PADZ to (
 
 #include "JPEGImage.h"
 
@@ -62,6 +63,8 @@ public:
 	typedef Eigen::Array<Scalar, NbFeatures, 1> Cell;
 	
 	/// Type of a pyramid level (matrix of cells).
+	//RowMajor : stored row by row. The entire first row is stored first, followed by the entire second row, and so on
+	//Dynamix : uknow size of the matrix at compile time
 	typedef Eigen::Matrix<Cell, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Level;
 	
 	/// Constructs an empty pyramid. An empty pyramid has no level.
