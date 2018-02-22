@@ -1,4 +1,4 @@
-#include "PointCloud.hpp"
+#include "PointCloud.h"
 
 using namespace Eigen;
 using namespace FFLD;

@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
-#include "typedefs.hpp"
+#include "typedefs.h"
 #include <Eigen/Core>
 
 namespace FFLD
@@ -58,6 +58,9 @@ public:
     
     /// Returns the height of the point cloud. If the result is one, it means that the point cloud is unorganized
     int getHeight() const;
+
+    //TODO: I think it's best to only consider unorganized PC and add this function for the Rectangle class
+    int getDepth() const;
     
     //Returns the centroid of the point cloud
     Eigen::Vector4f getCentroid() const;

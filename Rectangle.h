@@ -26,10 +26,10 @@
 
 namespace FFLD
 {
-/// The Rectangle class defines a rectangle in the plane using integer precision. If the coordinates
+/// The Rectangle class defines a rectangle in the plane using floateger precision. If the coordinates
 /// of the top left corner of the rectangle are (x, y), the coordinates of the bottom right corner
 /// are (x + width - 1, y + height - 1), where width and height are the dimensions of the rectangle.
-/// The corners are therefore understood as the extremal points still inside the rectangle.
+/// The corners are therefore understood as the extremal pofloats still inside the rectangle.
 class Rectangle
 {
 public:
@@ -37,79 +37,88 @@ public:
 	Rectangle();
 	
 	/// Constructs a rectangle with the given @p width and @p height.
-	Rectangle(int width, int height);
+    Rectangle(float width, float height, float depth);
 	
 	/// Constructs a rectangle with coordinates (@p x, @p y) and the given @p width and @p height.
-	Rectangle(int x, int y, int width, int height);
+    Rectangle(Eigen::Vector3f x, Eigen::Vector3f y);
 	
 	/// Returns the x-coordinate of the rectangle.
-	int x() const;
+    Eigen::Vector3f x() const;
 	
 	/// Sets the x coordinate of the rectangle to @p x.
-	void setX(int x);
+    void setX(Eigen::Vector3f x);
 	
 	/// Returns the y-coordinate of the rectangle.
-	int y() const;
+    Eigen::Vector3f y() const;
 	
 	/// Sets the y coordinate of the rectangle to @p y.
-	void setY(int y);
+    void setY(Eigen::Vector3f y);
 	
 	/// Returns the width of the rectangle.
-	int width() const;
+    float width() const;
 	
 	/// Sets the height of the rectangle to the given @p width.
-	void setWidth(int width);
+    void setWidth(float width);
 	
 	/// Returns the height of the rectangle.
-	int height() const;
+    float height() const;
 	
 	/// Sets the height of the rectangle to the given @p height.
-	void setHeight(int height);
+    void setHeight(float height);
 	
 	/// Returns the left side of the rectangle.
 	/// @note Equivalent to x().
-	int left() const;
+    float left() const;
 	
 	/// Sets the left side of the rectangle to @p left.
 	/// @note The right side of the rectangle is not modified.
-	void setLeft(int left);
+    void setLeft(Eigen::Vector3f left);
 	
 	/// Returns the top side of the rectangle.
 	/// @note Equivalent to y().
-	int top() const;
+    float top() const;
 	
 	/// Sets the top side of the rectangle to @p top.
 	/// @note The bottom side of the rectangle is not modified.
-	void setTop(int top);
+    void setTop(Eigen::Vector3f top);
 	
 	/// Returns the right side of the rectangle.
 	/// @note Equivalent to x() + width() - 1.
-	int right() const;
+    float right() const;
 	
 	/// Sets the right side of the rectangle to @p right.
 	/// @note The left side of the rectangle is not modified.
-	void setRight(int right);
+    void setRight(Eigen::Vector3f right);
 	
 	/// Returns the bottom side of the rectangle.
 	/// @note Equivalent to y() + height() - 1.
-	int bottom() const;
+    float bottom() const;
 	
 	/// Sets the bottom side of the rectangle to @p bottom.
 	/// @note The top side of the rectangle is not modified.
-	void setBottom(int bottom);
+    void setBottom(Eigen::Vector3f bottom);
+
+    float front() const;
+
+    void setFront(Eigen::Vector3f front);
+
+    float back() const;
+
+    void setBack(Eigen::Vector3f back);
 	
 	/// Returns whether the rectangle is empty. An empty rectangle has no area.
 	bool empty() const;
 	
 	/// Returns the area of the rectangle.
 	/// @note Equivalent to max(width(), 0) * max(height(), 0).
-	int area() const;
+    float volume() const;
 	
 private:
-	int x_;
-	int y_;
-	int width_;
-	int height_;
+    Eigen::Vector3f x_;
+    Eigen::Vector3f y_;
+    float width_;
+    float height_;
+    float depth_;
 };
 
 /// Serializes a rectangle to a stream.

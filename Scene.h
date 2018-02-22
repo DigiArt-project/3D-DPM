@@ -41,10 +41,10 @@ public:
 	Scene();
 	
 	/// Constructs a scene from informations about a jpeg image and a list of objects.
-	/// @param[in] width Width of the image.
-	/// @param[in] height Height of the image.
-	/// @param[in] depth Depth of the image.
-	/// @param[in] filename Filename of the image.
+    /// @param[in] width Width of the PC.
+    /// @param[in] height Height of the PC.
+    /// @param[in] depth Depth of the PC.
+    /// @param[in] filename Filename of the PC.
 	/// @param[in] objects List of objects present in the scene.
 	Scene(int width, int height, int depth, const std::string & filename,
 		  const std::vector<Object> & objects);
@@ -55,28 +55,28 @@ public:
 	/// Returns whether the scene is empty. An empty scene has an empty image and no object.
 	bool empty() const;
 	
-	/// Returns the width of the image.
+    /// Returns the width of the PC.
 	int width() const;
 	
-	/// Sets the width of the image.
+    /// Sets the width of the PC.
 	void setWidth(int width);
 	
-	/// Returns the height of the image.
+    /// Returns the height of the PC.
 	int height() const;
 	
-	/// Sets the height of the image.
+    /// Sets the height of the PC.
 	void setHeight(int height);
 	
-	/// Returns the depth of the image. The image depth is the number of color channels.
+    /// Returns the depth of the PC.
 	int depth() const;
 	
-	/// Sets the depth of the image.
+    /// Sets the depth of the PC.
 	void setDepth(int depth);
 	
-	/// Returns the filename of the image.
+    /// Returns the filename of the PC.
 	const std::string & filename() const;
 	
-	/// Sets the filename of the image.
+    /// Sets the filename of the PC.
 	void setFilename(const std::string & filename);
 	
 	/// Returns the list of objects present in the scene.
