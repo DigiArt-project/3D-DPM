@@ -165,6 +165,11 @@ namespace FFLD
         PointCloudPtr
         compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max);
         
+        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;
+        // The corresponding positions of the descriptors in the space for each level
+        std::vector<typename pcl::PointCloud<PointType>::Ptr >* _keypoints;
+        
+        
 //        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)
 //        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;
         

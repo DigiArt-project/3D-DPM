@@ -59,11 +59,12 @@ public:
 	/// Returns whether rectangle @p a comes before @p b.
 	bool operator()(int a, int b) const
 	{
-		const int areaA = rectangles_[a].first.area();
-		const int areaB = rectangles_[b].first.area();
+        const int volumeA = rectangles_[a].first.volume();
+        const int volumeB = rectangles_[b].first.volume();
+        
 		
-		return (areaA > areaB) || ((areaA == areaB) && (rectangles_[a].first.height() >
-														rectangles_[b].first.height()));
+        return (volumeA > volumeB) || ((volumeA == volumeB) && (rectangles_[a].first.height() >
+                                                                rectangles_[b].first.height()));
 	}
 	
 private:

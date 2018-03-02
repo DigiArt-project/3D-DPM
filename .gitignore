@@ -4,3 +4,4 @@ build
 CMakeLists.txt
 *.files
 *.includes
+ffld_v2/dpm3d.*

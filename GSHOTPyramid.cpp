@@ -16,47 +16,81 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 }
 
 GSHOTPyramid::GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::Vector3i pad, int interval) :
-    pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
+pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
-    if (input.empty() || (pad.x < 1) || (pad.y < 1) || (pad.z < 1) || (interval < 1)) {
+    if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
         cerr << "Attempting to create an empty pyramid" << endl;
         return;
     }
-
-    //TODO replace image per input
-    // Compute the number of scales such that the smallest size of the last level is 5
-    const int maxScale = ceil(log(min(image.width(), image.height()) / 40.0) / log(2.0) * interval);
-
-    // Cannot compute the pyramid on images too small
-    if (maxScale < interval) {
-        cerr << "The image is too small to create a pyramid" << endl;
-        return;
-    }
-
+    
+    _descriptors = new std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >();
+    _keypoints = new std::vector<PointCloudPtr>();
     pad_ = pad;
     interval_ = interval;
+    float subsections = 2;
+    
+    const int maxScale = (subsections+1) * (interval+1);
     levels_.resize(maxScale + 1);
-
+    
+    PointType min;
+    PointType max;
+    
+    
+    //Exemple of starting resolution
+    float starting_resolution = 0.05;
+    float starting_kp_reso = 0.2;
+    float starting_descr_rad = 0.4;
+    float resolution;
+    float kp_resolution;
+    float descr_rad;
+    pcl::UniformSampling<PointType> sampling;
 #pragma omp parallel for
     for (int i = 0; i < interval; ++i) {
-        //TODO how to compute the grid_reso to use from interval ???
-
-        //Scale factor
-        //const double scale = pow(2.0, -static_cast<double>(i) / interval);
-        float grid_reso = 1.0;
-
-        PointCloudPtr keypoints = compute_keypoints(input, grid_reso, min, max);
-        PointCloudPtr descriptors = compute_descriptor(input, keypoints, descr_rad);
-
-        Cell* cell = *(levels_[i]);
-        for( int j = 0; j < descriptors.size(); ++j){
-
-            *cell = descriptors(j);
-            ++cell;
+        resolution = starting_resolution*pow(2,i-1);
+        kp_resolution = starting_kp_reso*i;
+        descr_rad = starting_descr_rad*i;
+        
+        typename pcl::PointCloud<PointType>::Ptr subspace(new typename pcl::PointCloud<PointType>());
+        
+        sampling.setInputCloud(input);
+        sampling.setRadiusSearch (resolution);
+        sampling.filter(*subspace);
+        
+        pcl::getMinMax3D(*input,min,max);
+        _keypoints->push_back(this->compute_keypoints(input, kp_resolution, min, max));
+        DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->at(0),descr_rad);
+        //_descriptors->push_back(desc);
+        
+        Cell* cell_desc = new Cell();
+        for( int k = 0; k < desc->size(); ++k){
+            cell_desc[k] = desc->points[0].descriptor[k];
+        }
+        Level* level_current = new Level(1,0,0);
+        level_current->setValues({{{*cell_desc}}});
+        levels_.push_back(*level_current);
+        
+        for (int j = 0; j < subsections; j++){
+            float subresolution = resolution;
+            float sub_kp_resolution = kp_resolution;
+            float sub_descr_rad = descr_rad;
+            
+            sampling.setInputCloud(input);
+            sampling.setRadiusSearch (subresolution);
+            sampling.filter(*subspace);
+            
+            pcl::getMinMax3D(*input,min,max);
+            _keypoints->push_back(this->compute_keypoints(input, sub_kp_resolution, min, max));
+            DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->at(0),sub_descr_rad);
+            Cell* cell_desc = new Cell();
+            for( int k = 0; k < desc->size(); ++k){
+                cell_desc[k] = desc->points[0].descriptor[k];
+            }
+            Level* level_current = new Level(1,0,0);
+            level_current->setValues({{{*cell_desc}}});
+            levels_.push_back(*level_current);
         }
     }
 }
-
 
 
 
