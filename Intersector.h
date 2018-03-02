@@ -65,7 +65,7 @@ public:
 			return false;
 		
 		const int intersectionArea = (right - left + 1) * (bottom - top + 1);
-		const int rectArea = rect.area();
+		const int rectArea = rect.volume();
 		
 		if (felzenszwalb_) {
 			if (intersectionArea >= rectArea * threshold_) {
@@ -76,7 +76,7 @@ public:
 			}
 		}
 		else {
-			const int referenceArea = reference_.area();
+			const int referenceArea = reference_.volume();
 			const int unionArea = referenceArea + rectArea - intersectionArea;
 			
 			if (intersectionArea >= unionArea * threshold_) {

@@ -50,7 +50,7 @@ cached_(false), zero_(true)
 	}
 	
 	// Compute the root filters' sizes using Felzenszwalb's heuristic
-    const vector<triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name);
+    const vector<Model::triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name);
 	
 	// Early return in case the root filters' sizes could not be determined
 	if (sizes.size() != nbComponents)
@@ -80,9 +80,9 @@ vector<Model> & Mixture::models()
 	return models_;
 }
 
-triple<int, int, int> Mixture::minSize() const
+Model::triple<int, int, int> Mixture::minSize() const
 {
-    triple<int, int, int> size(0, 0, 0);
+    Model::triple<int, int, int> size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
@@ -97,9 +97,9 @@ triple<int, int, int> Mixture::minSize() const
 	return size;
 }
 
-triple<int, int, int> Mixture::maxSize() const
+Model::triple<int, int, int> Mixture::maxSize() const
 {
-    triple<int, int, int> size(0, 0, 0);
+    Model::triple<int, int, int> size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
@@ -118,7 +118,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 					  int interval, int nbRelabel, int nbDatamine, int maxNegatives, double C,
 					  double J, double overlap)
 {
-    if (empty() || scenes.empty() || (pad.x < 1) || (pad.y < 1) || (pad.z < 1) || (interval < 1) ||
+    if (empty() || scenes.empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1) ||
 		(nbRelabel < 1) || (nbDatamine < 1) || (maxNegatives < models_.size()) || (C <= 0.0) ||
 		(J <= 0.0) || (overlap <= 0.0) || (overlap >= 1.0)) {
 		cerr << "Invalid training parameters" << endl;

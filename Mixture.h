@@ -59,10 +59,10 @@ public:
 	std::vector<Model> & models();
 	
 	/// Returns the minimum root filter size (<tt>rows x cols</tt>).
-    triple<int, int, int> minSize() const;
+    Model::triple<int, int, int> minSize() const;
 	
 	/// Returns the maximum root filter size (<tt>rows x cols</tt>).
-    triple<int, int, int> maxSize() const;
+    Model::triple<int, int, int> maxSize() const;
 	
 	/// Trains the mixture.
 	/// @param[in] scenes Scenes to use for training.

@@ -23,6 +23,9 @@
 #define FFLD_RECTANGLE_H
 
 #include <iosfwd>
+//EIGEN
+#include <Eigen/Core>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 namespace FFLD
 {
@@ -44,16 +47,20 @@ public:
 	
 	/// Returns the x-coordinate of the rectangle.
     Eigen::Vector3f x() const;
+    
+    /// Returns the y-coordinate of the rectangle.
+    Eigen::Vector3f y() const;
+    
+    Eigen::Vector3f z() const;
 	
 	/// Sets the x coordinate of the rectangle to @p x.
     void setX(Eigen::Vector3f x);
-	
-	/// Returns the y-coordinate of the rectangle.
-    Eigen::Vector3f y() const;
-	
-	/// Sets the y coordinate of the rectangle to @p y.
+    
     void setY(Eigen::Vector3f y);
-	
+    
+    void setZ(Eigen::Vector3f z);
+
+
 	/// Returns the width of the rectangle.
     float width() const;
 	
@@ -105,6 +112,9 @@ public:
     float back() const;
 
     void setBack(Eigen::Vector3f back);
+    
+    float depth() const ;
+    void setDepth(float depth);
 	
 	/// Returns whether the rectangle is empty. An empty rectangle has no area.
 	bool empty() const;
@@ -116,6 +126,7 @@ public:
 private:
     Eigen::Vector3f x_;
     Eigen::Vector3f y_;
+    Eigen::Vector3f z_;
     float width_;
     float height_;
     float depth_;

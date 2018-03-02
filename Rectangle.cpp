@@ -39,37 +39,37 @@ Rectangle::Rectangle(float width, float height, float depth) :
 Rectangle::Rectangle(Eigen::Vector3f x, Eigen::Vector3f y) :
     x_(x), y_(y), width_(0), height_(0), depth_(0)
 {
-    width_ = y.x - x.x;
-    height_ = y.y - x.y;
-    depth_ = y.z - x.z;
+    width_ = y.x() - x.x();
+    height_ = y.y() - x.y();
+    depth_ = y.z() - x.z();
 }
 
-float Rectangle::x() const
+Eigen::Vector3f Rectangle::x() const
 {
 	return x_;
 }
 
-void Rectangle::setX(float x)
+void Rectangle::setX(Eigen::Vector3f x)
 {
 	x_ = x;
 }
 
-float Rectangle::y() const
+Eigen::Vector3f Rectangle::y() const
 {
 	return y_;
 }
 
-void Rectangle::setY(float y)
+void Rectangle::setY(Eigen::Vector3f y)
 {
 	y_ = y;
 }
 
-float Rectangle::z() const
+Eigen::Vector3f Rectangle::z() const
 {
     return z_;
 }
 
-void Rectangle::setZ(float z)
+void Rectangle::setZ(Eigen::Vector3f z)
 {
     z_ = z;
 }
@@ -106,64 +106,64 @@ void Rectangle::setDepth(float depth)
 
 float Rectangle::left() const
 {
-    return x().x;
+    return x().x();
 }
 
 void Rectangle::setLeft(Eigen::Vector3f left)
 {
-    setWidth(right() - left.x);
+    setWidth(right() - left.x());
 	setX(left);
 }
 
 float Rectangle::top() const
 {
-    return y().y;
+    return y().y();
 }
 
 void Rectangle::setTop(Eigen::Vector3f top)
 {
-    setHeight(top.y - bottom());
+    setHeight(top.y() - bottom());
 	setY(top);
 }
 
 float Rectangle::right() const
 {
-    return x().x + width();
+    return x().x() + width();
 }
 
 void Rectangle::setRight(Eigen::Vector3f right)
 {
-    setWidth(right.x - left());
+    setWidth(right.x() - left());
 }
 
 float Rectangle::bottom() const
 {
-    return x().y;
+    return x().y();
 }
 
 void Rectangle::setBottom(Eigen::Vector3f bottom)
 {
-    setHeight(top() - bottom.y);
+    setHeight(top() - bottom.y());
 }
 
 float Rectangle::front() const
 {
-    return x().z;
+    return x().z();
 }
 
 void Rectangle::setFront(Eigen::Vector3f front)
 {
-    setDepth(back() - front.z);
+    setDepth(back() - front.z());
 }
 
 float Rectangle::back() const
 {
-    return y().z;
+    return y().z();
 }
 
 void Rectangle::setBack(Eigen::Vector3f back)
 {
-    setDepth(back.z - front());
+    setDepth(back.z() - front());
 }
 
 bool Rectangle::empty() const
