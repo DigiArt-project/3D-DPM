@@ -15,7 +15,7 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::Vector3i pad, int interval) :
+GSHOTPyramid::GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::Vector3i pad, int interval):
 pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
     if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
@@ -59,14 +59,23 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         pcl::getMinMax3D(*input,min,max);
         _keypoints->push_back(this->compute_keypoints(input, kp_resolution, min, max));
         DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->at(0),descr_rad);
-        //_descriptors->push_back(desc);
         
-        Cell* cell_desc = new Cell();
-        for( int k = 0; k < desc->size(); ++k){
-            cell_desc[k] = desc->points[0].descriptor[k];
+        
+        int nb_desc_total = desc->size();
+        Level* level_current = new Level(nb_desc_total,0,0);
+        //Loop over the number of descriptors available
+        for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
+            //For each descriptor, create a cell
+             Cell* cell_desc = new Cell();
+            //Then for each value of the current descriptor, fill in the cell
+            for( int k = 0; k < descriptors->points[nb_desc].descriptorSize(); ++k){
+                cell_desc[k] = desc->points[nb_desc].descriptor[k];
+            }
+           //Add the cell to the current level
+            level_current(nb_desc,0,0) = *cell_desc;
+            //level_current->setValues({{{*cell_desc}}});
         }
-        Level* level_current = new Level(1,0,0);
-        level_current->setValues({{{*cell_desc}}});
+        //Once the first level is done, push it to the array of level
         levels_.push_back(*level_current);
         
         for (int j = 0; j < subsections; j++){
@@ -81,16 +90,47 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             pcl::getMinMax3D(*input,min,max);
             _keypoints->push_back(this->compute_keypoints(input, sub_kp_resolution, min, max));
             DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->at(0),sub_descr_rad);
-            Cell* cell_desc = new Cell();
-            for( int k = 0; k < desc->size(); ++k){
-                cell_desc[k] = desc->points[0].descriptor[k];
+            
+            int nb_desc_total = desc->size();
+            Level* level_current = new Level(nb_desc_total,0,0);
+            //Loop over the number of descriptors available
+            for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
+                //For each descriptor, create a cell
+                Cell* cell_desc = new Cell();
+                //Then for each value of the current descriptor, fill in the cell
+                for( int k = 0; k < descriptors->points[nb_desc].descriptorSize(); ++k){
+                    cell_desc[k] = desc->points[nb_desc].descriptor[k];
+                }
+                //Add the cell to the current level
+                level_current(nb_desc,0,0) = *cell_desc;
+                //level_current->setValues({{{*cell_desc}}});
             }
-            Level* level_current = new Level(1,0,0);
-            level_current->setValues({{{*cell_desc}}});
             levels_.push_back(*level_current);
         }
     }
 }
+
+//void GSHOTPyramid::test() const
+//{
+
+//    //Tensor = pile de matrice
+//    //Init array of float 32 x 1
+//    ArrayXf a = ArrayXf::Random(32,1);
+//    //Type,row,col
+//    //Create a cell with the array created before, corresponding to descriptors
+//    Eigen::Array<float, 32, 1> cell_test(a);
+//    std::cout << cell_test.size() << std::endl;
+//    //Rank 1 row = 2 col = 2
+//    //Ligne colomne et depth
+//    Tensor<Eigen::Array<float, 32, 1> > Level(2,2,2);
+//    Level.setValues({{{cell_test, cell_test}, {cell_test, cell_test}},
+//        {{cell_test, cell_test}, {cell_test, cell_test}}
+//    });
+
+//    // Result is a zero dimension tensor
+
+//    //m_Level
+//}
 
 
 
@@ -267,27 +307,6 @@ GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
 //}
 
 
-//void GSHOTPyramid::test() const
-//{
-    
-//    //Tensor = pile de matrice
-//    //Init array of float 32 x 1
-//    ArrayXf a = ArrayXf::Random(32,1);
-//    //Type,row,col
-//    //Create a cell with the array created before, corresponding to descriptors
-//    Eigen::Array<float, 32, 1> cell_test(a);
-//    std::cout << cell_test.size() << std::endl;
-//    //Rank 1 row = 2 col = 2
-//    //Ligne colomne et depth
-//    Tensor<Eigen::Array<float, 32, 1> > Level(2,2,2);
-//    Level.setValues({{{cell_test, cell_test}, {cell_test, cell_test}},
-//        {{cell_test, cell_test}, {cell_test, cell_test}}
-//    });
-    
-//    // Result is a zero dimension tensor
-    
-//    //m_Level
-//}
 
 
 

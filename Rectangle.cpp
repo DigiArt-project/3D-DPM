@@ -173,7 +173,7 @@ bool Rectangle::empty() const
 
 float Rectangle::volume() const
 {
-    return max(width(), 0) * max(height(), 0) * max(depth(), 0);
+    return std::max(width(), 0) * std::max(height(), 0) * std::max(depth(), 0);
 }
 
 ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)

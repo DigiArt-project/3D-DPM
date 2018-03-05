@@ -19,7 +19,7 @@
 #include <vector>
 
 //Other
-#include "typedefs.hpp"
+#include "typedefs.h"
 
 //Subsection = interval ?
 //Padding ?
