@@ -481,8 +481,7 @@ void HOGPyramid::Convolve(const Level & x, const Level & y, Matrix & z)
 	for (int i = 0; i < z.rows(); ++i) {
 		for (int j = 0; j < y.rows(); ++j) {
 			const Eigen::Map<const Matrix, Aligned, OuterStride<NbFeatures> >
-				mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(),
-					 y.cols() * NbFeatures);
+				mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(),y.cols() * NbFeatures);
 #ifndef FFLD_HOGPYRAMID_DOUBLE
 			const Eigen::Map<const RowVectorXf, Aligned>
 #else

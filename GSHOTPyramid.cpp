@@ -172,7 +172,7 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
 //TODO: do we need the flip function ?
 GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
 {
-    //TODO: adapt
+    //TODO: adapt --> 352 for shot
     // Symmetric features
     const int symmetry[NbFeatures] =
     {
@@ -195,8 +195,7 @@ GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
         for (int x = 0; x < level.cols(); ++x)
             for (int z = 0; z < level.depths(); ++z)
                 for (int i = 0; i < NbFeatures; ++i)
-                    //TODO
-                    result(y, x, z)(i) = level(y, level.cols() - 1 - x, )(symmetry[i]);
+                    result(y, x, z)(i) = level(y, level.cols() - 1 - x,z)(symmetry[i]);
 
     return result;
 }
