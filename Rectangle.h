@@ -23,6 +23,9 @@
 #define FFLD_RECTANGLE_H
 
 #include <iosfwd>
+
+#include <algorithm>
+#include <iostream>
 //EIGEN
 #include <Eigen/Core>
 #include <unsupported/Eigen/CXX11/Tensor>
@@ -38,27 +41,31 @@ class Rectangle
 public:
 	/// Constructs an empty rectangle. An empty rectangle has no area.
 	Rectangle();
+    
+    Rectangle(const Rectangle& rect);
 	
 	/// Constructs a rectangle with the given @p width and @p height.
-    Rectangle(float width, float height, float depth);
+    Rectangle(float width, float height, float depth,float volume);
 	
 	/// Constructs a rectangle with coordinates (@p x, @p y) and the given @p width and @p height.
-    Rectangle(Eigen::Vector3f x, Eigen::Vector3f y);
+    Rectangle(int x, int y, int z, int width, int height, int depth);
 	
+    ///Correspond to the top left corner of the rectangle
 	/// Returns the x-coordinate of the rectangle.
-    Eigen::Vector3f x() const;
+    int x() const;
     
     /// Returns the y-coordinate of the rectangle.
-    Eigen::Vector3f y() const;
+    int y() const;
     
-    Eigen::Vector3f z() const;
+     /// Returns the z-coordinate of the rectangle.
+    int z() const;
 	
 	/// Sets the x coordinate of the rectangle to @p x.
-    void setX(Eigen::Vector3f x);
+    void setX(int x);
     
-    void setY(Eigen::Vector3f y);
+    void setY(int y);
     
-    void setZ(Eigen::Vector3f z);
+    void setZ(int z);
 
 
 	/// Returns the width of the rectangle.
@@ -72,14 +79,29 @@ public:
 	
 	/// Sets the height of the rectangle to the given @p height.
     void setHeight(float height);
-	
+    
+    /// Sets the depth of the rectangle to the given @p depth.
+    void setDepth(float depth);
+    
+    //Return the depth of the rectangle
+    float depth() const ;
+    
+    /// Returns whether the rectangle is empty. An empty rectangle has no volume.
+    bool empty() const;
+    
+    /// Returns the volume of the rectangle.
+    /// @note Equivalent to max(width(), 0) * max(height(), 0)* max(depth(), 0).
+    float volume() const;
+    
+    void setVolume(float volume);
+    
 	/// Returns the left side of the rectangle.
 	/// @note Equivalent to x().
     float left() const;
 	
 	/// Sets the left side of the rectangle to @p left.
 	/// @note The right side of the rectangle is not modified.
-    void setLeft(Eigen::Vector3f left);
+    void setLeft(int left);
 	
 	/// Returns the top side of the rectangle.
 	/// @note Equivalent to y().
@@ -87,7 +109,7 @@ public:
 	
 	/// Sets the top side of the rectangle to @p top.
 	/// @note The bottom side of the rectangle is not modified.
-    void setTop(Eigen::Vector3f top);
+    void setTop(int top);
 	
 	/// Returns the right side of the rectangle.
 	/// @note Equivalent to x() + width() - 1.
@@ -95,7 +117,7 @@ public:
 	
 	/// Sets the right side of the rectangle to @p right.
 	/// @note The left side of the rectangle is not modified.
-    void setRight(Eigen::Vector3f right);
+    void setRight(int right);
 	
 	/// Returns the bottom side of the rectangle.
 	/// @note Equivalent to y() + height() - 1.
@@ -103,33 +125,31 @@ public:
 	
 	/// Sets the bottom side of the rectangle to @p bottom.
 	/// @note The top side of the rectangle is not modified.
-    void setBottom(Eigen::Vector3f bottom);
+    void setBottom(int bottom);
 
-    float front() const;
-
-    void setFront(Eigen::Vector3f front);
-
-    float back() const;
-
-    void setBack(Eigen::Vector3f back);
+    /// Returns the back top side of the rectangle.
+    /// @note Equivalent to top() + depth() - 1.
+    float backTop() const;
+    /// Sets the back top side of the rectangle to @p backtop.
+    void setBackTop(int backT);
     
-    float depth() const ;
-    void setDepth(float depth);
-	
-	/// Returns whether the rectangle is empty. An empty rectangle has no area.
-	bool empty() const;
-	
-	/// Returns the area of the rectangle.
-	/// @note Equivalent to max(width(), 0) * max(height(), 0).
-    float volume() const;
+    /// Returns the back bottom side of the rectangle.
+    /// @note Equivalent to bottom() + depth() - 1.
+    float backBottom() const;
+    /// Sets the back top side of the rectangle to @p backtop.
+    void setBackBottom(int backB);
+    
+  
+
 	
 private:
-    Eigen::Vector3f x_;
-    Eigen::Vector3f y_;
-    Eigen::Vector3f z_;
+    int x_;
+    int y_;
+    int z_;
     float width_;
     float height_;
     float depth_;
+    float volume_;
 };
 
 /// Serializes a rectangle to a stream.

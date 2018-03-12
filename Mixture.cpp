@@ -251,7 +251,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 	return loss;
 }
 
-void Mixture::initializeParts(int nbParts, triple<int, int, int> partSize)
+void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize)
 {
 	for (int i = 0; i < models_.size(); i += 2) {
 		models_[i].initializeParts(nbParts, partSize);
@@ -372,7 +372,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 							  int interval, double overlap,
 							  vector<pair<Model, int> > & positives) const
 {
-    if (scenes.empty() || (pad.x < 1) || (pad.y < 1) || (pad.z < 1) || (interval < 1) || (overlap <= 0.0) ||
+    if (scenes.empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1) || (overlap <= 0.0) ||
 		(overlap >= 1.0)) {
 		positives.clear();
 		cerr << "Invalid training paramters" << endl;
@@ -399,7 +399,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			return;
 		}
 		
-        const HOGPyramid pyramid(image, pad, interval);
+        const HOGPyramid pyramid(image, pad.x(),pad.y(), interval);
 		
 		if (pyramid.empty()) {
 			positives.clear();
@@ -455,8 +455,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 							for (int k = 0; k < models_.size(); ++k) {
 								// The bounding box of the model at this position
 								Rectangle bndbox;
-								bndbox.setX((x - padx) * scale + 0.5);
-								bndbox.setY((y - pady) * scale + 0.5);
+								bndbox.setX((x - pad.x()) * scale + 0.5);
+								bndbox.setY((y - pad.y()) * scale + 0.5);
 								bndbox.setWidth(models_[k].rootSize().second * scale + 0.5);
 								bndbox.setHeight(models_[k].rootSize().first * scale + 0.5);
 								
@@ -920,7 +920,8 @@ void Mixture::convolve(const HOGPyramid & pyramid,
 		vector<vector<HOGPyramid::Matrix> > tmp(models_[i].parts().size());
 		
 		for (int j = 0; j < tmp.size(); ++j)
-			tmp[j].swap(convolutions[offsets[i] + j]);
+            tmp[j] = convolutions[offsets[i] + j];
+			//tmp[j].swap(convolutions[offsets[i] + j]);
 		
 		models_[i].convolve(pyramid, scores[i], positions ? &(*positions)[i] : 0, &tmp);
 	}
@@ -941,12 +942,12 @@ void Mixture::convolve(const HOGPyramid & pyramid,
 #endif
 }
 
-vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
+std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
 											 Object::Name name)
 {
 	// Early return in case the filters or the dataset are empty
 	if ((nbComponents <= 0) || scenes.empty())
-        return vector<triple<int, int, int> >();
+        return std::vector<Model::triple<int, int, int> >();
 	
 	// Sort the aspect ratio of all the (non difficult) samples
 	vector<double> ratios;
@@ -962,7 +963,7 @@ vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vect
 	
 	// Early return if there is no object
 	if (ratios.empty())
-        return vector<triple<int, int, int> >();
+        return std::vector<Model::triple<int, int, int> >();
 	
 	// Sort the aspect ratio of all the samples
 	sort(ratios.begin(), ratios.end());
@@ -994,7 +995,7 @@ vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vect
 	}
 	
 	// For each component in reverse order
-    vector<triple<int, int, int> > sizes(nbComponents);
+    std::vector<Model::triple<int, int, int> > sizes(nbComponents);
 	
 	for (int i = nbComponents - 1; i >= 0; --i) {
 		if (!areas[i].empty()) {
@@ -1107,8 +1108,8 @@ istream & FFLD::operator>>(istream & is, Mixture & mixture)
 			return is;
 		}
 	}
-	
-	mixture.models().swap(models);
+    mixture.models() = models;
+	//mixture.models().swap(models);
 	
 	return is;
 }

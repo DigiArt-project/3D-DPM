@@ -22,7 +22,7 @@
 #include "SimpleOpt.h"
 
 #include "Mixture.h"
-#include "GSHOTPyramid.hpp"
+#include "GSHOTPyramid.h"
 
 #include <algorithm>
 #include <fstream>

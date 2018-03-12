@@ -97,7 +97,8 @@ JPEGImage::JPEGImage(const string & filename) : width_(0), height_(0), depth_(0)
 	width_ = cinfo.image_width;
 	height_ = cinfo.image_height;
 	depth_ = cinfo.num_components;
-	bits_.swap(bits);
+	//bits_.swap(bits);
+    bits_ = bits;
 }
 
 bool JPEGImage::empty() const

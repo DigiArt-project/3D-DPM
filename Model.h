@@ -23,6 +23,7 @@
 #define FFLD_MODEL_H
 #include <tuple>
 #include "HOGPyramid.h"
+#include "GSHOTPyramid.h"
 
 namespace FFLD
 {
@@ -49,9 +50,9 @@ public:
     template< typename T1, typename T2, typename T3>
     struct triple : std::tuple<T1, T2, T3>{
         triple( std::tuple<T1, T2, T3> t){
-            first = get<0>(t);
-            second = get<1>(t);
-            third = get<2>(t);
+            first = std::get<0>(t);
+            second = std::get<1>(t);
+            third = std::get<2>(t);
         }
         triple( T1 t1, T2 t2, T3 t3){
             first = t1;
@@ -66,6 +67,7 @@ public:
 	/// The part structure stores all the information about a part (or the root).
 	struct Part
 	{
+        GSHOTPyramid::Level filter_shot;
 		HOGPyramid::Level filter;	///< Part filter.
 		Position offset;			///< Part offset (dx dy dz) relative to the root.
 		Deformation deformation;	///< Deformation cost (dx^2 dx dy^2 dy dz^2 dz).
@@ -81,8 +83,8 @@ public:
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of all the parts (<tt>rows x cols</tt>).
 	/// @note The model will be empty if any of the parameter is invalid.
-	explicit Model(std::pair<int, int> rootSize, int nbParts = 0,
-				   std::pair<int, int> partSize = std::make_pair(0, 0));
+	explicit Model(Model::triple<int, int, int> rootSize, int nbParts = 0,
+                   Model::triple<int, int, int> partSize = Model::triple<int, int, int>(0, 0, 0));
 	
 	/// Constructs a model from a list of parts and a bias.
 	explicit Model(const std::vector<Part> & parts, double bias = 0.0);
@@ -104,18 +106,18 @@ public:
 	
 	/// Returns the size of the root (<tt>rows x cols</tt>).
 	/// @note Equivalent to std::pair<int, int>(parts()[0].rows(), parts()[0].cols()).
-	std::pair<int, int> rootSize() const;
+	Model::triple<int, int, int> rootSize() const;
 	
 	/// Returns the size of the parts (<tt>rows x cols</tt>).
 	/// @note Equivalent to make_pair(parts()[1].rows(), parts()[1].cols()) if the model has parts.
-	std::pair<int, int> partSize() const;
+	Model::triple<int, int, int> partSize() const;
 	
 	/// Initializes the specidied number of parts from the root.
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
 	/// @note The model stay unmodified if any of the parameter is invalid.
 	/// @note The parts are always initialized at twice the root resolution.
-	void initializeParts(int nbParts, std::pair<int, int> partSize);
+	void initializeParts(int nbParts, Model::triple<int, int, int> partSize);
 	
 	/// Initializes a training sample with fixed latent variables from a specified position in
 	/// a pyramid of features.

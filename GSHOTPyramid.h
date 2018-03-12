@@ -139,7 +139,7 @@ namespace FFLD
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
-        void convolve(const Level & filter, std::vector<Tensor> & convolutions) const;
+        void convolve(const Level & filter, std::vector<Tensor<Cell> > & convolutions) const;
         
         /// Returns the flipped version (horizontally) of a level.
         static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
@@ -158,7 +158,7 @@ namespace FFLD
         private:
         
         // Method for computing feature spaces. Will have different implementations depending on the descriptor used.
-        PointCloudPtr
+        DescriptorsPtr
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
         
         // Method creating the keypoint grid using the min/max values of the input

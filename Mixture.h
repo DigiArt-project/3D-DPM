@@ -85,7 +85,7 @@ public:
 	/// Initializes the specidied number of parts from the root of each model.
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
-	void initializeParts(int nbParts, std::pair<int, int> partSize);
+    void initializeParts(int nbParts, Model::triple<int, int, int> partSize);
 	
 	/// Returns the scores of the convolutions + distance transforms of the models with a
 	/// pyramid of features (useful to compute the SVM margins).
@@ -125,7 +125,7 @@ private:
 				  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
 	
 	// Computes the size of the roots of the models
-    static std::vector<triple<int, int, int> > FilterSizes(int nbComponents,
+    static std::vector<Model::triple<int, int, int> > FilterSizes(int nbComponents,
 														 const std::vector<Scene> & scenes,
 														 Object::Name name);
 	

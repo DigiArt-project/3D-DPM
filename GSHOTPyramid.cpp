@@ -62,21 +62,23 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         
         
         int nb_desc_total = desc->size();
-        Level* level_current = new Level(nb_desc_total,0,0);
-        //Loop over the number of descriptors available
-        for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
-            //For each descriptor, create a cell
+        int nb_kpt_total = _keypoints->at(0)->size();
+        //Level* level_current = new Level(nb_desc_total,0,0);
+        Level level_current (nb_kpt_total,0,0);
+        //Loop over the number of keypoints available
+        for (int nb_kpt = 0; nb_kpt < nb_kpt_total; nb_kpt++){
+            //For each keypoint, create a cell which will contain the corresponding shot descriptor
              Cell* cell_desc = new Cell();
-            //Then for each value of the current descriptor, fill in the cell
-            for( int k = 0; k < descriptors->points[nb_desc].descriptorSize(); ++k){
-                cell_desc[k] = desc->points[nb_desc].descriptor[k];
+            //Then for each value of the associated descriptor, fill in the cell
+            for( int k = 0; k < desc->points[nb_kpt].descriptorSize(); ++k){
+                cell_desc[k] = desc->points[nb_kpt].descriptor[k];
             }
            //Add the cell to the current level
-            level_current(nb_desc,0,0) = *cell_desc;
+            level_current(nb_kpt,0,0) = *cell_desc;
             //level_current->setValues({{{*cell_desc}}});
         }
         //Once the first level is done, push it to the array of level
-        levels_.push_back(*level_current);
+        levels_.push_back(level_current);
         
         for (int j = 0; j < subsections; j++){
             float subresolution = resolution;
@@ -89,23 +91,23 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             
             pcl::getMinMax3D(*input,min,max);
             _keypoints->push_back(this->compute_keypoints(input, sub_kp_resolution, min, max));
-            DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->at(0),sub_descr_rad);
+            DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->back(),sub_descr_rad);
             
             int nb_desc_total = desc->size();
-            Level* level_current = new Level(nb_desc_total,0,0);
+            Level level_current(nb_desc_total,0,0);
             //Loop over the number of descriptors available
             for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
                 //For each descriptor, create a cell
                 Cell* cell_desc = new Cell();
                 //Then for each value of the current descriptor, fill in the cell
-                for( int k = 0; k < descriptors->points[nb_desc].descriptorSize(); ++k){
+                for( int k = 0; k < desc->points[nb_desc].descriptorSize(); ++k){
                     cell_desc[k] = desc->points[nb_desc].descriptor[k];
                 }
                 //Add the cell to the current level
                 level_current(nb_desc,0,0) = *cell_desc;
                 //level_current->setValues({{{*cell_desc}}});
             }
-            levels_.push_back(*level_current);
+            levels_.push_back(level_current);
         }
     }
 }
@@ -135,7 +137,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
 
 
-void GSHOTPyramid::convolve(const Level & filter, vector<Tensor> & convolutions) const
+void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Cell> > & convolutions) const
 {
     convolutions.resize(levels_.size());
 
@@ -199,11 +201,6 @@ GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
 
     return result;
 }
-
-
-
-
-
 
 
 
@@ -314,7 +311,7 @@ GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
 /*
  * WARNING : need to build a sub structure to partially specialize the pyramid
  */
-PointCloudPtr
+DescriptorsPtr
 GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float descr_rad)
 {
     PointCloudPtr descriptors (new pcl::PointCloud<DescriptorType> ());
@@ -369,6 +366,16 @@ GSHOTPyramid::compute_keypoints(pcl::PointCloud<PointType>::Ptr input, float gri
     
     return keypoints;
 }
+
+Eigen::Map<Matrix, Eigen::Aligned> GSHOTPyramid::Map(Level & level){
+{
+    //return Eigen::Map<Matrix, Aligned>(level.data()->data(), level.rows(),level.cols() * NbFeatures);
+}
+
+const Eigen::Map<const Matrix, Eigen::Aligned> GSHOTPyramid::Map(const Level & level){
+    //return Eigen::Map<const Matrix, Aligned>(level.data()->data(), level.rows(),level.cols() * NbFeatures);
+}
+
 
 ///** GETTER AND SETTERS **/
 //#pragma mark -  GETTERS AND SETTER METHODS

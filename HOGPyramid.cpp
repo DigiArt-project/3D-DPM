@@ -90,7 +90,8 @@ pady_(0), interval_(0)
 	padx_ = padx;
 	pady_ = pady;
 	interval_ = interval;
-	levels_.swap(levels);
+    levels_ = levels;
+	//levels_.swap(levels);
 }
 
 bool HOGPyramid::empty() const

@@ -51,6 +51,7 @@ Model::Model(triple<int, int, int> rootSize, int nbParts, triple<int, int, int> 
 	
 	parts_.resize(nbParts + 1);
 	
+    parts_[0].filter_shot = GSHOTPyramid::Level::constant(rootSize.first, rootSize.second,GSHOTPyramid::Cell::Zero());
 	parts_[0].filter = HOGPyramid::Level::Constant(rootSize.first, rootSize.second,
 												   HOGPyramid::Cell::Zero());
 	
@@ -97,21 +98,21 @@ double & Model::bias()
 	return bias_;
 }
 
-triple<int, int, int> Model::rootSize() const
+Model::triple<int, int, int> Model::rootSize() const
 {
-    return triple<int, int, int>(static_cast<int>(parts_[0].filter.dimension(0)),
-                                 static_cast<int>(parts_[0].filter.dimension(1)),
-                                 static_cast<int>(parts_[0].filter.dimension(2)));
+    return Model::triple<int, int, int>(static_cast<int>(parts_[0].filter.rows()),
+                                 static_cast<int>(parts_[0].filter.cols()),
+                                 static_cast<int>(parts_[0].filter.cols()));//TODO REMPLACER PAR DEPTH APRES
 }
 
-triple<int, int, int> Model::partSize() const
+Model::triple<int, int, int> Model::partSize() const
 {
 	if (parts_.size() > 1)
-        return triple<int, int, int>(static_cast<int>(parts_[1].filter.dimension(0)),
-                                     static_cast<int>(parts_[1].filter.dimension(1)),
-                                     static_cast<int>(parts_[1].filter.dimension(2)));
+        return Model::triple<int, int, int>(static_cast<int>(parts_[1].filter.rows()),
+                                     static_cast<int>(parts_[1].filter.cols()),
+                                     static_cast<int>(parts_[1].filter.cols()));//TODO REMPLACER PAR DEPTH APRES
 	else
-        return triple<int, int, int>(0, 0, 0);
+        return Model::triple<int, int, int>(0, 0, 0);
 }
 
 void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
@@ -280,8 +281,8 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 			best = tmp;
 		}
 	}
-	
-	parts_.swap(best);
+    parts_ = best;
+	//parts_.swap(best);
 	
 	// Initialize the deformations
 	for (int i = 0; i < nbParts; ++i)
@@ -477,7 +478,8 @@ void Model::convolve(const HOGPyramid & pyramid, vector<HOGPyramid::Matrix> & sc
 		}
 	}
 	
-	scores.swap((*convolutions)[0]);
+    scores = (*convolutions)[0];
+	//scores.swap((*convolutions)[0]);
 	
 	for (int i = 0; i < interval; ++i) {
 		scores[i] = HOGPyramid::Matrix();
@@ -520,7 +522,8 @@ void Model::convolve(const HOGPyramid & pyramid, vector<HOGPyramid::Matrix> & sc
 	// For each root level in reverse order
 	for (int i = nbLevels - 1; i >= interval - interval2; --i) {
 		// Set the scores to those of the root + bias
-		scores[i].swap((*convolutions)[0][i]);
+		//scores[i].swap((*convolutions)[0][i]);
+        scores[i] = (*convolutions)[0][i];
 		
 		for (int j = 0; j < nbParts; ++j)
 			(*positions)[j][i] = Model::Positions::Constant(scores[i].rows(), scores[i].cols(),

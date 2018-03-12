@@ -21,55 +21,57 @@
 
 #include "Rectangle.h"
 
-#include <algorithm>
-#include <iostream>
 
 using namespace FFLD;
 using namespace std;
 
-Rectangle::Rectangle() : x_(0, 0, 0), y_(0, 0, 0), width_(0), height_(0), depth_(0)
+Rectangle::Rectangle() : x_(0), y_(0),z_(0), width_(0), height_(0), depth_(0)
+{
+}
+Rectangle::Rectangle(const Rectangle& rect){
+    width_ = rect.width_;
+    height_ = rect.height_;
+    depth_ = rect.depth_;
+    volume_ = rect.volume_;
+}
+
+Rectangle::Rectangle(float width, float height, float depth, float volume) :
+    x_(0), y_(0),z_(0), width_(width), height_(height), depth_(depth), volume_(volume)
 {
 }
 
-Rectangle::Rectangle(float width, float height, float depth) :
-    x_(0, 0, 0), y_(0, 0, 0), width_(width), height_(height), depth_(depth_)
+Rectangle::Rectangle(int x, int y, int z,int width, int height, int depth) :
+    x_(x), y_(y),z_(z), width_(width), height_(height), depth_(depth)
 {
+    volume_ = this->volume();
 }
 
-Rectangle::Rectangle(Eigen::Vector3f x, Eigen::Vector3f y) :
-    x_(x), y_(y), width_(0), height_(0), depth_(0)
-{
-    width_ = y.x() - x.x();
-    height_ = y.y() - x.y();
-    depth_ = y.z() - x.z();
-}
-
-Eigen::Vector3f Rectangle::x() const
+int Rectangle::x() const
 {
 	return x_;
 }
 
-void Rectangle::setX(Eigen::Vector3f x)
+void Rectangle::setX(int x)
 {
 	x_ = x;
 }
 
-Eigen::Vector3f Rectangle::y() const
+int Rectangle::y() const
 {
 	return y_;
 }
 
-void Rectangle::setY(Eigen::Vector3f y)
+void Rectangle::setY(int y)
 {
 	y_ = y;
 }
 
-Eigen::Vector3f Rectangle::z() const
+int Rectangle::z() const
 {
     return z_;
 }
 
-void Rectangle::setZ(Eigen::Vector3f z)
+void Rectangle::setZ(int z)
 {
     z_ = z;
 }
@@ -106,93 +108,99 @@ void Rectangle::setDepth(float depth)
 
 float Rectangle::left() const
 {
-    return x().x();
+    return x();
 }
 
-void Rectangle::setLeft(Eigen::Vector3f left)
+void Rectangle::setLeft(int left)
 {
-    setWidth(right() - left.x());
+    setWidth(right() - left + 1);
 	setX(left);
 }
 
 float Rectangle::top() const
 {
-    return y().y();
+    return y();
 }
 
-void Rectangle::setTop(Eigen::Vector3f top)
+void Rectangle::setTop(int top)
 {
-    setHeight(top.y() - bottom());
+    setHeight(bottom() - top + 1);
 	setY(top);
 }
 
 float Rectangle::right() const
 {
-    return x().x() + width();
+    return x() + width();
 }
 
-void Rectangle::setRight(Eigen::Vector3f right)
+void Rectangle::setRight(int right)
 {
-    setWidth(right.x() - left());
+    setWidth(right - left());
 }
 
 float Rectangle::bottom() const
 {
-    return x().y();
+    return y() + height() - 1;
 }
 
-void Rectangle::setBottom(Eigen::Vector3f bottom)
+void Rectangle::setBottom(int bottom)
 {
-    setHeight(top() - bottom.y());
+    setHeight(top() - bottom);
 }
 
-float Rectangle::front() const
-{
-    return x().z();
+float Rectangle::backBottom() const{
+    return bottom() + depth() - 1;
 }
 
-void Rectangle::setFront(Eigen::Vector3f front)
+void Rectangle::setBackBottom(int backB){
+    setDepth(backBottom() - backB);
+}
+float Rectangle::backTop() const
 {
-    setDepth(back() - front.z());
+    return (top() + depth() - 1);
 }
 
-float Rectangle::back() const
+void Rectangle::setBackTop(int backT)
 {
-    return y().z();
+    setDepth(backTop() - backT);
 }
 
-void Rectangle::setBack(Eigen::Vector3f back)
-{
-    setDepth(back.z() - front());
-}
 
 bool Rectangle::empty() const
 {
-    return (width() <= 0) || (height() <= 0) || (depth() <= 0);
+    return (width() <= 0) || (height() <= 0) || (depth() <= 0 ) || (volume() <=0);
+}
+
+void Rectangle::setVolume(float volume)
+{
+    volume_ = volume;
 }
 
 float Rectangle::volume() const
 {
-    return std::max(width(), 0) * std::max(height(), 0) * std::max(depth(), 0);
+    //max() requires that the first and second arguments are of the same type
+    return std::max(width(), float(0)) * std::max(height(), float(0)) * std::max(depth(), float(0));
 }
 
 ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)
 {
-    return os << rect.x() << ' ' << rect.y() << ' ' << rect.width() << ' ' << rect.height() << ' ' << rect.depth();
+    return os << rect.x() << ' ' << rect.y() << ' ' << rect.z() <<' ' << rect.width() << ' ' << rect.height() << ' ' << rect.depth();
 }
 
 istream & FFLD::operator>>(istream & is, Rectangle & rect)
 {
-    Eigen::Vector3f x, y;
-    float width, height, depth;
+    int x, y, z;
+    float width, height, depth, volume;
 	
-    is >> x >> y >> width >> height >> depth;
+    is >> x >> y >> z >> width >> height >> depth >> volume;
 	
     rect.setX(x);
 	rect.setY(y);
-	rect.setWidth(width);
+    rect.setZ(z);
+    rect.setWidth(width);
 	rect.setHeight(height);
     rect.setDepth(depth);
+    rect.setVolume(volume);
 	
 	return is;
 }
