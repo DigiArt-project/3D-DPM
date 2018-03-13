@@ -148,7 +148,6 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Scalar> >& convo
         Convolve(levels_[i], filter, convolutions[i]);
 }
 
-//TODO
 //Its a correlation not a convolution
 void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor<Scalar> & z)
 {
@@ -158,7 +157,7 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor<Scalar> & z
         return;
     }
     Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
-    //z = x.convolve(y, dims);
+    z = x.convolve(y, dims);
 }
 
 //void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
@@ -401,11 +400,11 @@ int GSHOTPyramid::interval() const
 {
     return interval_;
 }
-/*
+
 Eigen::Vector3i GSHOTPyramid::pad() const
 {
     return pad_;
-}*/
+}
 
 bool GSHOTPyramid::isEmpty() const
 {

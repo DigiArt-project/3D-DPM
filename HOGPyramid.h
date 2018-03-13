@@ -21,7 +21,6 @@
 
 #ifndef FFLD_HOGPYRAMID_H
 #define FFLD_HOGPYRAMID_H
-//TODO CHANGE PADX PADY PADZ to (
 
 #include "JPEGImage.h"
 

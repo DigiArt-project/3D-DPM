@@ -8,7 +8,7 @@ using namespace FFLD;
 using namespace std;
 using namespace Eigen;
 
-/*template <typename Type>
+template <typename Type>
 std::ostream& operator<<(std::ostream& os, GSHOTPyramid::Tensor<Type> t){
     for (int i = 0; i < t.dimension(2); ++i) {
         for (int j = 0; j < t.dimension(1); ++j) {
@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream& os, GSHOTPyramid::Tensor<Type> t){
     }
     
     return os;
- }*/
+ }
 
 int main(){
     //Create tensor et parcour valeur par valeur avec pointeur
@@ -45,6 +45,7 @@ int main(){
     
     std::cout << level << std::endl;
     //Parcour de la dernière dimension à la premiere dimension
+    //(depth, row, col)
     int* jony = &(level(0));
     for (int i = 0; i < size; ++i) {
         for (int j = 0; j < size; ++j) {

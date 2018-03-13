@@ -284,7 +284,6 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyra
     // Convolve with all the models
     vector<vector<GSHOTPyramid::Tensor> > convolutions;
 
-    //TODO
     convolve(pyramid, convolutions, positions);
 
     // In case of error
@@ -302,34 +301,34 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyra
     scores.resize(nbLevels);
     argmaxes.resize(nbLevels);
 
-    //TODO
+
 #pragma omp parallel for
     for (int lvl = 0; lvl < nbLevels; ++lvl) {
-        int rows = static_cast<int>(convolutions[0][lvl].dimension(0));
+        int rows = static_cast<int>(convolutions[0][lvl].dimension(2));
         int cols = static_cast<int>(convolutions[0][lvl].dimension(1));
-        int depths = static_cast<int>(convolutions[0][lvl].dimension(2));
+        int depths = static_cast<int>(convolutions[0][lvl].dimension(0));
 
 
         for (int i = 1; i < nbModels; ++i) {
-            rows = min(rows, static_cast<int>(convolutions[i][lvl].dimension(0)));
+            rows = min(rows, static_cast<int>(convolutions[i][lvl].dimension(2)));
             cols = min(cols, static_cast<int>(convolutions[i][lvl].dimension(1)));
-            depths = min(depths, static_cast<int>(convolutions[i][lvl].dimension(2)));
+            depths = min(depths, static_cast<int>(convolutions[i][lvl].dimension(0)));
         }
 
-        scores[lvl].resize(rows, cols, depths);
-        argmaxes[lvl].resize(rows, cols, depths);
+        scores[lvl].resize(depths, rows, cols);
+        argmaxes[lvl].resize(depths, rows, cols);
 
-        for (int y = 0; y < rows; ++y) {
-            for (int x = 0; x < cols; ++x) {
-                for (int z = 0; z < depths; ++z) {
+        for (int z = 0; z < depths; ++z) {
+            for (int y = 0; y < rows; ++y) {
+                for (int x = 0; x < cols; ++x) {
                     int argmax = 0;
 
                     for (int i = 1; i < nbModels; ++i)
-                        if (convolutions[i][lvl](y, x, z) > convolutions[argmax][lvl](y, x, z))
+                        if (convolutions[i][lvl](z, y, x) > convolutions[argmax][lvl](z, y, x))
                             argmax = i;
 
-                    scores[lvl](y, x, z) = convolutions[argmax][lvl](y, x, z);
-                    argmaxes[lvl](y, x, z) = argmax;
+                    scores[lvl](z, y, x) = convolutions[argmax][lvl](z, y, x);
+                    argmaxes[lvl](z, y, x) = argmax;
                 }
             }
         }
@@ -464,14 +463,14 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 		if (negative)
 			continue;
 		
-		const JPEGImage image(scenes[i].filename());
+        const PointCloud image(scenes[i].filename());
 		
 		if (image.empty()) {
 			positives.clear();
 			return;
 		}
 		
-        const HOGPyramid pyramid(image, pad.x(),pad.y(), interval);
+        const GSHOTPyramid pyramid(image, pad.x(),pad.y(), interval);
 		
 		if (pyramid.empty()) {
 			positives.clear();
@@ -484,7 +483,6 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 		
 		if (!zero_)
             //convolve(pyramid, scores, argmaxes, &positions);
-            //Replacment TODO !!!!!!
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
 		
 		// For each object, set as positive the best (highest score or else most intersecting)
@@ -501,30 +499,32 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			int argX = -1;
 			int argY = -1;
 			int argZ = -1;
+            int argLvl =-1;
 			double maxScore = -numeric_limits<double>::infinity();
 			double maxInter = 0.0;
 			
-			for (int z = 0; z < pyramid.levels().size(); ++z) {
-				const double scale = pow(2.0, static_cast<double>(z) / interval + 2);
+            for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
+                const double scale = pow(2.0, static_cast<double>(lvl) / interval + 2);
 				int rows = 0;
 				int cols = 0;
+                int depths = 0;
 				
 				if (!zero_) {
-					rows = static_cast<int>(scores[z].rows());
-					cols = static_cast<int>(scores[z].cols());
-                    depths = static_cast<int>(scores[z].depths());
+                    rows = static_cast<int>(scores[lvl].rows());
+                    cols = static_cast<int>(scores[lvl].cols());
+                    depths = static_cast<int>(scores[lvl].depths());
 				}
-				else if (z >= interval) {
-					rows = static_cast<int>(pyramid.levels()[z].rows()) - maxSize().first + 1;
-					cols = static_cast<int>(pyramid.levels()[z].cols()) - maxSize().second + 1;
-                    depths = static_cast<int>(pyramid.levels()[z].depths()) - maxSize().third + 1;
+                else if (lvl >= interval) {
+                    rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().first + 1;
+                    cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().second + 1;
+                    depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().third + 1;
 				}
 				
 				for (int y = 0; y < rows; ++y) {
                     for (int x = 0; x < cols; ++x) {
                         for (int z = 0; z < depths; ++z) {
                             // Find the best matching model (highest score or else most intersecting)
-                            int model = zero_ ? 0 : argmaxes[z](y, x, z);
+                            int model = zero_ ? 0 : argmaxes[lvl](z, y, x);
                             double intersection = 0.0;
 
                             // Try all models and keep the most intersecting one
@@ -535,9 +535,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     bndbox.setX((x - pad.x()) * scale + 0.5);
                                     bndbox.setY((y - pad.y()) * scale + 0.5);
                                     bndbox.setZ((z - pad.z()) * scale + 0.5);
-                                    bndbox.setWidth(models_[k].rootSize().second * scale + 0.5);
-                                    bndbox.setHeight(models_[k].rootSize().first * scale + 0.5);
-                                    bndbox.setDepth(models_[k].rootSize().third * scale + 0.5);
+                                    bndbox.setWidth(models_[k].rootSize().third * scale + 0.5);
+                                    bndbox.setHeight(models_[k].rootSize().second * scale + 0.5);
+                                    bndbox.setDepth(models_[k].rootSize().first * scale + 0.5);
 
                                     // Trade-off between clipping and penalizing
                                     clipBndBox(bndbox, scenes[i], 0.5);
@@ -559,22 +559,23 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 bndbox.setX((x - pad.x()) * scale + 0.5);
                                 bndbox.setY((y - pad.y()) * scale + 0.5);
                                 bndbox.setZ((z - pad.z()) * scale + 0.5);
-                                bndbox.setWidth(models_[model].rootSize().second * scale + 0.5);
-                                bndbox.setHeight(models_[model].rootSize().first * scale + 0.5);
-                                bndbox.setDepth(models_[k].rootSize().third * scale + 0.5);
+                                bndbox.setWidth(models_[model].rootSize().third * scale + 0.5);
+                                bndbox.setHeight(models_[model].rootSize().second * scale + 0.5);
+                                bndbox.setDepth(models_[k].rootSize().first * scale + 0.5);
 
                                 clipBndBox(bndbox, scenes[i]);
                                 intersector(bndbox, &intersection);
                             }
 
-                            if ((intersection > maxInter) && (zero_ || (scores[z](y, x) > maxScore))) {
+                            if ((intersection > maxInter) && (zero_ || (scores[lvl](y, x) > maxScore))) {
                                 argModel = model;
                                 argX = x;
                                 argY = y;
                                 argZ = z;
+                                argLvl = lvl;
 
                                 if (!zero_)
-                                    maxScore = scores[z](y, x);
+                                    maxScore = scores[lvl](z, y, x);
 
                                 maxInter = intersection;
                             }
@@ -586,7 +587,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			if (maxInter >= overlap) {
 				Model sample;
 				
-				models_[argModel].initializeSample(pyramid, argX, argY, argZ, sample,
+                models_[argModel].initializeSample(pyramid, argX, argY, argZ, argLvl, sample,
 												   zero_ ? 0 : &positions[argModel]);
 				
 				if (!sample.empty())
@@ -640,7 +641,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         if (positive)
             continue;
 
-        const JPEGImage image(scenes[i].filename());
+        const PointCloud image(scenes[i].filename());
 
         if (image.empty()) {
             negatives.clear();
@@ -677,26 +678,27 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                 depths = static_cast<int>(pyramid.levels()[lvl].dimension(2)) - maxSize().third + 1;
             }
 
-            for (int y = 0; y < rows; ++y) {
-                for (int x = 0; x < cols; ++x) {
-                    for (int z = 0; z < depths; ++z) {
-                        const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl](y, x);
+            for (int z = 0; z < depths; ++z) {
+                for (int y = 0; y < rows; ++y) {
+                    for (int x = 0; x < cols; ++x) {
 
-                        if (zero_ || (scores[lvl](y, x, z) > -1)) {
+                        const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl](z, y, x);
+
+                        if (zero_ || (scores[lvl](z, y, x) > -1)) {
                             Model sample;
 
                             models_[argmax].initializeSample(pyramid, x, y, z, lvl, sample,
                                                              zero_ ? 0 : &positions[argmax]);
-                            //TODO
                             if (!sample.empty()) {
                                 // Store all the information about the sample in the offset and
                                 // deformation of its root
                                 sample.parts()[0].offset(0) = i;
                                 sample.parts()[0].offset(1) = lvl;
-                                sample.parts()[0].deformation(0) = y;
-                                sample.parts()[0].deformation(1) = x;
-                                sample.parts()[0].deformation(2) = argmax;
-                                sample.parts()[0].deformation(3) = zero_ ? 0.0 : scores[lvl](y, x);
+                                sample.parts()[0].deformation(0) = z;
+                                sample.parts()[0].deformation(1) = y;
+                                sample.parts()[0].deformation(2) = x;
+                                sample.parts()[0].deformation(3) = argmax;
+                                sample.parts()[0].deformation(4) = zero_ ? 0.0 : scores[lvl](z, y, x);
 
                                 // Look if the same sample was already sampled
                                 while ((j < nbCached) && (negatives[j].first < sample))
@@ -866,7 +868,7 @@ public:
 		for (int i = 0, j = 0; i < models.size(); ++i) {
 			for (int k = 0; k < models[i].parts().size(); ++k) {
 				const int nbFeatures = static_cast<int>(models[i].parts()[k].filter.size()) *
-									   HOGPyramid::NbFeatures;
+                                       GSHOTPyramid::DescriptorSize;
 				
 				copy(x + j, x + j + nbFeatures, models[i].parts()[k].filter.data()->data());
 				
@@ -896,7 +898,7 @@ public:
 		for (int i = 0, j = 0; i < models.size(); ++i) {
 			for (int k = 0; k < models[i].parts().size(); ++k) {
 				const int nbFeatures = static_cast<int>(models[i].parts()[k].filter.size()) *
-									   HOGPyramid::NbFeatures;
+                                       GSHOTPyramid::DescriptorSize;
 				
 				copy(models[i].parts()[k].filter.data()->data(),
 					 models[i].parts()[k].filter.data()->data() + nbFeatures, x + j);
@@ -1029,6 +1031,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 #endif
 }
 
+//TODO
 std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
 											 Object::Name name)
 {

@@ -52,12 +52,12 @@ Model::Model(triple<int, int, int> rootSize, int nbParts, triple<int, int, int> 
 	parts_.resize(nbParts + 1);
 	
     parts_[0].filter_shot = GSHOTPyramid::Level::constant(rootSize.first, rootSize.second,GSHOTPyramid::Cell::Zero());
-	parts_[0].filter = HOGPyramid::Level::Constant(rootSize.first, rootSize.second,
-												   HOGPyramid::Cell::Zero());
+    parts_[0].filter = GSHOTPyramid::Level::Constant(rootSize.first, rootSize.second,
+                                                   GSHOTPyramid::Cell::Zero());
 	
 	for (int i = 0; i < nbParts; ++i) {
-		parts_[i + 1].filter = HOGPyramid::Level::Constant(partSize.first, partSize.second,
-														   HOGPyramid::Cell::Zero());
+        parts_[i + 1].filter = GSHOTPyramid::Level::Constant(partSize.first, partSize.second,
+                                                           GSHOTPyramid::Cell::Zero());
 		parts_[i + 1].offset.setZero();
 		parts_[i + 1].deformation.setZero();
 	}
@@ -100,17 +100,17 @@ double & Model::bias()
 
 Model::triple<int, int, int> Model::rootSize() const
 {
-    return Model::triple<int, int, int>(static_cast<int>(parts_[0].filter.rows()),
-                                 static_cast<int>(parts_[0].filter.cols()),
-                                 static_cast<int>(parts_[0].filter.cols()));//TODO REMPLACER PAR DEPTH APRES
+    return Model::triple<int, int, int>(static_cast<int>(parts_[0].filter.depths()),
+                                 static_cast<int>(parts_[0].filter.rows()),
+                                 static_cast<int>(parts_[0].filter.cols()));
 }
 
 Model::triple<int, int, int> Model::partSize() const
 {
 	if (parts_.size() > 1)
-        return Model::triple<int, int, int>(static_cast<int>(parts_[1].filter.rows()),
-                                     static_cast<int>(parts_[1].filter.cols()),
-                                     static_cast<int>(parts_[1].filter.cols()));//TODO REMPLACER PAR DEPTH APRES
+        return Model::triple<int, int, int>(static_cast<int>(parts_[1].filter.depths()),
+                                     static_cast<int>(parts_[1].filter.rows()),
+                                     static_cast<int>(parts_[1].filter.cols()));
 	else
         return Model::triple<int, int, int>(0, 0, 0);
 }
@@ -124,12 +124,13 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 	}
 	
 	// Upsample the root filter by a factor 2 using bicubic interpolation
-	const HOGPyramid::Level & root = parts_[0].filter;
+    const GSHOTPyramid::Level & root = parts_[0].filter;
+	
+
+    GSHOTPyramid::Level root2x = GSHOTPyramid::Level(2 * root.depths(), 2 * root.rows(), 2 * root.cols());
+    root2x.setConstant( GSHOTPyramid::Cell::Zero());
 	
     //TODO
-	HOGPyramid::Level root2x = HOGPyramid::Level::Constant(2 * root.rows(), 2 * root.cols(),
-														   HOGPyramid::Cell::Zero());
-	
 	// Bicubic interpolation matrix for x = y = 0.25
 	const double bicubic[4][4] =
 	{
@@ -139,36 +140,42 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 		{ 0.001647949219,-0.020324707031,-0.005310058594, 0.000549316406}
 	};
 	
-	for (int y = 0; y < root.rows(); ++y) {
-		for (int x = 0; x < root.cols(); ++x) {
-			for (int i = 0; i < 4; ++i) {
-				for (int j = 0; j < 4; ++j) {
-					const int y2 = min(max(y + i - 2, 0), static_cast<int>(root.rows()) - 1);
-					const int y1 = min(max(y + i - 1, 0), static_cast<int>(root.rows()) - 1);
-					const int x2 = min(max(x + j - 2, 0), static_cast<int>(root.cols()) - 1);
-					const int x1 = min(max(x + j - 1, 0), static_cast<int>(root.cols()) - 1);
-					
-					root2x(y * 2    , x * 2    ) += bicubic[3 - i][3 - j] * root(y2, x2);
-					root2x(y * 2    , x * 2 + 1) += bicubic[3 - i][    j] * root(y2, x1);
-					root2x(y * 2 + 1, x * 2    ) += bicubic[    i][3 - j] * root(y1, x2);
-					root2x(y * 2 + 1, x * 2 + 1) += bicubic[    i][    j] * root(y1, x1);
-				}
-			}
+    for (int z = 0; z < root.depths(); ++z) {
+        for (int y = 0; y < root.rows(); ++y) {
+            for (int x = 0; x < root.cols(); ++x) {
+                for (int i = 0; i < 4; ++i) {
+                    for (int j = 0; j < 4; ++j) {
+                        const int z2 = min(max(z + i - 2, 0), static_cast<int>(root.depths()) - 1);
+                        const int z1 = min(max(z + i - 1, 0), static_cast<int>(root.depths()) - 1);
+                        const int y2 = min(max(y + i - 2, 0), static_cast<int>(root.rows()) - 1);
+                        const int y1 = min(max(y + i - 1, 0), static_cast<int>(root.rows()) - 1);
+                        const int x2 = min(max(x + j - 2, 0), static_cast<int>(root.cols()) - 1);
+                        const int x1 = min(max(x + j - 1, 0), static_cast<int>(root.cols()) - 1);
+                    //TODO
+                        root2x(y * 2    , x * 2    ) += bicubic[3 - i][3 - j] * root(y2, x2);
+                        root2x(y * 2    , x * 2 + 1) += bicubic[3 - i][    j] * root(y2, x1);
+                        root2x(y * 2 + 1, x * 2    ) += bicubic[    i][3 - j] * root(y1, x2);
+                        root2x(y * 2 + 1, x * 2 + 1) += bicubic[    i][    j] * root(y1, x1);
+                    }
+                }
+            }
 		}
 	}
 	
 	// Compute the energy of each cell
-	HOGPyramid::Matrix energy(root2x.rows(), root2x.cols());
+    GSHOTPyramid::Matrix energy(root2x.depths(), root2x.rows(), root2x.cols());
 	
-	for (int y = 0; y < root2x.rows(); ++y) {
-		for (int x = 0; x < root2x.cols(); ++x) {
-			root2x(y, x).cwiseMax(0);
-			
-			energy(y, x) = 0;
-			
-			for (int i = 0; i < HOGPyramid::NbFeatures; ++i)
-				energy(y, x) += root2x(y, x)(i) * root2x(y, x)(i);
-		}
+    for (int z = 0; z < root2x.depths(); ++z) {
+        for (int y = 0; y < root2x.rows(); ++y) {
+            for (int x = 0; x < root2x.cols(); ++x) {
+                root2x(z, y, x).cwiseMax(0);
+
+                energy(z, y, x) = 0;
+
+                for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+                    energy(z, y, x) += root2x(z, y, x)(i) * root2x(z, y, x)(i);
+            }
+        }
 	}
 	
 	// Assign each part greedily to the region of maximum energy
@@ -179,26 +186,29 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 		int argX = 0;
 		int argY = 0;
 		
-		for (int y = 0; y <= energy.rows() - partSize.first; ++y) {
-			for (int x = 0; x <= energy.cols() - partSize.second; ++x) {
-				const double e = energy.block(y, x, partSize.first, partSize.second).sum();
-				
-				if (e > maxEnergy) {
-					maxEnergy = e;
-					argX = x;
-					argY = y;
-				}
-			}
+        for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
+            for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
+                for (int x = 0; x <= energy.cols() - partSize.third; ++x) {
+                    const double e = energy.block(z, y, x, partSize.first, partSize.second, partSize.third).sum();
+
+                    if (e > maxEnergy) {
+                        maxEnergy = e;
+                        argX = x;
+                        argY = y;
+                        argZ = z;
+                    }
+                }
+            }
 		}
 		
 		// Initialize the part
-		parts_[i + 1].filter = root2x.block(argY, argX, partSize.first, partSize.second);
-		parts_[i + 1].offset(0) = argX;
+        parts_[i + 1].filter = root2x.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third);
+        parts_[i + 1].offset(0) = argZ;
 		parts_[i + 1].offset(1) = argY;
-		parts_[i + 1].offset(2) = 0;
+        parts_[i + 1].offset(2) = argX;
 		
 		// Set the energy of the part to zero
-		energy.block(argY, argX, partSize.first, partSize.second).setZero();
+        energy.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third).setZero();
 	}
 	
 	// Retry 10 times from randomized starting points
@@ -211,13 +221,15 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 		// Remove a part at random and look for the best place to put it
 		for (int j = 0; j < 100 * nbParts; ++j) {
 			// Recompute the energy
-			for (int y = 0; y < root2x.rows(); ++y) {
-				for (int x = 0; x < root2x.cols(); ++x) {
-					energy(y, x) = 0;
-					
-					for (int i = 0; i < HOGPyramid::NbFeatures; ++i)
-						energy(y, x) += root2x(y, x)(i) * root2x(y, x)(i);
-				}
+            for (int z = 0; z < root2x.depths(); ++z) {
+                for (int y = 0; y < root2x.rows(); ++y) {
+                    for (int x = 0; x < root2x.cols(); ++x) {
+                        energy(z, y, x) = 0;
+
+                        for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+                            energy(z, y, x) += root2x(z, y, x)(i) * root2x(z, y, x)(i);
+                    }
+                }
 			}
 			
 			// Select a part at random
@@ -226,54 +238,60 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 			// Zero out the energy covered by the other parts
 			for (int k = 0; k < nbParts; ++k)
 				if (k != part)
-					energy.block(tmp[k + 1].offset(1), tmp[k + 1].offset(0), partSize.first,
-								 partSize.second).setZero();
+                    energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize.first,
+                                 partSize.second, partSize.third).setZero();
 			
 			// Find the region of maximum energy
 			double maxEnergy = 0.0;
 			int argX = 0;
 			int argY = 0;
+            int argZ = 0;
 			
-			for (int y = 0; y <= energy.rows() - partSize.first; ++y) {
-				for (int x = 0; x <= energy.cols() - partSize.second; ++x) {
-					const double e = energy.block(y, x, partSize.first, partSize.second).sum();
-					
-					if (e > maxEnergy) {
-						maxEnergy = e;
-						argX = x;
-						argY = y;
-					}
+            for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
+                for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
+                    for (int x = 0; x <= energy.cols() - partSize.third; ++x) {
+                        const double e = energy.block(z, y, x, partSize.first, partSize.second, partSize.third).sum();
+
+                        if (e > maxEnergy) {
+                            maxEnergy = e;
+                            argX = x;
+                            argY = y;
+                            argZ = z;
+                        }
+                    }
 				}
 			}
 			
 			// Initialize the part
-			tmp[part + 1].filter = root2x.block(argY, argX, partSize.first, partSize.second);
-			tmp[part + 1].offset(0) = argX;
+            tmp[part + 1].filter = root2x.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third);
+            tmp[part + 1].offset(0) = argZ;
 			tmp[part + 1].offset(1) = argY;
-			tmp[part + 1].offset(2) = 0;
+            tmp[part + 1].offset(2) = argX;
 		}
 		
 		// Compute the energy covered by this part arrangement
 		double cover = 0.0;
 		
 		// Recompute the energy
-		for (int y = 0; y < root2x.rows(); ++y) {
-			for (int x = 0; x < root2x.cols(); ++x) {
-				energy(y, x) = 0;
-				
-				for (int i = 0; i < HOGPyramid::NbFeatures; ++i)
-					energy(y, x) += root2x(y, x)(i) * root2x(y, x)(i);
-			}
+        for (int z = 0; z < root2x.depths(); ++z) {
+            for (int y = 0; y < root2x.rows(); ++y) {
+                for (int x = 0; x < root2x.cols(); ++x) {
+                    energy(z, y, x) = 0;
+
+                    for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+                        energy(z, y, x) += root2x(z, y, x)(i) * root2x(z, y, x)(i);
+                }
+            }
 		}
 		
 		for (int j = 0; j < nbParts; ++j) {
 			// Add the energy of the part
-			cover += energy.block(tmp[j + 1].offset(1), tmp[j + 1].offset(0), partSize.first,
-								  partSize.second).sum();
+            cover += energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
+                                  partSize.second, partSize.third).sum();
 			
 			// Set the energy of the part to zero
-			energy.block(tmp[j + 1].offset(1), tmp[j + 1].offset(0), partSize.first,
-						 partSize.second).setZero();
+            energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
+                         partSize.second, partSize.third).setZero();
 		}
 		
 		if (cover > bestCover) {
@@ -286,24 +304,24 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 	
 	// Initialize the deformations
 	for (int i = 0; i < nbParts; ++i)
-		parts_[i + 1].deformation << -0.01, 0.0, -0.01, 0.0, -0.01, 0.0;
+        parts_[i + 1].deformation << -0.01, 0.0, -0.01, 0.0, -0.01, 0.0, -0.01, 0.0;
 }
 
-void Model::initializeSample(const HOGPyramid & pyramid, int x, int y, int z, Model & sample,
+void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, int lvl, Model & sample,
 							 const vector<vector<Positions> > * positions) const
 {
 	// All the constants relative to the model and the pyramid
 	const int nbFilters = static_cast<int>(parts_.size());
 	const int nbParts = nbFilters - 1;
-	const int padx = pyramid.padx();
-	const int pady = pyramid.pady();
+    const Eigen::Vector3i pad = pyramid.pad();
 	const int interval = pyramid.interval();
 	const int nbLevels = static_cast<int>(pyramid.levels().size());
 	
 	// Invalid parameters
-	if (empty() || (x < 0) || (y < 0) || (z < 0) || (z >= nbLevels) ||
-		(x + rootSize().second > pyramid.levels()[z].cols()) ||
-		(y + rootSize().first > pyramid.levels()[z].rows()) ||
+    if (empty() || (x < 0) || (y < 0) || (z < 0) || (lvl >= nbLevels) ||
+        (x + rootSize().third > pyramid.levels()[lvl].cols()) ||
+        (y + rootSize().second > pyramid.levels()[lvl].rows()) ||
+        (z + rootSize().first > pyramid.levels()[lvl].depths()) ||
 		(nbParts && (!positions || (positions->size() != nbParts)))) {
 		sample = Model();
 		cerr << "Attempting to initialize an empty sample" << endl;
@@ -314,61 +332,67 @@ void Model::initializeSample(const HOGPyramid & pyramid, int x, int y, int z, Mo
 	sample.parts_.resize(nbFilters);
 	
 	// Extract the root filter
-	sample.parts_[0].filter = pyramid.levels()[z].block(y, x, rootSize().first, rootSize().second);
+    sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().third, rootSize().second, rootSize().first);
 	sample.parts_[0].offset.setZero();
 	sample.parts_[0].deformation.setZero();
 	
 	for (int i = 0; i < nbParts; ++i) {
 		// Position of the part
-		if ((z >= (*positions)[i].size()) || (x >= (*positions)[i][z].cols()) ||
-			(y >= (*positions)[i][z].rows())) {
+        if ((lvl >= (*positions)[i].size()) || (x >= (*positions)[i][lvl].cols()) ||
+            (y >= (*positions)[i][lvl].rows()) || (z >= (*positions)[i][lvl].depths())) {
 			sample = Model();
 			cerr << "Attempting to initialize an empty sample" << endl;
 			return;
 		}
 		
-		const Position position = (*positions)[i][z](y, x);
+        const Position position = (*positions)[i][lvl](z, y, x);
 		
 		// Level of the part
-		if ((position(2) < 0) || (position(2) >= nbLevels)) {
+        if ((position(3) < 0) || (position(3) >= nbLevels)) {
 			sample = Model();
 			cerr << "Attempting to initialize an empty sample" << endl;
 			return;
 		}
 		
-		const HOGPyramid::Level & level = pyramid.levels()[position(2)];
+        const GSHOTPyramid::Level & level = pyramid.levels()[position(3)];
 		
-		if ((position(0) < 0) || (position(1) < 0) ||
-			(position(0) + partSize().second > level.cols()) ||
-			(position(1) + partSize().first > level.rows())) {
+        if ((position(0) < 0) || (position(1) < 0 || (position(2) < 0)) ||
+            (position(2) + partSize().third > level.cols()) ||
+            (position(1) + partSize().second > level.rows()) ||
+            (position(0) + partSize().first > level.depths())) {
 			sample = Model();
 			cerr << "Attempting to initialize an empty sample" << endl;
 			return;
 		}
 		
 		// Extract the part filter
-		sample.parts_[i + 1].filter = level.block(position(1), position(0), partSize().first,
-												  partSize().second);
+        sample.parts_[i + 1].filter = level.block(position(2), position(1), position(0), partSize().third,
+                                                  partSize().second, partSize().first);
 		
 		// Set the part offset to the position
 		sample.parts_[i + 1].offset = position;
 		
 		// Compute the deformation gradient at the level of the part
-		const double scale = pow(2.0, static_cast<double>(z - position(2)) / interval);
-		const double xr = (x + (parts_[i + 1].offset(0) + partSize().second * 0.5) * 0.5 - padx) *
-						  scale + padx - partSize().second * 0.5;
-		const double yr = (y + (parts_[i + 1].offset(1) + partSize().first * 0.5) * 0.5 - pady) *
-						  scale + pady - partSize().first * 0.5;
-		const double dx = xr - position(0);
+        const double scale = pow(2.0, static_cast<double>(lvl - position(3)) / interval);
+        const double xr = (x + (parts_[i + 1].offset(2) + partSize().third * 0.5) * 0.5 - pad.x) *
+                          scale + pad.x - partSize().third * 0.5;
+        const double yr = (y + (parts_[i + 1].offset(1) + partSize().second * 0.5) * 0.5 - pad.y) *
+                          scale + pad.y - partSize().second * 0.5;
+        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first * 0.5) * 0.5 - pad.z) *
+                          scale + pad.z - partSize().first * 0.5;
+        const double dx = xr - position(2);
 		const double dy = yr - position(1);
-		const int dz = z - interval - position(2);
+        const double dz = zr - position(0);
+        const int dlvl = lvl - interval - position(3);
 		
-		sample.parts_[i + 1].deformation(0) = dx * dx;
-		sample.parts_[i + 1].deformation(1) = dx;
+        sample.parts_[i + 1].deformation(0) = dz * dz;
+        sample.parts_[i + 1].deformation(1) = dz;
 		sample.parts_[i + 1].deformation(2) = dy * dy;
 		sample.parts_[i + 1].deformation(3) = dy;
-		sample.parts_[i + 1].deformation(4) = dz * dz;
-		sample.parts_[i + 1].deformation(5) = dz;
+        sample.parts_[i + 1].deformation(4) = dx * dx;
+        sample.parts_[i + 1].deformation(5) = dx;
+        sample.parts_[i + 1].deformation(6) = dlvl * dlvl;
+        sample.parts_[i + 1].deformation(7) = dlvl;
 	}
 	
 	sample.bias_ = 1.0;
@@ -434,7 +458,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 	}
 	
 	// Temporary data needed by the distance transforms
-	HOGPyramid::Matrix tmp;
+    GSHOTPyramid::Matrix tmp;
 	
 #ifndef FFLD_MODEL_3D
 	// For each root level in reverse order
@@ -468,7 +492,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 					}
 					else {
 						(*convolutions)[0][z](y, x) =
-							-numeric_limits<HOGPyramid::Scalar>::infinity();
+                            -numeric_limits<GSHOTPyramid::Scalar>::infinity();
 					}
 				}
 			}
@@ -482,7 +506,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 	//scores.swap((*convolutions)[0]);
 	
 	for (int i = 0; i < interval; ++i) {
-		scores[i] = HOGPyramid::Matrix();
+        scores[i] = GSHOTPyramid::Tensor();
 		
 		for (int j = 0; j < nbParts; ++j)
 			(*positions)[j][i] = Positions();
@@ -501,7 +525,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 	// Precompute all the necessary distance transforms
 	for (int i = 0; i < nbLevels - interval + interval2; ++i) {
 		for (int j = 0; j < nbParts; ++j) {
-			HOGPyramid::Matrix copy = (*convolutions)[j + 1][i];
+            GSHOTPyramid::Matrix copy = (*convolutions)[j + 1][i];
 			DT2D(copy, parts_[j + 1], tmp, positions ? &(*positions)[j][i] : 0);
 		}
 	}
@@ -536,7 +560,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 			for (int y = 0; y < scores[i].rows(); ++y) {
 				for (int x = 0; x < scores[i].cols(); ++x) {
 					// Score of the best part position across scales
-					HOGPyramid::Scalar best = -numeric_limits<HOGPyramid::Scalar>::infinity();
+                    GSHOTPyramid::Scalar best = -numeric_limits<GSHOTPyramid::Scalar>::infinity();
 					
 					// Coordinates of the center of the part at the root level
 					const double cxr = x - padx + 0.5 * (parts_[j + 1].offset(0) + hpx);
@@ -599,8 +623,8 @@ double Model::dot(const Model & sample) const
 			return numeric_limits<double>::quiet_NaN();
 		
 		for (int y = 0; y < parts_[i].filter.rows(); ++y)
-			d += HOGPyramid::Map(parts_[i].filter).row(y).dot(
-					HOGPyramid::Map(sample.parts_[i].filter).row(y));
+            d += GSHOTPyramid::Map(parts_[i].filter).row(y).dot(
+                    GSHOTPyramid::Map(sample.parts_[i].filter).row(y));
 		
 		if (i)
 			d += parts_[i].deformation.dot(sample.parts_[i].deformation);
@@ -614,7 +638,7 @@ double Model::norm() const
 	double n = 0.0;
 	
 	for (int i = 0; i < parts_.size(); ++i) {
-		n += HOGPyramid::Map(parts_[i].filter).squaredNorm();
+        n += GSHOTPyramid::Map(parts_[i].filter).squaredNorm();
 		
 		if (i)
 			n += 10.0 * parts_[i].deformation.squaredNorm();
@@ -672,7 +696,7 @@ Model & Model::operator-=(const Model & sample)
 Model & Model::operator*=(double a)
 {
 	for (int i = 0; i < parts_.size(); ++i) {
-		HOGPyramid::Map(parts_[i].filter) *= a;
+        GSHOTPyramid::Map(parts_[i].filter) *= a;
 		parts_[i].deformation *= a;
 	}
 	
@@ -689,13 +713,13 @@ Model Model::flip() const
 		model.parts_.resize(parts_.size());
 		
 		// Flip the root
-		model.parts_[0].filter = HOGPyramid::Flip(parts_[0].filter);
+        model.parts_[0].filter = GSHOTPyramid::Flip(parts_[0].filter);
 		model.parts_[0].offset = parts_[0].offset;
 		model.parts_[0].deformation = parts_[0].deformation;
 		
 		// Flip the parts
 		for (int i = 1; i < parts_.size(); ++i) {
-			model.parts_[i].filter = HOGPyramid::Flip(parts_[i].filter);
+            model.parts_[i].filter = GSHOTPyramid::Flip(parts_[i].filter);
 			model.parts_[i].offset(0) = 2 * static_cast<int>(parts_[0].filter.cols()) -
 										static_cast<int>(parts_[i].filter.cols()) -
 										parts_[i].offset(0);
@@ -775,7 +799,7 @@ static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * 
 	}
 }
 
-void Model::DT2D(HOGPyramid::Matrix & matrix, const Part & part, HOGPyramid::Matrix & tmp,
+void Model::DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
 				 Positions * positions)
 {
 	// Nothing to do if the matrix is empty
@@ -791,18 +815,18 @@ void Model::DT2D(HOGPyramid::Matrix & matrix, const Part & part, HOGPyramid::Mat
 	tmp.resize(rows, cols);
 	
 	// Temporary vectors
-	vector<HOGPyramid::Scalar> z(max(rows, cols) + 1);
+    vector<GSHOTPyramid::Scalar> z(max(rows, cols) + 1);
 	vector<int> v(max(rows, cols) + 1);
-	vector<HOGPyramid::Scalar> t(max(rows, cols));
+    vector<GSHOTPyramid::Scalar> t(max(rows, cols));
 	
-	t[0] = numeric_limits<HOGPyramid::Scalar>::infinity();
+    t[0] = numeric_limits<GSHOTPyramid::Scalar>::infinity();
 	
 	for (int x = 1; x < cols; ++x)
 		t[x] = 1 / (part.deformation(0) * x);
 	
 	// Filter the rows in tmp
 	for (int y = 0; y < rows; ++y)
-		dt1d<HOGPyramid::Scalar>(matrix.row(y).data(), cols, part.deformation(0),
+        dt1d<GSHOTPyramid::Scalar>(matrix.row(y).data(), cols, part.deformation(0),
 								 part.deformation(1), &z[0], &v[0], tmp.row(y).data(),
 								 positions ? positions->row(y).data()->data() : 0, &t[0], 1, 1, 3);
 	
@@ -811,7 +835,7 @@ void Model::DT2D(HOGPyramid::Matrix & matrix, const Part & part, HOGPyramid::Mat
 	
 	// Filter the columns back to the original matrix
 	for (int x = 0; x < cols; ++x)
-		dt1d<HOGPyramid::Scalar>(tmp.data() + x, rows, part.deformation(2), part.deformation(3),
+        dt1d<GSHOTPyramid::Scalar>(tmp.data() + x, rows, part.deformation(2), part.deformation(3),
 								 &z[0], &v[0],
 #ifndef FFLD_MODEL_3D
 								 matrix.data() + x,
@@ -841,7 +865,7 @@ ostream & FFLD::operator<<(ostream & os, const Model & model)
 	// Save the parts themselves
 	for (int i = 0; i < model.parts().size(); ++i) {
 		os << model.parts()[i].filter.rows() << ' ' << model.parts()[i].filter.cols() << ' '
-		   << HOGPyramid::NbFeatures << ' ' << model.parts()[i].offset(0) << ' '
+           << GSHOTPyramid::DescriptorSize << ' ' << model.parts()[i].offset(0) << ' '
 		   << model.parts()[i].offset(1) << ' ' << model.parts()[i].offset(2) << ' '
 		   << model.parts()[i].deformation(0) << ' ' << model.parts()[i].deformation(1) << ' '
 		   << model.parts()[i].deformation(2) << ' ' << model.parts()[i].deformation(3) << ' '
@@ -851,11 +875,11 @@ ostream & FFLD::operator<<(ostream & os, const Model & model)
 		for (int y = 0; y < model.parts()[i].filter.rows(); ++y) {
 			os << model.parts()[i].filter(y, 0)(0);
 			
-			for (int j = 1; j < HOGPyramid::NbFeatures; ++j)
+            for (int j = 1; j < GSHOTPyramid::DescriptorSize; ++j)
 				os << ' ' << model.parts()[i].filter(y, 0)(j);
 			
 			for (int x = 1; x < model.parts()[i].filter.cols(); ++x)
-				for (int j = 0; j < HOGPyramid::NbFeatures; ++j)
+                for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j)
 					os << ' ' << model.parts()[i].filter(y, x)(j);
 			
 			os << endl;
@@ -887,7 +911,7 @@ istream & FFLD::operator>>(istream & is, Model & model)
 		   >> parts[i].deformation(2) >> parts[i].deformation(3) >> parts[i].deformation(4)
 		   >> parts[i].deformation(5);
 		
-		if (!is || (nbFeatures > HOGPyramid::NbFeatures)) {
+        if (!is || (nbFeatures > GSHOTPyramid::DescriptorSize)) {
 			model = Model();
 			return is;
 		}
@@ -902,7 +926,7 @@ istream & FFLD::operator>>(istream & is, Model & model)
 			parts[i].offset(2) = 0;
 		}
 		
-		parts[i].filter = HOGPyramid::Level::Constant(rows, cols, HOGPyramid::Cell::Zero());
+        parts[i].filter = GSHOTPyramid::Level::Constant(rows, cols, GSHOTPyramid::Cell::Zero());
 		
 		for (int y = 0; y < rows; ++y) {
 			for (int x = 0; x < cols; ++x) {
@@ -910,9 +934,9 @@ istream & FFLD::operator>>(istream & is, Model & model)
 					is >> parts[i].filter(y, x)(j);
 				
 				// Always put the truncation feature at the end
-				if (nbFeatures < HOGPyramid::NbFeatures)
+                if (nbFeatures < GSHOTPyramid::DescriptorSize)
 					swap(parts[i].filter(y, x)(nbFeatures - 1),
-						 parts[i].filter(y, x)(HOGPyramid::NbFeatures - 1));
+                         parts[i].filter(y, x)(GSHOTPyramid::DescriptorSize - 1));
 			}
 		}
 		

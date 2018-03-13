@@ -66,7 +66,18 @@ namespace FFLD
                 return this->dimension(2);
             }
             
-           
+            //return a block of size (p, q, r) from point (z, y, x)
+            Tensor<Type> block(int z, int y, int x, int p, int q, int r){
+                Tensor<Type> t(p, q, r);
+                for (int i = 0; i < p; ++i) {
+                    for (int j = 0; j < q; ++j) {
+                        for (int k = 0; k < r; ++k) {
+                            t(i,j,k) = *this(z+i, y+j, x+k);
+                        }
+                    }
+                }
+                return t;
+            }
             
         };
    
@@ -113,6 +124,8 @@ namespace FFLD
         
         /// Returns whether the pyramid is empty. An empty pyramid has no level.
         bool isEmpty() const;
+
+        Eigen::Vector3i pad() const;
         
         /// Returns the number of levels per octave in the pyramid.
         int interval() const;

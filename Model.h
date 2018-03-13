@@ -45,7 +45,7 @@ public:
 	typedef Eigen::Matrix<Position, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Positions;
 	
 	/// Type of a 3d quadratic deformation (dx^2 dx dy^2 dy dz^2 dz).
-	typedef Eigen::Matrix<double, 6, 1> Deformation;
+    typedef Eigen::Matrix<double, 8, 1> Deformation;
 
     template< typename T1, typename T2, typename T3>
     struct triple : std::tuple<T1, T2, T3>{
@@ -67,8 +67,8 @@ public:
 	/// The part structure stores all the information about a part (or the root).
 	struct Part
 	{
-        GSHOTPyramid::Level filter_shot;
-		HOGPyramid::Level filter;	///< Part filter.
+        GSHOTPyramid::Level filter;
+        HOGPyramid::Level filter_hog;	///< Part filter.
 		Position offset;			///< Part offset (dx dy dz) relative to the root.
 		Deformation deformation;	///< Deformation cost (dx^2 dx dy^2 dy dz^2 dz).
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -128,7 +128,7 @@ public:
 	/// (<tt>parts x levels</tt>, only required if the model has parts).
 	/// @note The sample will be empty if any of the parameter is invalid or if any of the part
 	/// filter is unreachable.
-	void initializeSample(const HOGPyramid & pyramid, int x, int y, int z, Model & sample,
+    void initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, int lvl, Model & sample,
 						  const std::vector<std::vector<Positions> > * positions = 0) const;
 	
 	/// Returns the scores of the convolutions + distance transforms of the parts with a pyramid of
@@ -173,7 +173,7 @@ public:
 	/// @param[in] part Part from which to read the deformation cost and offset.
 	/// @param tmp Temporary matrix.
 	/// @param[out] positions Optimal position of each part for each root location.
-	static void DT2D(HOGPyramid::Matrix & matrix, const Part & part, HOGPyramid::Matrix & tmp,
+    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
 					 Positions * positions = 0);
 	
 private:
