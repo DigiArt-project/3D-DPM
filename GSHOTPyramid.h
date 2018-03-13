@@ -46,6 +46,7 @@ namespace FFLD
 
         template <typename Type>
         struct Tensor : Eigen::Tensor<Type, 3, Eigen::RowMajor>{
+            Tensor() : Eigen::Tensor<Type, 3, Eigen::RowMajor>(0,0,0){}
             Tensor( int s1, int s2, int s3) : Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3){}
             //row d'une matrice --> renvoie ligne de la matrice
             
@@ -55,14 +56,14 @@ namespace FFLD
                 return res.setZero();
             }
 
-            int rows(){
-                return *this->dimension(0);
+            int rows() const{
+                return this->dimension(0);
             }
-            int cols(){
-                return *this->dimension(1);
+            int cols() const {
+                return this->dimension(1);
             }
-            int depths(){
-                return *this->dimension(2);
+            int depths() const{
+                return this->dimension(2);
             }
             
         };
@@ -108,7 +109,7 @@ namespace FFLD
         /** GETTERS AND SETTER **/
         
         /// Returns whether the pyramid is empty. An empty pyramid has no level.
-        bool empty() const;
+        bool isEmpty() const;
         
         /// Returns the number of levels per octave in the pyramid.
         int interval() const;
@@ -139,7 +140,7 @@ namespace FFLD
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
-        void convolve(const Level & filter, std::vector<Level > & convolutions) const;
+        void convolve(const Level & filter, vector<Tensor<Scalar> >& convolutions) const;
         
         /// Returns the flipped version (horizontally) of a level.
         static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
@@ -174,7 +175,7 @@ namespace FFLD
         
 
         // Computes the 2D convolution of a pyramid level with a filter
-        static void Convolve(const Level & x, const Level & y, Matrix & z);
+        static void Convolve(const Level & x, const Level & y, Tensor<Scalar> & z);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
         std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;
