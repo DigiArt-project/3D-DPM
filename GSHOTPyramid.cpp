@@ -139,7 +139,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
 
 
-void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Cell> > & convolutions) const
+void GSHOTPyramid::convolve(const Level & filter, vector<Level > & convolutions) const
 {
     convolutions.resize(levels_.size());
 
@@ -149,6 +149,7 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Cell> > & convol
 }
 
 //TODO
+//Its a correlation not a convolution
 void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
 {
     // Nothing to do if x is smaller than y
@@ -156,22 +157,32 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
         z = Tensor();
         return;
     }
-
-    z = Tensor::Zero(x.rows() - y.rows() + 1, x.cols() - y.cols() + 1, );
-
-    for (int i = 0; i < z.rows(); ++i) {
-        for (int j = 0; j < y.rows(); ++j) {
-            const Eigen::Map<const Matrix, Aligned, OuterStride<DescriptorSize> >
-                mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(), y.cols() * DescriptorSize);
-
-                const Eigen::Map<const RowVectorXf, Aligned>
-
-                mapy(reinterpret_cast<const Scalar *>(y.row(j).data()), y.cols() * DescriptorSize);
-
-            z.row(i).noalias() += mapy * mapx.transpose();
-        }
-    }
+    Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
+    z = x.convolve(y, dims);
 }
+
+//void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
+//{
+//    // Nothing to do if x is smaller than y
+//    if ((x.rows() < y.rows()) || (x.cols() < y.cols())) {
+//        z = Tensor();
+//        return;
+//    }
+
+//    z = Tensor::Zero( x.dimension(0) - y.dimension(0) + 1, x.dimension(1) - y.dimension(1) + 1, x.dimension(2) - y.dimension(2) + 1);
+
+//    for (int i = 0; i < z.rows(); ++i) {
+//        for (int j = 0; j < y.rows(); ++j) {
+//            const Eigen::Map<const Matrix, Aligned, OuterStride<DescriptorSize> >
+//                mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(), y.cols() * DescriptorSize);
+
+//            const Eigen::Map<const RowVectorXf, Aligned>
+//                mapy(reinterpret_cast<const Scalar *>(y.row(j).data()), y.cols() * DescriptorSize);
+
+//            z.row(i).noalias() += mapy * mapx.transpose();
+//        }
+//    }
+//}
 
 //TODO: do we need the flip function ?
 GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)

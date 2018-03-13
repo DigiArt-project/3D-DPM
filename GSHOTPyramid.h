@@ -139,7 +139,7 @@ namespace FFLD
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
-        void convolve(const Level & filter, std::vector<Tensor<Cell> > & convolutions) const;
+        void convolve(const Level & filter, std::vector<Level > & convolutions) const;
         
         /// Returns the flipped version (horizontally) of a level.
         static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);

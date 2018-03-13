@@ -264,70 +264,142 @@ void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize
 	zero_ = false;
 }
 
-void Mixture::convolve(const HOGPyramid & pyramid, vector<HOGPyramid::Matrix> & scores,
-					   vector<Indices> & argmaxes,
-					   vector<vector<vector<Model::Positions> > > * positions) const
+void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> & scores,
+                                  vector<Indices> & argmaxes,
+                                  vector<vector<vector<Model::Positions> > > * positions) const
 {
-	if (empty() || pyramid.empty()) {
-		scores.clear();
-		argmaxes.clear();
-		
-		if (positions)
-			positions->clear();
-		
-		return;
-	}
-	
-	const int nbModels = static_cast<int>(models_.size());
-	const int nbLevels = static_cast<int>(pyramid.levels().size());
-	
-	// Convolve with all the models
-	vector<vector<HOGPyramid::Matrix> > convolutions;
-	
-	convolve(pyramid, convolutions, positions);
-	
-	// In case of error
-	if (convolutions.empty()) {
-		scores.clear();
-		argmaxes.clear();
-		
-		if (positions)
-			positions->clear();
-		
-		return;
-	}
-	
-	// Resize the scores and argmaxes
-	scores.resize(nbLevels);
-	argmaxes.resize(nbLevels);
-	
+    if (empty() || pyramid.empty()) {
+        scores.clear();
+        argmaxes.clear();
+
+        if (positions)
+            positions->clear();
+
+        return;
+    }
+
+    const int nbModels = static_cast<int>(models_.size());
+    const int nbLevels = static_cast<int>(pyramid.levels().size());
+
+    // Convolve with all the models
+    vector<vector<GSHOTPyramid::Tensor> > convolutions;
+
+    //TODO
+    convolve(pyramid, convolutions, positions);
+
+    // In case of error
+    if (convolutions.empty()) {
+        scores.clear();
+        argmaxes.clear();
+
+        if (positions)
+            positions->clear();
+
+        return;
+    }
+
+    // Resize the scores and argmaxes
+    scores.resize(nbLevels);
+    argmaxes.resize(nbLevels);
+
+    //TODO
 #pragma omp parallel for
-	for (int z = 0; z < nbLevels; ++z) {
-		int rows = static_cast<int>(convolutions[0][z].rows());
-		int cols = static_cast<int>(convolutions[0][z].cols());
-		
-		for (int i = 1; i < nbModels; ++i) {
-			rows = min(rows, static_cast<int>(convolutions[i][z].rows()));
-			cols = min(cols, static_cast<int>(convolutions[i][z].cols()));
-		}
-		
-		scores[z].resize(rows, cols);
-		argmaxes[z].resize(rows, cols);
-		
-		for (int y = 0; y < rows; ++y) {
-			for (int x = 0; x < cols; ++x) {
-				int argmax = 0;
-				
-				for (int i = 1; i < nbModels; ++i)
-					if (convolutions[i][z](y, x) > convolutions[argmax][z](y, x))
-						argmax = i;
-				
-				scores[z](y, x) = convolutions[argmax][z](y, x);
-				argmaxes[z](y, x) = argmax;
-			}
-		}
-	}
+    for (int lvl = 0; lvl < nbLevels; ++lvl) {
+        int rows = static_cast<int>(convolutions[0][lvl].dimension(0));
+        int cols = static_cast<int>(convolutions[0][lvl].dimension(1));
+        int depths = static_cast<int>(convolutions[0][lvl].dimension(2));
+
+
+        for (int i = 1; i < nbModels; ++i) {
+            rows = min(rows, static_cast<int>(convolutions[i][lvl].dimension(0)));
+            cols = min(cols, static_cast<int>(convolutions[i][lvl].dimension(1)));
+            depths = min(depths, static_cast<int>(convolutions[i][lvl].dimension(2)));
+        }
+
+        scores[lvl].resize(rows, cols, depths);
+        argmaxes[lvl].resize(rows, cols, depths);
+
+        for (int y = 0; y < rows; ++y) {
+            for (int x = 0; x < cols; ++x) {
+                for (int z = 0; z < depths; ++z) {
+                    int argmax = 0;
+
+                    for (int i = 1; i < nbModels; ++i)
+                        if (convolutions[i][lvl](y, x, z) > convolutions[argmax][lvl](y, x, z))
+                            argmax = i;
+
+                    scores[lvl](y, x, z) = convolutions[argmax][lvl](y, x, z);
+                    argmaxes[lvl](y, x, z) = argmax;
+                }
+            }
+        }
+    }
 }
+
+//void Mixture::convolve(const HOGPyramid & pyramid, vector<HOGPyramid::Matrix> & scores,
+//					   vector<Indices> & argmaxes,
+//					   vector<vector<vector<Model::Positions> > > * positions) const
+//{
+//	if (empty() || pyramid.empty()) {
+//		scores.clear();
+//		argmaxes.clear();
+		
+//		if (positions)
+//			positions->clear();
+		
+//		return;
+//	}
+	
+//	const int nbModels = static_cast<int>(models_.size());
+//	const int nbLevels = static_cast<int>(pyramid.levels().size());
+	
+//	// Convolve with all the models
+//	vector<vector<HOGPyramid::Matrix> > convolutions;
+	
+//	convolve(pyramid, convolutions, positions);
+	
+//	// In case of error
+//	if (convolutions.empty()) {
+//		scores.clear();
+//		argmaxes.clear();
+		
+//		if (positions)
+//			positions->clear();
+		
+//		return;
+//	}
+	
+//	// Resize the scores and argmaxes
+//	scores.resize(nbLevels);
+//	argmaxes.resize(nbLevels);
+	
+//#pragma omp parallel for
+//	for (int z = 0; z < nbLevels; ++z) {
+//		int rows = static_cast<int>(convolutions[0][z].rows());
+//		int cols = static_cast<int>(convolutions[0][z].cols());
+		
+//		for (int i = 1; i < nbModels; ++i) {
+//			rows = min(rows, static_cast<int>(convolutions[i][z].rows()));
+//			cols = min(cols, static_cast<int>(convolutions[i][z].cols()));
+//		}
+		
+//		scores[z].resize(rows, cols);
+//		argmaxes[z].resize(rows, cols);
+		
+//		for (int y = 0; y < rows; ++y) {
+//			for (int x = 0; x < cols; ++x) {
+//				int argmax = 0;
+				
+//				for (int i = 1; i < nbModels; ++i)
+//					if (convolutions[i][z](y, x) > convolutions[argmax][z](y, x))
+//						argmax = i;
+				
+//				scores[z](y, x) = convolutions[argmax][z](y, x);
+//				argmaxes[z](y, x) = argmax;
+//			}
+//		}
+//	}
+//}
 
 void Mixture::cacheFilters() const
 {
@@ -406,12 +478,14 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			return;
 		}
 		
-		vector<HOGPyramid::Matrix> scores;
+        vector<GSHOTPyramid::Tensor> scores;
 		vector<Indices> argmaxes;
 		vector<vector<vector<Model::Positions> > > positions;
 		
 		if (!zero_)
-			convolve(pyramid, scores, argmaxes, &positions);
+            //convolve(pyramid, scores, argmaxes, &positions);
+            //Replacment TODO !!!!!!
+            computeEnergyScores(pyramid, scores, argmaxes, &positions);
 		
 		// For each object, set as positive the best (highest score or else most intersecting)
 		// position
@@ -438,65 +512,73 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 				if (!zero_) {
 					rows = static_cast<int>(scores[z].rows());
 					cols = static_cast<int>(scores[z].cols());
+                    depths = static_cast<int>(scores[z].depths());
 				}
 				else if (z >= interval) {
 					rows = static_cast<int>(pyramid.levels()[z].rows()) - maxSize().first + 1;
 					cols = static_cast<int>(pyramid.levels()[z].cols()) - maxSize().second + 1;
+                    depths = static_cast<int>(pyramid.levels()[z].depths()) - maxSize().third + 1;
 				}
 				
 				for (int y = 0; y < rows; ++y) {
-					for (int x = 0; x < cols; ++x) {
-						// Find the best matching model (highest score or else most intersecting)
-						int model = zero_ ? 0 : argmaxes[z](y, x);
-						double intersection = 0.0;
-						
-						// Try all models and keep the most intersecting one
-						if (zero_) {
-							for (int k = 0; k < models_.size(); ++k) {
-								// The bounding box of the model at this position
-								Rectangle bndbox;
-								bndbox.setX((x - pad.x()) * scale + 0.5);
-								bndbox.setY((y - pad.y()) * scale + 0.5);
-								bndbox.setWidth(models_[k].rootSize().second * scale + 0.5);
-								bndbox.setHeight(models_[k].rootSize().first * scale + 0.5);
-								
-								// Trade-off between clipping and penalizing
-								clipBndBox(bndbox, scenes[i], 0.5);
-								
-								double inter = 0.0;
-								
-								if (intersector(bndbox, &inter)) {
-									if (inter > intersection) {
-										model = k;
-										intersection = inter;
-									}
-								}
-							}
-						}
-						// Just take the model with the best score
-						else {
-							// The bounding box of the model at this position
-							Rectangle bndbox;
-							bndbox.setX((x - padx) * scale + 0.5);
-							bndbox.setY((y - pady) * scale + 0.5);
-							bndbox.setWidth(models_[model].rootSize().second * scale + 0.5);
-							bndbox.setHeight(models_[model].rootSize().first * scale + 0.5);
-							
-							clipBndBox(bndbox, scenes[i]);
-							intersector(bndbox, &intersection);
-						}
-						
-						if ((intersection > maxInter) && (zero_ || (scores[z](y, x) > maxScore))) {
-							argModel = model;
-							argX = x;
-							argY = y;
-							argZ = z;
-							
-							if (!zero_)
-								maxScore = scores[z](y, x);
-							
-							maxInter = intersection;
-						}
+                    for (int x = 0; x < cols; ++x) {
+                        for (int z = 0; z < depths; ++z) {
+                            // Find the best matching model (highest score or else most intersecting)
+                            int model = zero_ ? 0 : argmaxes[z](y, x, z);
+                            double intersection = 0.0;
+
+                            // Try all models and keep the most intersecting one
+                            if (zero_) {
+                                for (int k = 0; k < models_.size(); ++k) {
+                                    // The bounding box of the model at this position
+                                    Rectangle bndbox;
+                                    bndbox.setX((x - pad.x()) * scale + 0.5);
+                                    bndbox.setY((y - pad.y()) * scale + 0.5);
+                                    bndbox.setZ((z - pad.z()) * scale + 0.5);
+                                    bndbox.setWidth(models_[k].rootSize().second * scale + 0.5);
+                                    bndbox.setHeight(models_[k].rootSize().first * scale + 0.5);
+                                    bndbox.setDepth(models_[k].rootSize().third * scale + 0.5);
+
+                                    // Trade-off between clipping and penalizing
+                                    clipBndBox(bndbox, scenes[i], 0.5);
+
+                                    double inter = 0.0;
+
+                                    if (intersector(bndbox, &inter)) {
+                                        if (inter > intersection) {
+                                            model = k;
+                                            intersection = inter;
+                                        }
+                                    }
+                                }
+                            }
+                            // Just take the model with the best score
+                            else {
+                                // The bounding box of the model at this position
+                                Rectangle bndbox;
+                                bndbox.setX((x - pad.x()) * scale + 0.5);
+                                bndbox.setY((y - pad.y()) * scale + 0.5);
+                                bndbox.setZ((z - pad.z()) * scale + 0.5);
+                                bndbox.setWidth(models_[model].rootSize().second * scale + 0.5);
+                                bndbox.setHeight(models_[model].rootSize().first * scale + 0.5);
+                                bndbox.setDepth(models_[k].rootSize().third * scale + 0.5);
+
+                                clipBndBox(bndbox, scenes[i]);
+                                intersector(bndbox, &intersection);
+                            }
+
+                            if ((intersection > maxInter) && (zero_ || (scores[z](y, x) > maxScore))) {
+                                argModel = model;
+                                argX = x;
+                                argY = y;
+                                argZ = z;
+
+                                if (!zero_)
+                                    maxScore = scores[z](y, x);
+
+                                maxInter = intersection;
+                            }
+                        }
 					}
 				}
 			}
@@ -533,102 +615,107 @@ static inline bool operator<(const Model & a, const Model & b)
 }
 
 void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
-							  int interval, int maxNegatives,
-							  vector<pair<Model, int> > & negatives) const
+                              int interval, int maxNegatives,
+                              vector<pair<Model, int> > & negatives) const
 {
-	// Sample at most (maxNegatives - negatives.size()) negatives with a score above -1.0
+    // Sample at most (maxNegatives - negatives.size()) negatives with a score above -1.0
     if (scenes.empty() || (pad.x < 1) || (pad.y < 1) || (pad.z < 1) || (interval < 1) || (maxNegatives <= 0) ||
-		(negatives.size() >= maxNegatives)) {
-		negatives.clear();
-		cerr << "Invalid training paramters" << endl;
-		return;
-	}
-	
-	// The number of negatives already in the cache
-	const int nbCached = static_cast<int>(negatives.size());
-	
-	for (int i = 0, j = 0; i < scenes.size(); ++i) {
-		// Skip positive scenes
-		bool positive = false;
-		
-		for (int k = 0; k < scenes[i].objects().size(); ++k)
-			if (scenes[i].objects()[k].name() == name)
-				positive = true;
-		
-		if (positive)
-			continue;
-		
-		const JPEGImage image(scenes[i].filename());
-		
-		if (image.empty()) {
-			negatives.clear();
-			return;
-		}
-		
-        const HOGPyramid pyramid(image, pad, interval);
-		
-		if (pyramid.empty()) {
-			negatives.clear();
-			return;
-		}
-		
-		vector<HOGPyramid::Matrix> scores;
-		vector<Indices> argmaxes;
-		vector<vector<vector<Model::Positions> > > positions;
-		
-		if (!zero_)
-			convolve(pyramid, scores, argmaxes, &positions);
-		
-		for (int z = 0; z < pyramid.levels().size(); ++z) {
-			int rows = 0;
-			int cols = 0;
-			
-			if (!zero_) {
-				rows = static_cast<int>(scores[z].rows());
-				cols = static_cast<int>(scores[z].cols());
-			}
-			else if (z >= interval) {
-				rows = static_cast<int>(pyramid.levels()[z].rows()) - maxSize().first + 1;
-				cols = static_cast<int>(pyramid.levels()[z].cols()) - maxSize().second + 1;
-			}
-			
-			for (int y = 0; y < rows; ++y) {
-				for (int x = 0; x < cols; ++x) {
-					const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[z](y, x);
-					
-					if (zero_ || (scores[z](y, x) > -1)) {
-						Model sample;
-						
-						models_[argmax].initializeSample(pyramid, x, y, z, sample,
-														 zero_ ? 0 : &positions[argmax]);
-						
-						if (!sample.empty()) {
-							// Store all the information about the sample in the offset and
-							// deformation of its root
-							sample.parts()[0].offset(0) = i;
-							sample.parts()[0].offset(1) = z;
-							sample.parts()[0].deformation(0) = y;
-							sample.parts()[0].deformation(1) = x;
-							sample.parts()[0].deformation(2) = argmax;
-							sample.parts()[0].deformation(3) = zero_ ? 0.0 : scores[z](y, x);
-							
-							// Look if the same sample was already sampled
-							while ((j < nbCached) && (negatives[j].first < sample))
-								++j;
-							
-							// Make sure not to put the same sample twice
-							if ((j >= nbCached) || !(negatives[j].first == sample)) {
-								negatives.push_back(make_pair(sample, argmax));
-								
-								if (negatives.size() == maxNegatives)
-									return;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+            (negatives.size() >= maxNegatives)) {
+        negatives.clear();
+        cerr << "Invalid training paramters" << endl;
+        return;
+    }
+
+    // The number of negatives already in the cache
+    const int nbCached = static_cast<int>(negatives.size());
+
+    for (int i = 0, j = 0; i < scenes.size(); ++i) {
+        // Skip positive scenes
+        bool positive = false;
+
+        for (int k = 0; k < scenes[i].objects().size(); ++k)
+            if (scenes[i].objects()[k].name() == name)
+                positive = true;
+
+        if (positive)
+            continue;
+
+        const JPEGImage image(scenes[i].filename());
+
+        if (image.empty()) {
+            negatives.clear();
+            return;
+        }
+
+        const GSHOTPyramid pyramid(image, pad, interval);
+
+        if (pyramid.empty()) {
+            negatives.clear();
+            return;
+        }
+
+        vector<GSHOTPyramid::Tensor> scores;
+        vector<Indices> argmaxes;
+        vector<vector<vector<Model::Positions> > > positions;
+
+        if (!zero_)
+            convolve(pyramid, scores, argmaxes, &positions);
+
+        for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
+            int rows = 0;
+            int cols = 0;
+            int depths = 0;
+
+            if (!zero_) {
+                rows = static_cast<int>(scores[lvl].dimension(0));
+                cols = static_cast<int>(scores[lvl].dimension(1));
+                depths = static_cast<int>(scores[lvl].dimension(2));
+            }
+            else if (lvl >= interval) {
+                rows = static_cast<int>(pyramid.levels()[lvl].dimension(0)) - maxSize().first + 1;
+                cols = static_cast<int>(pyramid.levels()[lvl].dimension(1)) - maxSize().second + 1;
+                depths = static_cast<int>(pyramid.levels()[lvl].dimension(2)) - maxSize().third + 1;
+            }
+
+            for (int y = 0; y < rows; ++y) {
+                for (int x = 0; x < cols; ++x) {
+                    for (int z = 0; z < depths; ++z) {
+                        const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl](y, x);
+
+                        if (zero_ || (scores[lvl](y, x, z) > -1)) {
+                            Model sample;
+
+                            models_[argmax].initializeSample(pyramid, x, y, z, lvl, sample,
+                                                             zero_ ? 0 : &positions[argmax]);
+                            //TODO
+                            if (!sample.empty()) {
+                                // Store all the information about the sample in the offset and
+                                // deformation of its root
+                                sample.parts()[0].offset(0) = i;
+                                sample.parts()[0].offset(1) = lvl;
+                                sample.parts()[0].deformation(0) = y;
+                                sample.parts()[0].deformation(1) = x;
+                                sample.parts()[0].deformation(2) = argmax;
+                                sample.parts()[0].deformation(3) = zero_ ? 0.0 : scores[lvl](y, x);
+
+                                // Look if the same sample was already sampled
+                                while ((j < nbCached) && (negatives[j].first < sample))
+                                    ++j;
+
+                                // Make sure not to put the same sample twice
+                                if ((j >= nbCached) || !(negatives[j].first == sample)) {
+                                    negatives.push_back(make_pair(sample, argmax));
+
+                                    if (negatives.size() == maxNegatives)
+                                        return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 namespace FFLD
@@ -859,8 +946,8 @@ double Mixture::train(const vector<pair<Model, int> > & positives,
 	return l;
 }
 
-void Mixture::convolve(const HOGPyramid & pyramid,
-					   vector<vector<HOGPyramid::Matrix> > & scores,
+void Mixture::convolve(const GSHOTPyramid & pyramid,
+                       vector<vector<GSHOTPyramid::Tensor> > & scores,
 					   vector<vector<vector<Model::Positions> > > * positions) const
 {
 	if (empty() || pyramid.empty()) {
@@ -892,7 +979,7 @@ void Mixture::convolve(const HOGPyramid & pyramid,
 	const Patchwork patchwork(pyramid);
 	
 	// Convolve the patchwork with the filters
-	vector<vector<HOGPyramid::Matrix> > convolutions(filterCache_.size());
+    vector<vector<GSHOTPyramid::Tensor> > convolutions(filterCache_.size());
 	
 	patchwork.convolve(filterCache_, convolutions);
 	
@@ -917,7 +1004,7 @@ void Mixture::convolve(const HOGPyramid & pyramid,
 	// For each model
 #pragma omp parallel for
 	for (int i = 0; i < nbModels; ++i) {
-		vector<vector<HOGPyramid::Matrix> > tmp(models_[i].parts().size());
+        vector<vector<GSHOTPyramid::Tensor> > tmp(models_[i].parts().size());
 		
 		for (int j = 0; j < tmp.size(); ++j)
             tmp[j] = convolutions[offsets[i] + j];

@@ -374,9 +374,9 @@ void Model::initializeSample(const HOGPyramid & pyramid, int x, int y, int z, Mo
 	sample.bias_ = 1.0;
 }
 
-void Model::convolve(const HOGPyramid & pyramid, vector<HOGPyramid::Matrix> & scores,
+void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> & scores,
 					 vector<vector<Positions> > * positions,
-					 vector<vector<HOGPyramid::Matrix> > * convolutions) const
+                     vector<vector<GSHOTPyramid::Tensor> > * convolutions) const
 {
 	// Invalid parameters
 	if (empty() || pyramid.empty() ||
@@ -401,7 +401,7 @@ void Model::convolve(const HOGPyramid & pyramid, vector<HOGPyramid::Matrix> & sc
 	const int nbLevels = static_cast<int>(pyramid.levels().size());
 	
 	// Convolve the pyramid with all the filters
-	vector<vector<HOGPyramid::Matrix> > tmpConvolutions;
+    vector<vector<GSHOTPyramid::Tensor> > tmpConvolutions;
 	
 	if (convolutions) {
 		for (int i = 0; i < nbFilters; ++i) {

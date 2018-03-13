@@ -137,9 +137,9 @@ public:
 	/// @param[out] scores Scores for each pyramid level.
 	/// @param[out] positions Positions of each part and each pyramid level.
 	/// @param[in] Precomputed convolutions of each part and each pyramid level.
-	void convolve(const HOGPyramid & pyramid, std::vector<HOGPyramid::Matrix> & scores,
+    void convolve(const GSHOTPyramid & pyramid, std::vector<GSHOTPyramid::Tensor> & scores,
 				  std::vector<std::vector<Positions> > * positions = 0,
-				  std::vector<std::vector<HOGPyramid::Matrix> > * convolutions = 0) const;
+                  std::vector<std::vector<GSHOTPyramid::Tensor> > * convolutions = 0) const;
 	
 	/// Returns the dot product between the model and a fixed training @p sample.
 	/// @note Returns NaN if the sample and the model are not compatible.

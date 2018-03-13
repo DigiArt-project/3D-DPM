@@ -95,9 +95,13 @@ public:
 	/// level.
 	/// @param[out] positions Positions of each part of each model for each pyramid level
 	/// (<tt>models x parts x levels</tt>).
-	void convolve(const HOGPyramid & pyramid, std::vector<HOGPyramid::Matrix> & scores,
-				  std::vector<Indices> & argmaxes,
-				  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
+    ///     //Replace convolve
+    void computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> & scores,
+                             vector<Indices> & argmaxes,
+                             vector<vector<vector<Model::Positions> > > * positions) const;
+//    void convolve(const HOGPyramid & pyramid, std::vector<HOGPyramid::Matrix> & scores,
+//                  std::vector<Indices> & argmaxes,
+//                  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
 	
 	/// Caches the transformed version of the models' filters.
 	void cacheFilters() const;
@@ -120,9 +124,9 @@ private:
 	
 	// Returns the scores of the convolutions + distance transforms of the models with a pyramid of
 	// features (useful to compute the SVM margins)
-	void convolve(const HOGPyramid & pyramid,
-				  std::vector<std::vector<HOGPyramid::Matrix> > & scores,
-				  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
+    void convolve(const GSHOTPyramid & pyramid,
+                  std::vector<std::vector<GSHOTPyramid::Tensor> > & scores,
+                  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
 	
 	// Computes the size of the roots of the models
     static std::vector<Model::triple<int, int, int> > FilterSizes(int nbComponents,
