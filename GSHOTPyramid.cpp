@@ -23,8 +23,6 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         return;
     }
     
-    _descriptors = new std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >();
-    _keypoints = new std::vector<PointCloudPtr>();
     pad_ = pad;
     interval_ = interval;
     float subsections = 2;
@@ -44,71 +42,75 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     float kp_resolution;
     float descr_rad;
     pcl::UniformSampling<PointType> sampling;
-#pragma omp parallel for
-    for (int i = 0; i < interval; ++i) {
-        resolution = starting_resolution*pow(2,i-1);
-        kp_resolution = starting_kp_reso*i;
-        descr_rad = starting_descr_rad*i;
+
+    levels_.resize( interval_);
+    keypoints_.resize( interval_);
+    //TODO #pragma omp parallel for i
+    for (int i = 0; i < interval_; ++i) {
+        resolution = starting_resolution * pow(2, i-1);
+        kp_resolution = starting_kp_reso * i;
+        descr_rad = starting_descr_rad * i;
         
-        typename pcl::PointCloud<PointType>::Ptr subspace(new typename pcl::PointCloud<PointType>());
+        PointCloudPtr subspace(new PointCloudPtr());
         
         sampling.setInputCloud(input);
         sampling.setRadiusSearch (resolution);
         sampling.filter(*subspace);
         
-        pcl::getMinMax3D(*input,min,max);
-        _keypoints->push_back(this->compute_keypoints(input, kp_resolution, min, max));
-        DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->at(0),descr_rad);
+        pcl::getMinMax3D(*input, min, max);
+        keypoints_[ compute_keypoints(input, kp_resolution, min, max)];
+        DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[i], descr_rad);
         
         
-        int nb_desc_total = desc->size();
-        int nb_kpt_total = _keypoints->at(0)->size();
-        //Level* level_current = new Level(nb_desc_total,0,0);
-        Level level_current (nb_kpt_total,0,0);
+        int nb_kpt = keypoints_[i]->size();
+
+        Level level( topology[i](0), topology[i](1), topology[i](2));
+        Cell* levelCell = &level;
         //Loop over the number of keypoints available
-        for (int nb_kpt = 0; nb_kpt < nb_kpt_total; nb_kpt++){
+        for (int kpt = 0; kpt < nb_kpt; ++kpt){
             //For each keypoint, create a cell which will contain the corresponding shot descriptor
-             Cell* cell_desc = new Cell();
+            Cell cell( DescriptorSize);
             //Then for each value of the associated descriptor, fill in the cell
-            for( int k = 0; k < desc->points[nb_kpt].descriptorSize(); ++k){
-                cell_desc[k] = desc->points[nb_kpt].descriptor[k];
+            for( int k = 0; k < DescriptorSize; ++k){
+                cell.row(k) = descriptors->points[kpt].descriptor[k];
             }
            //Add the cell to the current level
-            level_current(nb_kpt,0,0) = *cell_desc;
-            //level_current->setValues({{{*cell_desc}}});
+            //TODO check the order of the cells
+            *levelCell = cell;
+            ++levelCell;
         }
         //Once the first level is done, push it to the array of level
-        levels_.push_back(level_current);
+        levels_[i] = level;
         
-        for (int j = 0; j < subsections; j++){
-            float subresolution = resolution;
-            float sub_kp_resolution = kp_resolution;
-            float sub_descr_rad = descr_rad;
+//        for (int j = 0; j < subsections; j++){
+//            float subresolution = resolution;
+//            float sub_kp_resolution = kp_resolution;
+//            float sub_descr_rad = descr_rad;
             
-            sampling.setInputCloud(input);
-            sampling.setRadiusSearch (subresolution);
-            sampling.filter(*subspace);
+//            sampling.setInputCloud(input);
+//            sampling.setRadiusSearch (subresolution);
+//            sampling.filter(*subspace);
             
-            pcl::getMinMax3D(*input,min,max);
-            _keypoints->push_back(this->compute_keypoints(input, sub_kp_resolution, min, max));
-            DescriptorsPtr desc = this->compute_descriptor(input,_keypoints->back(),sub_descr_rad);
+//            pcl::getMinMax3D(*input,min,max);
+//            keypoints_[j] = compute_keypoints(input, sub_kp_resolution, min, max);
+//            DescriptorsPtr descriptors = compute_descriptor(input,_keypoints->back(),sub_descr_rad);
             
-            int nb_desc_total = desc->size();
-            Level level_current(nb_desc_total,0,0);
-            //Loop over the number of descriptors available
-            for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
-                //For each descriptor, create a cell
-                Cell* cell_desc = new Cell();
-                //Then for each value of the current descriptor, fill in the cell
-                for( int k = 0; k < desc->points[nb_desc].descriptorSize(); ++k){
-                    cell_desc[k] = desc->points[nb_desc].descriptor[k];
-                }
-                //Add the cell to the current level
-                level_current(nb_desc,0,0) = *cell_desc;
-                //level_current->setValues({{{*cell_desc}}});
-            }
-            levels_.push_back(level_current);
-        }
+//            int nb_desc_total = desc->size();
+//            Level level_current(nb_desc_total,0,0);
+//            //Loop over the number of descriptors available
+//            for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
+//                //For each descriptor, create a cell
+//                Cell* cell_desc = new Cell();
+//                //Then for each value of the current descriptor, fill in the cell
+//                for( int k = 0; k < desc->points[nb_desc].descriptorSize(); ++k){
+//                    cell_desc[k] = desc->points[nb_desc].descriptor[k];
+//                }
+//                //Add the cell to the current level
+//                level_current(nb_desc,0,0) = *cell_desc;
+//                //level_current->setValues({{{*cell_desc}}});
+//            }
+//            levels_.push_back(level_current);
+//        }
     }
 }
 
@@ -159,12 +161,12 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
 
     for (int i = 0; i < z.rows(); ++i) {
         for (int j = 0; j < y.rows(); ++j) {
-            const Eigen::Map<const Matrix, Aligned, OuterStride<NbFeatures> >
-                mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(), y.cols() * NbFeatures);
+            const Eigen::Map<const Matrix, Aligned, OuterStride<DescriptorSize> >
+                mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(), y.cols() * DescriptorSize);
 
                 const Eigen::Map<const RowVectorXf, Aligned>
 
-                mapy(reinterpret_cast<const Scalar *>(y.row(j).data()), y.cols() * NbFeatures);
+                mapy(reinterpret_cast<const Scalar *>(y.row(j).data()), y.cols() * DescriptorSize);
 
             z.row(i).noalias() += mapy * mapx.transpose();
         }
@@ -176,7 +178,7 @@ GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
 {
     //TODO: adapt --> 352 for shot
     // Symmetric features
-    const int symmetry[NbFeatures] =
+    const int symmetry[DescriptorSize] =
     {
         9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 17, 16, 15, 14, 13, 12, 11, 10, // Contrast-sensitive
         18, 26, 25, 24, 23, 22, 21, 20, 19, // Contrast-insensitive
@@ -196,7 +198,7 @@ GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
     for (int y = 0; y < level.rows(); ++y)
         for (int x = 0; x < level.cols(); ++x)
             for (int z = 0; z < level.depths(); ++z)
-                for (int i = 0; i < NbFeatures; ++i)
+                for (int i = 0; i < DescriptorSize; ++i)
                     result(y, x, z)(i) = level(y, level.cols() - 1 - x,z)(symmetry[i]);
 
     return result;
@@ -368,7 +370,6 @@ GSHOTPyramid::compute_keypoints(pcl::PointCloud<PointType>::Ptr input, float gri
 }
 
 Eigen::Map<Matrix, Eigen::Aligned> GSHOTPyramid::Map(Level & level){
-{
     //return Eigen::Map<Matrix, Aligned>(level.data()->data(), level.rows(),level.cols() * NbFeatures);
 }
 

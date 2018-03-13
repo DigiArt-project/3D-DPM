@@ -651,7 +651,7 @@ public:
 		
 		for (int i = 0; i < models_.size(); ++i) {
 			for (int j = 0; j < models_[i].parts().size(); ++j) {
-				d += models_[i].parts()[j].filter.size() * HOGPyramid::NbFeatures; // Filter
+                d += models_[i].parts()[j].filter.size() * GSHOTPyramid::DescriptorSize; // Filter
 				
 				if (j)
 					d += 6; // Deformation

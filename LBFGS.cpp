@@ -41,9 +41,9 @@ bool LBFGS::IFunction::progress(const double * x, const double * g, int n, doubl
 }
 
 LBFGS::LBFGS(const IFunction * function, double epsilon, int maxIterations, int maxLineSearches,
-
-			 int maxHistory) : function_(function), epsilon_(epsilon),
-	maxIterations_(maxIterations), maxLineSearches_(maxLineSearches), maxHistory_(maxHistory)
+             int maxHistory) :
+    function_(function), epsilon_(epsilon), maxIterations_(maxIterations),
+    maxLineSearches_(maxLineSearches), maxHistory_(maxHistory)
 {
 	assert(!function || (function->dim() > 0));
 	assert(epsilon > 0.0);

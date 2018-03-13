@@ -37,7 +37,7 @@ namespace FFLD
         
         /// Number of HOG features (guaranteed to be even). Fixed at compile time for both ease of use
         /// and optimal performance.
-        static const int NbFeatures = 352;
+        static const int DescriptorSize = 352;
         typedef float Scalar;
 
         
@@ -68,7 +68,7 @@ namespace FFLD
         };
         
         /// Type of a pyramid level cell (fixed-size array of length NbFeatures).
-        typedef Eigen::Array<Scalar, NbFeatures, 1> Cell;
+        typedef Eigen::Array<Scalar, DescriptorSize, 1> Cell;
         
         /// Type of a pyramid level (matrix of cells).
         typedef Tensor<Cell> Level;
@@ -165,9 +165,6 @@ namespace FFLD
         PointCloudPtr
         compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max);
         
-        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;
-        // The corresponding positions of the descriptors in the space for each level
-        std::vector<typename pcl::PointCloud<PointType>::Ptr >* _keypoints;
         
         
 //        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)
@@ -180,7 +177,7 @@ namespace FFLD
         static void Convolve(const Level & x, const Level & y, Matrix & z);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
-//        std::vector<Eigen::Vector3i,Eigen::aligned_allocator<Eigen::Vector3i> > topology;
+        std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;
 //        int _octaves;
 //        float _original_resolution;
 //        int interval_;
@@ -194,7 +191,7 @@ namespace FFLD
         std::vector<Level> levels_;
         //TODO: I don't think we need it
         // The corresponding positions of the descriptors in the space for each level
-        std::vector<PointCloudPtr > _keypoints;
+        std::vector<PointCloudPtr > keypoints_;
     };
     
     /// Serializes a pyramid to a stream.
