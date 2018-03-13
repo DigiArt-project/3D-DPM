@@ -52,7 +52,7 @@ namespace FFLD
             
             Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
             row( int i) const{
-                Eigen::Matrix<Type, this->dimension(0), this->dimension(1), Eigen::RowMajor> res;
+                Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(this->dimension(0),this->dimension(1));
                 return res.setZero();
             }
 
@@ -66,7 +66,10 @@ namespace FFLD
                 return this->dimension(2);
             }
             
+           
+            
         };
+   
         
         /// Type of a pyramid level cell (fixed-size array of length NbFeatures).
         typedef Eigen::Array<Scalar, DescriptorSize, 1> Cell;
