@@ -398,9 +398,9 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
 	sample.bias_ = 1.0;
 }
 
-void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> & scores,
+void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D> & scores,
 					 vector<vector<Positions> > * positions,
-                     vector<vector<GSHOTPyramid::Tensor> > * convolutions) const
+                     vector<vector<GSHOTPyramid::Tensor3D> > * convolutions) const
 {
 	// Invalid parameters
 	if (empty() || pyramid.empty() ||
@@ -425,7 +425,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 	const int nbLevels = static_cast<int>(pyramid.levels().size());
 	
 	// Convolve the pyramid with all the filters
-    vector<vector<GSHOTPyramid::Tensor> > tmpConvolutions;
+    vector<vector<GSHOTPyramid::Tensor3D> > tmpConvolutions;
 	
 	if (convolutions) {
 		for (int i = 0; i < nbFilters; ++i) {
@@ -473,7 +473,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 				(*positions)[i][z] = Positions::Constant((*convolutions)[0][z].rows(),
 														 (*convolutions)[0][z].cols(),
 														 Position::Zero());
-			
+
 			// Add the distance transforms of the part one octave below
 			for (int y = 0; y < (*convolutions)[0][z].rows(); ++y) {
 				for (int x = 0; x < (*convolutions)[0][z].cols(); ++x) {
@@ -506,7 +506,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> 
 	//scores.swap((*convolutions)[0]);
 	
 	for (int i = 0; i < interval; ++i) {
-        scores[i] = GSHOTPyramid::Tensor();
+        scores[i] = GSHOTPyramid::Tensor3D();
 		
 		for (int j = 0; j < nbParts; ++j)
 			(*positions)[j][i] = Positions();

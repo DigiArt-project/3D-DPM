@@ -14,7 +14,7 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::Vector3i pad, int interval):
+GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval):
 pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
     if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
@@ -65,7 +65,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         int nb_kpt = keypoints_[i]->size();
         
         Level level( topology[i](0), topology[i](1), topology[i](2));
-        Cell* levelCell = &(level(0));
+        Cell* levelCell = &(level()(0));
         //Loop over the number of keypoints available
         for (int kpt = 0; kpt < nb_kpt; ++kpt){
             //For each keypoint, create a cell which will contain the corresponding shot descriptor
@@ -139,7 +139,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
 
 
-void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Scalar> >& convolutions) const
+void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3D<Scalar> >& convolutions) const
 {
    // convolutions.resize(levels_.size());
 
@@ -149,15 +149,45 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Scalar> >& convo
 }
 
 //Its a correlation not a convolution
-void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor<Scalar> & z)
+void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3D<Scalar> & z)
 {
     // Nothing to do if x is smaller than y
-    if ((x.dimension(0) < y.dimension(0)) || (x.dimension(1) < y.dimension(1) ) || (x.dimension(2) < y.dimension(2) )) {
-        z = Tensor<Scalar>(0,0,0);
+    if ((x().dimension(0) < y().dimension(0)) || (x().dimension(1) < y().dimension(1) ) || (x().dimension(2) < y().dimension(2) )) {
         return;
     }
+
+    Eigen::Tensor<float, 3, RowMajor> dx(x().dimension(0), x().dimension(1), x().dimension(2) * DescriptorSize),
+                                      dy(y().dimension(0), y().dimension(1), y().dimension(2) * DescriptorSize);
+//    Eigen::Tensor<float, 3, RowMajor> res( dx.dimension(0) - dy.dimension(0) + 1,
+//                                   dx.dimension(1) - dy.dimension(1) + 1,
+//                                   dx.dimension(2) - dy.dimension(2) + 1);
+
+    for (int i = 0; i < x().dimension(0); ++i) {
+        for (int j = 0; j < x().dimension(1); ++j) {
+            for (int k = 0; k < x().dimension(2); ++k) {
+                for (int l = 0; l < DescriptorSize; ++l) {
+                    dx(i,j, k * DescriptorSize + l) = x()(i,j,k).coeff(l);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < y().dimension(0); ++i) {
+        for (int j = 0; j < y().dimension(1); ++j) {
+            for (int k = 0; k < y().dimension(2); ++k) {
+                for (int l = 0; l < DescriptorSize; ++l) {
+                    dy(i,j, k * DescriptorSize + l) = y()(i,j,k).coeff(l);
+                }
+            }
+        }
+    }
+
+    z().resize( dx.dimension(0) - dy.dimension(0) + 1,
+              dx.dimension(1) - dy.dimension(1) + 1,
+              dx.dimension(2) - dy.dimension(2) + 1);
+
     Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
-    z = x.convolve(y, dims);
+    z() = dx.convolve(dy, dims);
 }
 
 //void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
@@ -184,35 +214,35 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor<Scalar> & z
 //}
 
 //TODO: do we need the flip function ?
-GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
-{
-    //TODO: adapt --> 352 for shot
-    // Symmetric features
-    const int symmetry[GSHOTPyramid::DescriptorSize] =
-    {
-        9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 17, 16, 15, 14, 13, 12, 11, 10, // Contrast-sensitive
-        18, 26, 25, 24, 23, 22, 21, 20, 19, // Contrast-insensitive
-        28, 27, 30, 29, // Texture
-#ifndef FFLD_HOGPYRAMID_EXTRA_FEATURES
-        31 // Truncation
-#else
-        31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // Uniform LBP
-        41, 42, 43, 44, 45, 46, // Color
-        47 // Truncation
-#endif
-    };
+//GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
+//{
+//    //TODO: adapt --> 352 for shot
+//    // Symmetric features
+//    const int symmetry[GSHOTPyramid::DescriptorSize] =
+//    {
+//        9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 17, 16, 15, 14, 13, 12, 11, 10, // Contrast-sensitive
+//        18, 26, 25, 24, 23, 22, 21, 20, 19, // Contrast-insensitive
+//        28, 27, 30, 29, // Texture
+//#ifndef FFLD_HOGPYRAMID_EXTRA_FEATURES
+//        31 // Truncation
+//#else
+//        31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // Uniform LBP
+//        41, 42, 43, 44, 45, 46, // Color
+//        47 // Truncation
+//#endif
+//    };
 
-    // Symmetric filter
-    GSHOTPyramid::Level result(level.rows(), level.cols(), level.depths());
+//    // Symmetric filter
+//    GSHOTPyramid::Level result(level.rows(), level.cols(), level.depths());
 
-    for (int y = 0; y < level.rows(); ++y)
-        for (int x = 0; x < level.cols(); ++x)
-            for (int z = 0; z < level.depths(); ++z)
-                for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                    result(y, x, z)(i) = level(y, level.cols() - 1 - x,z)(symmetry[i]);
+//    for (int y = 0; y < level.rows(); ++y)
+//        for (int x = 0; x < level.cols(); ++x)
+//            for (int z = 0; z < level.depths(); ++z)
+//                for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+//                    result(y, x, z)(i) = level(y, level.cols() - 1 - x,z)(symmetry[i]);
 
-    return result;
-}
+//    return result;
+//}
 
 
 

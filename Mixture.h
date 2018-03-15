@@ -96,7 +96,7 @@ public:
 	/// @param[out] positions Positions of each part of each model for each pyramid level
 	/// (<tt>models x parts x levels</tt>).
     ///     //Replace convolve
-    void computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> & scores,
+    void computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D> & scores,
                              vector<Indices> & argmaxes,
                              vector<vector<vector<Model::Positions> > > * positions) const;
 //    void convolve(const HOGPyramid & pyramid, std::vector<HOGPyramid::Matrix> & scores,
@@ -125,7 +125,7 @@ private:
 	// Returns the scores of the convolutions + distance transforms of the models with a pyramid of
 	// features (useful to compute the SVM margins)
     void convolve(const GSHOTPyramid & pyramid,
-                  std::vector<std::vector<GSHOTPyramid::Tensor> > & scores,
+                  std::vector<std::vector<GSHOTPyramid::Tensor3D> > & scores,
                   std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
 	
 	// Computes the size of the roots of the models

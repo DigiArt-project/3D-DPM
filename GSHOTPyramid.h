@@ -44,41 +44,112 @@ namespace FFLD
         /// Type of a matrix.
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 
-        template <typename Type>
-        struct Tensor : Eigen::Tensor<Type, 3, Eigen::RowMajor>{
-            Tensor() : Eigen::Tensor<Type, 3, Eigen::RowMajor>(0,0,0){}
-            Tensor( int s1, int s2, int s3) : Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3){}
-            //row d'une matrice --> renvoie ligne de la matrice
+//        template <typename Type>
+//        class Tensor : public Eigen::Tensor<Type, 3, Eigen::RowMajor>{
+//        public:
+////            Tensor() : Eigen::Tensor<Type, 3, Eigen::RowMajor>(0,0,0){
+//////                *this = NULL;
+////            }
+//            Tensor( int s1, int s2, int s3) : Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3){}
+//            //row d'une matrice --> renvoie ligne de la matrice
             
+//            Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+//            row( int i) const{
+//                Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(this->dimension(0),this->dimension(1));
+//                return res.setZero();
+//            }
+
+//            int rows() const{
+//                return this->dimension(0);
+//            }
+//            int cols() const {
+//                return this->dimension(1);
+//            }
+//            int depths() const{
+//                return this->dimension(2);
+//            }
+            
+//            //return a block of size (p, q, r) from point (z, y, x)
+//            Tensor<Type> block(int z, int y, int x, int p, int q, int r){
+//                Tensor<Type> t(p, q, r);
+//                for (int i = 0; i < p; ++i) {
+//                    for (int j = 0; j < q; ++j) {
+//                        for (int k = 0; k < r; ++k) {
+//                            t(i,j,k) = *this(z+i, y+j, x+k);
+//                        }
+//                    }
+//                }
+//                return t;
+//            }
+
+////            void operator=(Eigen::TensorConvolutionOp<const std::array<long int, 3ul>,
+////                           const Eigen::Tensor<float, 3, 1>,
+////                           const Eigen::Tensor<float, 3, 1> > t)
+////            {
+////                Eigen::Tensor<float, 3, Eigen::RowMajor>* tt = new Eigen::Tensor<float, 3, Eigen::RowMajor>();
+////                *tt = t;
+
+////                //tt = new Tensor<float>();
+
+//////                Pet* pPet = addPetToVet();
+//////                Dog* pDog = dynamic_cast<Dog*>(pPet);
+////                this = (Tensor<float>*)dynamic_cast<Tensor<float>*>(tt);
+////            }
+
+//            virtual ~Tensor<Type>(){
+
+//            }
+            
+//        };
+
+        template <typename Type>
+        class Tensor3D{
+        public:
+            Tensor3D() : tensor( Eigen::Tensor<Type, 3, Eigen::RowMajor>(0,0,0)){
+            }
+            Tensor3D( int s1, int s2, int s3){
+                tensor = Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3);
+            }
+            //row d'une matrice --> renvoie ligne de la matrice
+
             Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
             row( int i) const{
-                Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(this->dimension(0),this->dimension(1));
+                Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(tensor.dimension(0),tensor.dimension(1));
                 return res.setZero();
             }
 
+            Eigen::Tensor<Type, 3, Eigen::RowMajor>& operator()(){
+                return tensor;
+            }
+
+            const Eigen::Tensor<Type, 3, Eigen::RowMajor>& operator()() const{
+                return tensor;
+            }
+
             int rows() const{
-                return this->dimension(0);
+                return tensor.dimension(0);
             }
             int cols() const {
-                return this->dimension(1);
+                return tensor.dimension(1);
             }
             int depths() const{
-                return this->dimension(2);
+                return tensor.dimension(2);
             }
-            
+
             //return a block of size (p, q, r) from point (z, y, x)
-            Tensor<Type> block(int z, int y, int x, int p, int q, int r){
-                Tensor<Type> t(p, q, r);
+            Tensor3D<Type> block(int z, int y, int x, int p, int q, int r){
+                Tensor3D<Type> t(p, q, r);
                 for (int i = 0; i < p; ++i) {
                     for (int j = 0; j < q; ++j) {
                         for (int k = 0; k < r; ++k) {
-                            t(i,j,k) = *this(z+i, y+j, x+k);
+                            t(i,j,k) = tensor(z+i, y+j, x+k);
                         }
                     }
                 }
                 return t;
             }
-            
+
+            Eigen::Tensor<Type, 3, Eigen::RowMajor> tensor;
         };
    
         
@@ -86,7 +157,7 @@ namespace FFLD
         typedef Eigen::Array<Scalar, DescriptorSize, 1> Cell;
         
         /// Type of a pyramid level (matrix of cells).
-        typedef Tensor<Cell> Level;
+        typedef Tensor3D<Cell> Level;
         
         
         void test() const;
@@ -99,12 +170,12 @@ namespace FFLD
         // Copy constructor
         GSHOTPyramid(const GSHOTPyramid&);
         
-        /// Constructs a pyramid from the JPEGImage of a Scene.
+        /// Constructs a pyramid from the PointCloud of a Scene.
         /// @param[in] input The PointCloud data
         /// @param[in] pad Amount of horizontal, vertical and depth zero padding (in cells).
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::Vector3i pad, int interval = 5);
+        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
@@ -114,7 +185,7 @@ namespace FFLD
         /// in order to reduce computation and define a standard.
         /// @param[in] starting_kp_grid_reso Resolution keypoint
         /// @note TODO Need to take a container of parameters instead of the descr_rad to generalize to different descriptors.
-        GSHOTPyramid(pcl::PointCloud<PointType>::Ptr input,  int octaves, int interval,
+        GSHOTPyramid(PointCloudPtr input,  int octaves, int interval,
                      float starting_resolution, float starting_kp_grid_reso, float descr_rad);
         
         // Destructor
@@ -156,19 +227,19 @@ namespace FFLD
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
-        void convolve(const Level & filter, vector<Tensor<Scalar> >& convolutions) const;
+        void convolve(const Level & filter, vector<Tensor3D<Scalar> >& convolutions) const;
         
         /// Returns the flipped version (horizontally) of a level.
-        static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
+//        static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
         
         /// Maps a pyramid level to a simple matrix (useful to apply standard matrix operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
-        static Eigen::Map<Matrix, Eigen::Aligned> Map(Level & level);
+//        static Eigen::Map<Matrix, Eigen::Aligned> Map(Level & level);
         
         /// Maps a const pyramid level to a simple const matrix (useful to apply standard matrix
         /// operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
-        static const Eigen::Map<const Matrix, Eigen::Aligned> Map(const Level & level);
+//        static const Eigen::Map<const Matrix, Eigen::Aligned> Map(const Level & level);
         
         
         
@@ -191,7 +262,7 @@ namespace FFLD
         
 
         // Computes the 2D convolution of a pyramid level with a filter
-        static void Convolve(const Level & x, const Level & y, Tensor<Scalar> & z);
+        static void Convolve(const Level & x, const Level & y, Tensor3D<Scalar> & z);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
         std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;
