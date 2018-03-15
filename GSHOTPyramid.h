@@ -137,8 +137,8 @@ namespace FFLD
             }
 
             //return a block of size (p, q, r) from point (z, y, x)
-            Tensor3D<Type> block(int z, int y, int x, int p, int q, int r){
-                Tensor3D<Type> t(p, q, r);
+            Eigen::Tensor<Type, 3, Eigen::RowMajor>& block(int z, int y, int x, int p, int q, int r){
+                Eigen::Tensor<Type, 3, Eigen::RowMajor> t(p, q, r);
                 for (int i = 0; i < p; ++i) {
                     for (int j = 0; j < q; ++j) {
                         for (int k = 0; k < r; ++k) {
@@ -158,6 +158,9 @@ namespace FFLD
         
         /// Type of a pyramid level (matrix of cells).
         typedef Tensor3D<Cell> Level;
+
+        /// Type of a pyramid level (matrix of cells).
+        typedef Tensor3D<Scalar> Tensor3DF;
         
         
         void test() const;

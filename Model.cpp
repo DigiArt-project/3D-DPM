@@ -51,13 +51,12 @@ Model::Model(triple<int, int, int> rootSize, int nbParts, triple<int, int, int> 
 	
 	parts_.resize(nbParts + 1);
 	
-    parts_[0].filter_shot = GSHOTPyramid::Level::constant(rootSize.first, rootSize.second,GSHOTPyramid::Cell::Zero());
-    parts_[0].filter = GSHOTPyramid::Level::Constant(rootSize.first, rootSize.second,
-                                                   GSHOTPyramid::Cell::Zero());
+    parts_[0].filter = GSHOTPyramid::Level(rootSize.first, rootSize.second, rootSize.third);
+    parts_[0].filter().setValues( GSHOTPyramid::Cell::setZero());
 	
 	for (int i = 0; i < nbParts; ++i) {
-        parts_[i + 1].filter = GSHOTPyramid::Level::Constant(partSize.first, partSize.second,
-                                                           GSHOTPyramid::Cell::Zero());
+        parts_[i + 1].filter = GSHOTPyramid::Level(partSize.first, partSize.second, partSize.third);
+        parts_[i + 1].filter().setValues( GSHOTPyramid::Cell::setZero());
 		parts_[i + 1].offset.setZero();
 		parts_[i + 1].deformation.setZero();
 	}
@@ -75,6 +74,7 @@ Model::Model(const vector<Part> & parts, double bias) : parts_(parts), bias_(bia
 
 bool Model::empty() const
 {
+    //TODO
 	return !parts_[0].filter.size() && (parts_.size() == 1);
 }
 
@@ -128,7 +128,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 	
 
     GSHOTPyramid::Level root2x = GSHOTPyramid::Level(2 * root.depths(), 2 * root.rows(), 2 * root.cols());
-    root2x.setConstant( GSHOTPyramid::Cell::Zero());
+    root2x.setValues( GSHOTPyramid::Cell::setZero());
 	
     //TODO
 	// Bicubic interpolation matrix for x = y = 0.25
@@ -152,10 +152,10 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
                         const int x2 = min(max(x + j - 2, 0), static_cast<int>(root.cols()) - 1);
                         const int x1 = min(max(x + j - 1, 0), static_cast<int>(root.cols()) - 1);
                     //TODO
-                        root2x(y * 2    , x * 2    ) += bicubic[3 - i][3 - j] * root(y2, x2);
-                        root2x(y * 2    , x * 2 + 1) += bicubic[3 - i][    j] * root(y2, x1);
-                        root2x(y * 2 + 1, x * 2    ) += bicubic[    i][3 - j] * root(y1, x2);
-                        root2x(y * 2 + 1, x * 2 + 1) += bicubic[    i][    j] * root(y1, x1);
+                        root2x()(y * 2    , x * 2    ) += bicubic[3 - i][3 - j] * root()(y2, x2);
+                        root2x()(y * 2    , x * 2 + 1) += bicubic[3 - i][    j] * root()(y2, x1);
+                        root2x()(y * 2 + 1, x * 2    ) += bicubic[    i][3 - j] * root()(y1, x2);
+                        root2x()(y * 2 + 1, x * 2 + 1) += bicubic[    i][    j] * root()(y1, x1);
                     }
                 }
             }
@@ -163,17 +163,17 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 	}
 	
 	// Compute the energy of each cell
-    GSHOTPyramid::Matrix energy(root2x.depths(), root2x.rows(), root2x.cols());
+    GSHOTPyramid::Tensor3D<GSHOTPyramid::Scalar> energy(root2x.depths(), root2x.rows(), root2x.cols());
 	
     for (int z = 0; z < root2x.depths(); ++z) {
         for (int y = 0; y < root2x.rows(); ++y) {
             for (int x = 0; x < root2x.cols(); ++x) {
-                root2x(z, y, x).cwiseMax(0);
+                root2x()(z, y, x).cwiseMax(0);
 
-                energy(z, y, x) = 0;
+                energy()(z, y, x) = 0;
 
                 for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                    energy(z, y, x) += root2x(z, y, x)(i) * root2x(z, y, x)(i);
+                    energy()(z, y, x) += root2x()(z, y, x)(i) * root2x()(z, y, x)(i);
             }
         }
 	}
@@ -224,10 +224,10 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
             for (int z = 0; z < root2x.depths(); ++z) {
                 for (int y = 0; y < root2x.rows(); ++y) {
                     for (int x = 0; x < root2x.cols(); ++x) {
-                        energy(z, y, x) = 0;
+                        energy()(z, y, x) = 0;
 
                         for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                            energy(z, y, x) += root2x(z, y, x)(i) * root2x(z, y, x)(i);
+                            energy()(z, y, x) += root2x()(z, y, x)(i) * root2x()(z, y, x)(i);
                     }
                 }
 			}
@@ -276,10 +276,10 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
         for (int z = 0; z < root2x.depths(); ++z) {
             for (int y = 0; y < root2x.rows(); ++y) {
                 for (int x = 0; x < root2x.cols(); ++x) {
-                    energy(z, y, x) = 0;
+                    energy()(z, y, x) = 0;
 
                     for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                        energy(z, y, x) += root2x(z, y, x)(i) * root2x(z, y, x)(i);
+                        energy()(z, y, x) += root2x()(z, y, x)(i) * root2x()(z, y, x)(i);
                 }
             }
 		}
@@ -332,7 +332,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
 	sample.parts_.resize(nbFilters);
 	
 	// Extract the root filter
-    sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().third, rootSize().second, rootSize().first);
+    sample.parts_[0].filter() = pyramid.levels()[lvl].block(z, y, x, rootSize().first, rootSize().second, rootSize().third);
 	sample.parts_[0].offset.setZero();
 	sample.parts_[0].deformation.setZero();
 	
@@ -366,8 +366,8 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
 		}
 		
 		// Extract the part filter
-        sample.parts_[i + 1].filter = level.block(position(2), position(1), position(0), partSize().third,
-                                                  partSize().second, partSize().first);
+        sample.parts_[i + 1].filter() = level.block(position(0), position(1), position(2), partSize().first,
+                                                  partSize().second, partSize().third);
 		
 		// Set the part offset to the position
 		sample.parts_[i + 1].offset = position;
@@ -398,9 +398,9 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
 	sample.bias_ = 1.0;
 }
 
-void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D> & scores,
+void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3DF> & scores,
 					 vector<vector<Positions> > * positions,
-                     vector<vector<GSHOTPyramid::Tensor3D> > * convolutions) const
+                     vector<vector<GSHOTPyramid::Tensor3DF> > * convolutions) const
 {
 	// Invalid parameters
 	if (empty() || pyramid.empty() ||
@@ -419,13 +419,12 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 	// All the constants relative to the model and the pyramid
 	const int nbFilters = static_cast<int>(parts_.size());
 	const int nbParts = nbFilters - 1;
-	const int padx = pyramid.padx();
-	const int pady = pyramid.pady();
+    const Eigen::Vector3i pad = pyramid.pad();
 	const int interval = pyramid.interval();
 	const int nbLevels = static_cast<int>(pyramid.levels().size());
 	
 	// Convolve the pyramid with all the filters
-    vector<vector<GSHOTPyramid::Tensor3D> > tmpConvolutions;
+    vector<vector<GSHOTPyramid::Tensor3DF> > tmpConvolutions;
 	
 	if (convolutions) {
 		for (int i = 0; i < nbFilters; ++i) {
@@ -462,43 +461,48 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 	
 #ifndef FFLD_MODEL_3D
 	// For each root level in reverse order
-	for (int z = nbLevels - 1; z >= interval; --z) {
+    for (int lvl = nbLevels - 1; lvl >= interval; --lvl) {
 		// For each part
 		for (int i = 0; i < nbParts; ++i) {
 			// Transform the part one octave below
-			DT2D((*convolutions)[i + 1][z - interval], parts_[i + 1], tmp,
-				 positions ? &(*positions)[i][z - interval] : 0);
+            DT2D((*convolutions)[i + 1][lvl - interval], parts_[i + 1], tmp,
+                 positions ? &(*positions)[i][lvl - interval] : 0);
 			
 			if (positions)
-				(*positions)[i][z] = Positions::Constant((*convolutions)[0][z].rows(),
-														 (*convolutions)[0][z].cols(),
+                (*positions)[i][lvl] = Positions::Constant((*convolutions)[0][lvl].depths(),
+                                                         (*convolutions)[0][lvl].rows(),
+                                                         (*convolutions)[0][lvl].cols(),
 														 Position::Zero());
 
 			// Add the distance transforms of the part one octave below
-			for (int y = 0; y < (*convolutions)[0][z].rows(); ++y) {
-				for (int x = 0; x < (*convolutions)[0][z].cols(); ++x) {
-					const int xr = 2 * x - padx + parts_[i + 1].offset(0);
-					const int yr = 2 * y - pady + parts_[i + 1].offset(1);
-					
-					if ((xr >= 0) && (yr >= 0) &&
-						(xr < (*convolutions)[i + 1][z - interval].cols()) &&
-						(yr < (*convolutions)[i + 1][z - interval].rows())) {
-						(*convolutions)[0][z](y, x) += (*convolutions)[i + 1][z - interval](yr, xr);
-						
-						if (positions)
-							(*positions)[i][z](y, x) << (*positions)[i][z - interval](yr, xr)(0),
-														(*positions)[i][z - interval](yr, xr)(1),
-														z - interval;
-					}
-					else {
-						(*convolutions)[0][z](y, x) =
-                            -numeric_limits<GSHOTPyramid::Scalar>::infinity();
-					}
-				}
+            for (int z = 0; z < (*convolutions)[0][lvl].depths(); ++z) {
+                for (int y = 0; y < (*convolutions)[0][lvl].rows(); ++y) {
+                    for (int x = 0; x < (*convolutions)[0][lvl].cols(); ++x) {
+                        const int zr = 2 * z - pad.z + parts_[i + 1].offset(0);
+                        const int yr = 2 * y - pad.y + parts_[i + 1].offset(1);
+                        const int xr = 2 * x - pad.x + parts_[i + 1].offset(2);
+
+                        if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
+                            (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&
+                            (yr < (*convolutions)[i + 1][lvl - interval].rows()) &&
+                            (zr < (*convolutions)[i + 1][lvl - interval].depths())) {
+                            (*convolutions)[0][lvl]()(z, y, x) += (*convolutions)[i + 1][lvl - interval]()(zr, yr, xr);
+
+                            if (positions)
+                                (*positions)[i][lvl]()(z, y, x) << (*positions)[i][lvl - interval]()(zr, yr, xr)(0),
+                                                            (*positions)[i][lvl - interval]()(zr, yr, xr)(1),
+                                                            lvl - interval;
+                        }
+                        else {
+                            (*convolutions)[0][lvl](z, y, x) =
+                                -numeric_limits<GSHOTPyramid::Scalar>::infinity();
+                        }
+                    }
+                }
 			}
 			
 			if (positions)
-				(*positions)[i][z - interval] = Positions();
+                (*positions)[i][lvl - interval] = Positions();
 		}
 	}
 	
@@ -506,7 +510,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 	//scores.swap((*convolutions)[0]);
 	
 	for (int i = 0; i < interval; ++i) {
-        scores[i] = GSHOTPyramid::Tensor3D();
+        scores[i] = GSHOTPyramid::Tensor3DF();
 		
 		for (int j = 0; j < nbParts; ++j)
 			(*positions)[j][i] = Positions();
@@ -618,10 +622,11 @@ double Model::dot(const Model & sample) const
 		return numeric_limits<double>::quiet_NaN();
 	
 	for (int i = 0; i < parts_.size(); ++i) {
-		if ((parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
+        if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
+            (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
 			(parts_[i].filter.cols() != sample.parts_[i].filter.cols()))
 			return numeric_limits<double>::quiet_NaN();
-		
+        //TODO !!!!!
 		for (int y = 0; y < parts_[i].filter.rows(); ++y)
             d += GSHOTPyramid::Map(parts_[i].filter).row(y).dot(
                     GSHOTPyramid::Map(sample.parts_[i].filter).row(y));
@@ -632,7 +637,7 @@ double Model::dot(const Model & sample) const
 	
 	return d;
 }
-
+//TODO
 double Model::norm() const
 {
 	double n = 0.0;
@@ -655,13 +660,14 @@ Model & Model::operator+=(const Model & sample)
 	Model copy(*this);
 	
 	for (int i = 0; i < parts_.size(); ++i) {
-		if ((parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
+        if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
+            (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
 			(parts_[i].filter.cols() != sample.parts_[i].filter.cols())) {
 			*this = copy; // Restore the copy
 			return *this;
 		}
 		
-		parts_[i].filter += sample.parts_[i].filter;
+        parts_[i].filter() += sample.parts_[i].filter();
 		parts_[i].deformation += sample.parts_[i].deformation;
 	}
 	
@@ -678,13 +684,14 @@ Model & Model::operator-=(const Model & sample)
 	Model copy(*this);
 	
 	for (int i = 0; i < parts_.size(); ++i) {
-		if ((parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
-			(parts_[i].filter.cols() != sample.parts_[i].filter.cols())) {
+        if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
+            (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
+            (parts_[i].filter.cols() != sample.parts_[i].filter.cols())) {
 			*this = copy; // Restore the copy
 			return *this;
 		}
 		
-		parts_[i].filter -= sample.parts_[i].filter;
+        parts_[i].filter() -= sample.parts_[i].filter();
 		parts_[i].deformation -= sample.parts_[i].deformation;
 	}
 	
@@ -704,7 +711,7 @@ Model & Model::operator*=(double a)
 	
 	return *this;
 }
-
+//TODO
 Model Model::flip() const
 {
 	Model model;
@@ -864,26 +871,32 @@ ostream & FFLD::operator<<(ostream & os, const Model & model)
 	
 	// Save the parts themselves
 	for (int i = 0; i < model.parts().size(); ++i) {
-		os << model.parts()[i].filter.rows() << ' ' << model.parts()[i].filter.cols() << ' '
-           << GSHOTPyramid::DescriptorSize << ' ' << model.parts()[i].offset(0) << ' '
-		   << model.parts()[i].offset(1) << ' ' << model.parts()[i].offset(2) << ' '
+        os << model.parts()[i].filter.depths() << ' ' << model.parts()[i].filter.rows()
+           << ' ' << model.parts()[i].filter.cols() << ' ' << GSHOTPyramid::DescriptorSize
+           << ' ' << model.parts()[i].offset(0) << ' ' << model.parts()[i].offset(1)
+           << ' ' << model.parts()[i].offset(2) << ' ' << model.parts()[i].offset(3) << ' '
 		   << model.parts()[i].deformation(0) << ' ' << model.parts()[i].deformation(1) << ' '
 		   << model.parts()[i].deformation(2) << ' ' << model.parts()[i].deformation(3) << ' '
-		   << model.parts()[i].deformation(4) << ' ' << model.parts()[i].deformation(5)
+           << model.parts()[i].deformation(4) << ' ' << model.parts()[i].deformation(5) << ' '
+           << model.parts()[i].deformation(6) << ' ' << model.parts()[i].deformation(7)
 		   << endl;
 		
-		for (int y = 0; y < model.parts()[i].filter.rows(); ++y) {
-			os << model.parts()[i].filter(y, 0)(0);
-			
+        for (int z = 0; z < model.parts()[i].filter.depths(); ++z) {
+            os << model.parts()[i].filter()(z, 0, 0)(0);
             for (int j = 1; j < GSHOTPyramid::DescriptorSize; ++j)
-				os << ' ' << model.parts()[i].filter(y, 0)(j);
-			
-			for (int x = 1; x < model.parts()[i].filter.cols(); ++x)
+                os << ' ' << model.parts()[i].filter()(z, 0, 0)(j);
+
+            for (int y = 0; y < model.parts()[i].filter.rows(); ++y) {
                 for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j)
-					os << ' ' << model.parts()[i].filter(y, x)(j);
-			
-			os << endl;
-		}
+                    os << ' ' << model.parts()[i].filter()(z, y, 0)(j);
+
+                for (int x = 0; x < model.parts()[i].filter.cols(); ++x)
+                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j)
+                        os << ' ' << model.parts()[i].filter()(z, y, x)(j);
+
+                os << endl;
+            }
+        }
 	}
 	
 	return os;
@@ -904,12 +917,12 @@ istream & FFLD::operator>>(istream & is, Model & model)
 	vector<Model::Part> parts(nbParts);
 	
 	for (int i = 0; i < nbParts; ++i) {
-		int rows, cols, nbFeatures;
+        int depths, rows, cols, nbFeatures;
 		
-		is >> rows >> cols >> nbFeatures >> parts[i].offset(0) >> parts[i].offset(1)
-		   >> parts[i].offset(2) >> parts[i].deformation(0) >> parts[i].deformation(1)
+        is >> depths >> rows >> cols >> nbFeatures >> parts[i].offset(0) >> parts[i].offset(1)
+           >> parts[i].offset(2) >> parts[i].offset(3) >> parts[i].deformation(0) >> parts[i].deformation(1)
 		   >> parts[i].deformation(2) >> parts[i].deformation(3) >> parts[i].deformation(4)
-		   >> parts[i].deformation(5);
+           >> parts[i].deformation(5) >> parts[i].deformation(6) >> parts[i].deformation(7);
 		
         if (!is || (nbFeatures > GSHOTPyramid::DescriptorSize)) {
 			model = Model();
@@ -921,23 +934,25 @@ istream & FFLD::operator>>(istream & is, Model & model)
 			parts[0].offset.setZero();
 			parts[0].deformation.setZero();
 		}
-		// Always set the z offset of a part to zero
+        // Always set the lvl offset of a part to zero
 		else {
-			parts[i].offset(2) = 0;
+            parts[i].offset(3) = 0;
 		}
 		
-        parts[i].filter = GSHOTPyramid::Level::Constant(rows, cols, GSHOTPyramid::Cell::Zero());
+        parts[i].filter = GSHOTPyramid::Level(depths, rows, cols).setValues( GSHOTPyramid::Cell::Zero());
 		
-		for (int y = 0; y < rows; ++y) {
-			for (int x = 0; x < cols; ++x) {
-				for (int j = 0; j < nbFeatures; ++j)
-					is >> parts[i].filter(y, x)(j);
-				
-				// Always put the truncation feature at the end
-                if (nbFeatures < GSHOTPyramid::DescriptorSize)
-					swap(parts[i].filter(y, x)(nbFeatures - 1),
-                         parts[i].filter(y, x)(GSHOTPyramid::DescriptorSize - 1));
-			}
+        for (int z = 0; z < depths; ++z) {
+            for (int y = 0; y < rows; ++y) {
+                for (int x = 0; x < cols; ++x) {
+                    for (int j = 0; j < nbFeatures; ++j)
+                        is >> parts[i].filter()(z, y, x)(j);
+
+                    // Always put the truncation feature at the end
+                    if (nbFeatures < GSHOTPyramid::DescriptorSize)
+                        swap(parts[i].filter()(z, y, x)(nbFeatures - 1),
+                             parts[i].filter()(z, y, x)(GSHOTPyramid::DescriptorSize - 1));
+                }
+            }
 		}
 		
 		if (!is) {

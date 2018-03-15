@@ -22,7 +22,7 @@
 #ifndef FFLD_MODEL_H
 #define FFLD_MODEL_H
 #include <tuple>
-#include "HOGPyramid.h"
+//#include "HOGPyramid.h"
 #include "GSHOTPyramid.h"
 
 namespace FFLD
@@ -38,8 +38,8 @@ namespace FFLD
 class Model
 {
 public:
-	/// Type of a 3d position (x y z).
-	typedef Eigen::Vector3i Position;
+    /// Type of a 3d position (z y x lvl).
+    typedef Eigen::Vector4i Position;
 	
 	/// Type of a matrix of 3d positions.
 	typedef Eigen::Matrix<Position, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Positions;
@@ -68,7 +68,6 @@ public:
 	struct Part
 	{
         GSHOTPyramid::Level filter;
-        HOGPyramid::Level filter_hog;	///< Part filter.
 		Position offset;			///< Part offset (dx dy dz) relative to the root.
 		Deformation deformation;	///< Deformation cost (dx^2 dx dy^2 dy dz^2 dz).
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -137,9 +136,9 @@ public:
 	/// @param[out] scores Scores for each pyramid level.
 	/// @param[out] positions Positions of each part and each pyramid level.
 	/// @param[in] Precomputed convolutions of each part and each pyramid level.
-    void convolve(const GSHOTPyramid & pyramid, std::vector<GSHOTPyramid::Tensor3D> & scores,
-				  std::vector<std::vector<Positions> > * positions = 0,
-                  std::vector<std::vector<GSHOTPyramid::Tensor3D> > * convolutions = 0) const;
+    void convolve(const GSHOTPyramid & pyramid, std::vector<GSHOTPyramid::Tensor3DF> & scores,
+                  std::vector<std::vector<Positions> > * positions = 0,
+                  std::vector<std::vector<GSHOTPyramid::Tensor3DF> > * convolutions = 0) const;
 	
 	/// Returns the dot product between the model and a fixed training @p sample.
 	/// @note Returns NaN if the sample and the model are not compatible.
