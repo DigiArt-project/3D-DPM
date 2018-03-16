@@ -42,7 +42,7 @@ public:
     typedef Eigen::Vector4i Position;
 	
 	/// Type of a matrix of 3d positions.
-	typedef Eigen::Matrix<Position, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Positions;
+    typedef GSHOTPyramid::Tensor3D<Position> Positions;
 	
 	/// Type of a 3d quadratic deformation (dx^2 dx dy^2 dy dz^2 dz).
     typedef Eigen::Matrix<double, 8, 1> Deformation;
@@ -172,8 +172,10 @@ public:
 	/// @param[in] part Part from which to read the deformation cost and offset.
 	/// @param tmp Temporary matrix.
 	/// @param[out] positions Optimal position of each part for each root location.
-    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
-					 Positions * positions = 0);
+//    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
+//					 Positions * positions = 0);
+    static void DT3D(GSHOTPyramid::Tensor3DF & tensor, const Part & part, GSHOTPyramid::Tensor3DF & tmp,
+                     Positions * positions = 0);
 	
 private:
 	std::vector<Part> parts_;

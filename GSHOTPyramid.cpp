@@ -436,7 +436,7 @@ Eigen::Vector3i GSHOTPyramid::pad() const
     return pad_;
 }
 
-bool GSHOTPyramid::isEmpty() const
+bool GSHOTPyramid::empty() const
 {
     return levels_.empty();
 }

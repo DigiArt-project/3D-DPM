@@ -135,18 +135,46 @@ namespace FFLD
             int depths() const{
                 return tensor.dimension(2);
             }
+            int size() const{
+                return rows() * cols() * depths();
+            }
 
             //return a block of size (p, q, r) from point (z, y, x)
-            Eigen::Tensor<Type, 3, Eigen::RowMajor>& block(int z, int y, int x, int p, int q, int r){
-                Eigen::Tensor<Type, 3, Eigen::RowMajor> t(p, q, r);
+            Tensor3D<Type> block(int z, int y, int x, int p, int q, int r){
+                Tensor3D<Type> t(p, q, r);
                 for (int i = 0; i < p; ++i) {
                     for (int j = 0; j < q; ++j) {
                         for (int k = 0; k < r; ++k) {
-                            t(i,j,k) = tensor(z+i, y+j, x+k);
+                            t()(i,j,k) = tensor(z+i, y+j, x+k);
                         }
                     }
                 }
                 return t;
+            }
+
+            //return a block of size (p, q, r) from point (z, y, x)
+            const Tensor3D<Type> block(int z, int y, int x, int p, int q, int r) const{
+                Tensor3D<Type> t(p, q, r);
+                for (int i = 0; i < p; ++i) {
+                    for (int j = 0; j < q; ++j) {
+                        for (int k = 0; k < r; ++k) {
+                            t()(i,j,k) = tensor(z+i, y+j, x+k);
+                        }
+                    }
+                }
+                return t;
+            }
+
+            Type sum() const{
+//                double res = 0;
+//                for (int i = 0; i < depths(); ++i) {
+//                    for (int j = 0; j < rows(); ++j) {
+//                        for (int k = 0; k < cols(); ++k) {
+//                            res += tensor(i, j, k);
+//                        }
+//                    }
+//                }
+                return ((Eigen::Tensor<Type, 3, Eigen::RowMajor>)tensor.sum())(0);
             }
 
             Eigen::Tensor<Type, 3, Eigen::RowMajor> tensor;
@@ -197,7 +225,7 @@ namespace FFLD
         /** GETTERS AND SETTER **/
         
         /// Returns whether the pyramid is empty. An empty pyramid has no level.
-        bool isEmpty() const;
+        bool empty() const;
 
         Eigen::Vector3i pad() const;
         
