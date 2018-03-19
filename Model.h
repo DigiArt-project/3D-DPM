@@ -42,7 +42,7 @@ public:
     typedef Eigen::Vector4i Position;
 	
 	/// Type of a matrix of 3d positions.
-    typedef GSHOTPyramid::Tensor3D<Position> Positions;
+    typedef Tensor3D<Position> Positions;
 	
 	/// Type of a 3d quadratic deformation (dx^2 dx dy^2 dy dz^2 dz).
     typedef Eigen::Matrix<double, 8, 1> Deformation;
@@ -136,9 +136,9 @@ public:
 	/// @param[out] scores Scores for each pyramid level.
 	/// @param[out] positions Positions of each part and each pyramid level.
 	/// @param[in] Precomputed convolutions of each part and each pyramid level.
-    void convolve(const GSHOTPyramid & pyramid, std::vector<GSHOTPyramid::Tensor3DF> & scores,
+    void convolve(const GSHOTPyramid & pyramid, std::vector<Tensor3DF> & scores,
                   std::vector<std::vector<Positions> > * positions = 0,
-                  std::vector<std::vector<GSHOTPyramid::Tensor3DF> > * convolutions = 0) const;
+                  std::vector<std::vector<Tensor3DF> > * convolutions = 0) const;
 	
 	/// Returns the dot product between the model and a fixed training @p sample.
 	/// @note Returns NaN if the sample and the model are not compatible.
@@ -174,7 +174,7 @@ public:
 	/// @param[out] positions Optimal position of each part for each root location.
 //    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
 //					 Positions * positions = 0);
-    static void DT3D(GSHOTPyramid::Tensor3DF & tensor, const Part & part, GSHOTPyramid::Tensor3DF & tmp,
+    static void DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp,
                      Positions * positions = 0);
 	
 private:

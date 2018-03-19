@@ -63,7 +63,7 @@ using namespace Eigen;
             }
 
             // Compute the energy of each cell
-            GSHOTPyramid::Tensor3D<GSHOTPyramid::Scalar> energy(root2x.depths(), root2x.rows(), root2x.cols());
+            Tensor3D<GSHOTPyramid::Scalar> energy(root2x.depths(), root2x.rows(), root2x.cols());
 
             for (int z = 0; z < root2x.depths(); ++z) {
                 for (int y = 0; y < root2x.rows(); ++y) {

@@ -403,14 +403,21 @@ GSHOTPyramid::compute_keypoints(pcl::PointCloud<PointType>::Ptr input, float gri
     
     return keypoints;
 }
-/*
-Eigen::Map<Matrix, Eigen::Aligned> GSHOTPyramid::Map(Level & level){
-    //return Eigen::Map<Matrix, Aligned>(level.data()->data(), level.rows(),level.cols() * NbFeatures);
+
+Tensor3DF GSHOTPyramid::TensorMap(Level & level){
+    Tensor3DF res( level.depths(), level.rows(), level.cols() * DescriptorSize);
+    res() = Eigen::TensorMap< Eigen::Tensor< Scalar, 3, Eigen::RowMajor> >(level().data()->data(),
+                                                                          level.depths(), level.rows(),
+                                                                          level.cols() * DescriptorSize);
+    return res;
 }
 
-const Eigen::Map<const Matrix, Eigen::Aligned> GSHOTPyramid::Map(const Level & level){
-    //return Eigen::Map<const Matrix, Aligned>(level.data()->data(), level.rows(),level.cols() * NbFeatures);
-}*/
+Tensor3DF GSHOTPyramid::TensorMap(Level level){
+    const Tensor3DF res( Eigen::TensorMap< Eigen::Tensor< Scalar, 3, Eigen::RowMajor> >(level().data()->data(),
+                                                                   level.depths(), level.rows(),
+                                                                   level.cols() * DescriptorSize));
+    return res;
+}
 
 
 ///** GETTER AND SETTERS **/

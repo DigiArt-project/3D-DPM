@@ -20,6 +20,7 @@
 
 //Other
 #include "typedefs.h"
+#include "tensor3d.h"
 
 //Subsection = interval ?
 //Padding ?
@@ -102,93 +103,14 @@ namespace FFLD
             
 //        };
 
-        template <typename Type>
-        class Tensor3D{
-        public:
-            Tensor3D() : tensor( Eigen::Tensor<Type, 3, Eigen::RowMajor>(0,0,0)){
-            }
-            Tensor3D( int s1, int s2, int s3){
-                tensor = Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3);
-            }
-            //row d'une matrice --> renvoie ligne de la matrice
 
-            Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-            row( int i) const{
-                Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(tensor.dimension(0),tensor.dimension(1));
-                return res.setZero();
-            }
 
-            Eigen::Tensor<Type, 3, Eigen::RowMajor>& operator()(){
-                return tensor;
-            }
 
-            const Eigen::Tensor<Type, 3, Eigen::RowMajor>& operator()() const{
-                return tensor;
-            }
-
-            int rows() const{
-                return tensor.dimension(0);
-            }
-            int cols() const {
-                return tensor.dimension(1);
-            }
-            int depths() const{
-                return tensor.dimension(2);
-            }
-            int size() const{
-                return rows() * cols() * depths();
-            }
-
-            //return a block of size (p, q, r) from point (z, y, x)
-            Tensor3D<Type> block(int z, int y, int x, int p, int q, int r){
-                Tensor3D<Type> t(p, q, r);
-                for (int i = 0; i < p; ++i) {
-                    for (int j = 0; j < q; ++j) {
-                        for (int k = 0; k < r; ++k) {
-                            t()(i,j,k) = tensor(z+i, y+j, x+k);
-                        }
-                    }
-                }
-                return t;
-            }
-
-            //return a block of size (p, q, r) from point (z, y, x)
-            const Tensor3D<Type> block(int z, int y, int x, int p, int q, int r) const{
-                Tensor3D<Type> t(p, q, r);
-                for (int i = 0; i < p; ++i) {
-                    for (int j = 0; j < q; ++j) {
-                        for (int k = 0; k < r; ++k) {
-                            t()(i,j,k) = tensor(z+i, y+j, x+k);
-                        }
-                    }
-                }
-                return t;
-            }
-
-            Type sum() const{
-//                double res = 0;
-//                for (int i = 0; i < depths(); ++i) {
-//                    for (int j = 0; j < rows(); ++j) {
-//                        for (int k = 0; k < cols(); ++k) {
-//                            res += tensor(i, j, k);
-//                        }
-//                    }
-//                }
-                return ((Eigen::Tensor<Type, 3, Eigen::RowMajor>)tensor.sum())(0);
-            }
-
-            Eigen::Tensor<Type, 3, Eigen::RowMajor> tensor;
-        };
-   
-        
         /// Type of a pyramid level cell (fixed-size array of length NbFeatures).
         typedef Eigen::Array<Scalar, DescriptorSize, 1> Cell;
-        
-        /// Type of a pyramid level (matrix of cells).
-        typedef Tensor3D<Cell> Level;
 
         /// Type of a pyramid level (matrix of cells).
-        typedef Tensor3D<Scalar> Tensor3DF;
+        typedef Tensor3D<Cell> Level;
         
         
         void test() const;
@@ -265,12 +187,12 @@ namespace FFLD
         
         /// Maps a pyramid level to a simple matrix (useful to apply standard matrix operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
-//        static Eigen::Map<Matrix, Eigen::Aligned> Map(Level & level);
+        static Tensor3DF TensorMap(Level & level);
         
         /// Maps a const pyramid level to a simple const matrix (useful to apply standard matrix
         /// operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
-//        static const Eigen::Map<const Matrix, Eigen::Aligned> Map(const Level & level);
+        static Tensor3DF TensorMap(Level level);
         
         
         

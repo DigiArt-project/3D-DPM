@@ -9,7 +9,7 @@ using namespace std;
 using namespace Eigen;
 
 template <typename Type>
-std::ostream& operator<<(std::ostream& os, GSHOTPyramid::Tensor3D<Type> t){
+std::ostream& operator<<(std::ostream& os, Tensor3D<Type> t){
     for (int i = 0; i < t().dimension(2); ++i) {
         for (int j = 0; j < t().dimension(1); ++j) {
             for (int k = 0; k < t().dimension(0); ++k) {
@@ -31,7 +31,7 @@ public:
     //Create tensor et parcour valeur par valeur avec pointeur
     void tensorParcours(){
         int size = 3;
-        GSHOTPyramid::Tensor3D<int> level(size,size, size);
+        Tensor3D<int> level(size,size, size);
         level().setZero();
         int p = 0;
         //Row colonne depth
@@ -79,7 +79,7 @@ public:
         Eigen::Tensor<float, 3, RowMajor> res( dx.dimension(0) - dy.dimension(0) + 1,
                                        dx.dimension(1) - dy.dimension(1) + 1,
                                        dx.dimension(2) - dy.dimension(2) + 1);
-        GSHOTPyramid::Tensor3D<float> resPerso( dx.dimension(0) - dy.dimension(0) + 1,
+        Tensor3D<float> resPerso( dx.dimension(0) - dy.dimension(0) + 1,
                                        dx.dimension(1) - dy.dimension(1) + 1,
                                        dx.dimension(2) - dy.dimension(2) + 1);
 

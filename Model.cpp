@@ -167,7 +167,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
 	}
 	
 	// Compute the energy of each cell
-    GSHOTPyramid::Tensor3D<GSHOTPyramid::Scalar> energy(root2x.depths(), root2x.rows(), root2x.cols());
+    Tensor3D<GSHOTPyramid::Scalar> energy(root2x.depths(), root2x.rows(), root2x.cols());
 	
     for (int z = 0; z < root2x.depths(); ++z) {
         for (int y = 0; y < root2x.rows(); ++y) {
@@ -403,9 +403,9 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
 	sample.bias_ = 1.0;
 }
 
-void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3DF> & scores,
+void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 					 vector<vector<Positions> > * positions,
-                     vector<vector<GSHOTPyramid::Tensor3DF> > * convolutions) const
+                     vector<vector<Tensor3DF> > * convolutions) const
 {
 	// Invalid parameters
 	if (empty() || pyramid.empty() ||
@@ -429,7 +429,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 	const int nbLevels = static_cast<int>(pyramid.levels().size());
 	
 	// Convolve the pyramid with all the filters
-    vector<vector<GSHOTPyramid::Tensor3DF> > tmpConvolutions;
+    vector<vector<Tensor3DF> > tmpConvolutions;
 	
 	if (convolutions) {
 		for (int i = 0; i < nbFilters; ++i) {
@@ -462,7 +462,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 	}
 	
 	// Temporary data needed by the distance transforms
-    GSHOTPyramid::Tensor3DF tmp;
+    Tensor3DF tmp;
 	
 #ifndef FFLD_MODEL_3D
 	// For each root level in reverse order
@@ -516,7 +516,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 	//scores.swap((*convolutions)[0]);
 	
 	for (int i = 0; i < interval; ++i) {
-        scores[i] = GSHOTPyramid::Tensor3DF();
+        scores[i] = Tensor3DF();
 		
 		for (int j = 0; j < nbParts; ++j)
 			(*positions)[j][i] = Positions();
@@ -527,7 +527,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 #pragma omp parallel for
         for (int i = interval; i < nbLevels; ++i){
 //			scores[i].array() += bias_;
-            GSHOTPyramid::Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
+            Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
             biasTensor().setConstant( bias_);
             scores[i]() += biasTensor();
         }
@@ -626,24 +626,48 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor3D
 
 double Model::dot(const Model & sample) const
 {
-	double d = bias_ * sample.bias_;
+    double d = bias_ * sample.bias_;
+
+
+
+    if (parts_.size() != sample.parts_.size())
+        return numeric_limits<double>::quiet_NaN();
+
+    for (int i = 0; i < parts_.size(); ++i) {
+        if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
+            (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
+            (parts_[i].filter.cols() != sample.parts_[i].filter.cols()))
+            return numeric_limits<double>::quiet_NaN();
+
+        for (int z = 0; z < parts_[i].filter.depths(); ++z){
+            for (int y = 0; y < parts_[i].filter.rows(); ++y){
+                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
+                            GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
+            }
+        }
+
+        if (i) d += parts_[i].deformation.dot(sample.parts_[i].deformation);
+    }
 	
-//	if (parts_.size() != sample.parts_.size())
-//		return numeric_limits<double>::quiet_NaN();
+    if (parts_.size() != sample.parts_.size())
+        return numeric_limits<double>::quiet_NaN();
 	
-//	for (int i = 0; i < parts_.size(); ++i) {
-//        if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
-//            (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
-//			(parts_[i].filter.cols() != sample.parts_[i].filter.cols()))
-//			return numeric_limits<double>::quiet_NaN();
-//        //TODO !!!!!
-//		for (int y = 0; y < parts_[i].filter.rows(); ++y)
-//            d += GSHOTPyramid::Map(parts_[i].filter).row(y).dot(
-//                    GSHOTPyramid::Map(sample.parts_[i].filter).row(y));
+    for (int i = 0; i < parts_.size(); ++i) {
+        if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
+            (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
+            (parts_[i].filter.cols() != sample.parts_[i].filter.cols()))
+            return numeric_limits<double>::quiet_NaN();
+
+        for (int z = 0; z < parts_[i].filter.depths(); ++z){
+            for (int y = 0; y < parts_[i].filter.rows(); ++y){
+                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
+                        GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
+            }
+        }
 		
-//		if (i)
-//			d += parts_[i].deformation.dot(sample.parts_[i].deformation);
-//	}
+        if (i)
+            d += parts_[i].deformation.dot(sample.parts_[i].deformation);
+    }
 	
 	return d;
 }
@@ -652,12 +676,12 @@ double Model::norm() const
 {
 	double n = 0.0;
 	
-//	for (int i = 0; i < parts_.size(); ++i) {
-//        n += GSHOTPyramid::Map(parts_[i].filter).squaredNorm();
+//    for (int i = 0; i < parts_.size(); ++i) {
+//        n += GSHOTPyramid::TensorMap(parts_[i].filter).squaredNorm();
 		
-//		if (i)
-//			n += 10.0 * parts_[i].deformation.squaredNorm();
-//	}
+//        if (i)
+//            n += 10.0 * parts_[i].deformation.squaredNorm();
+//    }
 	
 	return sqrt(n);
 }
@@ -716,7 +740,7 @@ Model & Model::operator*=(double a)
 //        GSHOTPyramid::Map(parts_[i].filter) *= a;
 //		parts_[i].deformation *= a;
 //	}
-	
+
 //	bias_ *= a;
 	
 	return *this;
@@ -816,7 +840,7 @@ static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * 
 	}
 }
 
-void Model::DT3D(GSHOTPyramid::Tensor3DF & tensor, const Part & part, GSHOTPyramid::Tensor3DF & tmp,
+void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp,
                  Positions * positions)
 {
 //    // Nothing to do if the matrix is empty
@@ -1013,7 +1037,7 @@ istream & FFLD::operator>>(istream & is, Model & model)
         for (int z = 0; z < depths; ++z) {
             for (int y = 0; y < rows; ++y) {
                 for (int x = 0; x < cols; ++x) {
-                    for (int j = 0; j < nbFeatures; ++j)
+                    for (int j = 0; j < nbFeaturMapes; ++j)
                         is >> parts[i].filter()(z, y, x)(j);
 
                     // Always put the truncation feature at the end
