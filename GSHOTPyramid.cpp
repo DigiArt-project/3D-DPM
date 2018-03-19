@@ -14,7 +14,7 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval):
+GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval, float starting_resolution):
 pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
     if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
@@ -24,22 +24,18 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     
     pad_ = pad;
     interval_ = interval;
-    float subsections = 2;
-    
-    //const int maxScale = (subsections+1) * (interval+1);
-    //levels_.resize(maxScale + 1);
+
     
     PointType min;
     PointType max;
     
     
     //Exemple of starting resolution
-    float starting_resolution = 0.05;
-    float starting_kp_reso = 0.2;
-    float starting_descr_rad = 0.4;
+//    float starting_kp_reso = 0.2;
+//    float starting_descr_rad = 0.4;
     float resolution;
-    float kp_resolution;
-    float descr_rad;
+//    float kp_resolution;
+//    float descr_rad;
     pcl::UniformSampling<PointType> sampling;
 
     levels_.resize( interval_);
@@ -47,9 +43,9 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     
     //TODO #pragma omp parallel for i
     for (int i = 0; i < interval_; ++i) {
-        resolution = starting_resolution * pow(2, i-1);
-        kp_resolution = starting_kp_reso * i;
-        descr_rad = starting_descr_rad * i;
+        resolution = starting_resolution * pow(2.0, -static_cast<double>(i) / interval);
+//        resolution = starting_resolution * pow(2, i-1);
+//        descr_rad = starting_descr_rad * (i+1);
         
         PointCloudPtr subspace(new PointCloudT());
         
@@ -57,9 +53,10 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         sampling.setRadiusSearch (resolution);
         sampling.filter(*subspace);
         
-        pcl::getMinMax3D(*input, min, max);
-        keypoints_[i] = compute_keypoints(input, kp_resolution, min, max);
-        DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[i], descr_rad);
+        pcl::getMinMax3D(*subspace, min, max);
+        keypoints_[i] = compute_keypoints(subspace, resolution, min, max);
+//        cout << keypoints_[i]->width << endl;
+        DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[i], resolution);
         
         
         int nb_kpt = keypoints_[i]->size();
@@ -81,62 +78,9 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         }
         //Once the first level is done, push it to the array of level
         levels_[i] = level;
-        
-//        for (int j = 0; j < subsections; j++){
-//            float subresolution = resolution;
-//            float sub_kp_resolution = kp_resolution;
-//            float sub_descr_rad = descr_rad;
-            
-//            sampling.setInputCloud(input);
-//            sampling.setRadiusSearch (subresolution);
-//            sampling.filter(*subspace);
-            
-//            pcl::getMinMax3D(*input,min,max);
-//            keypoints_[j] = compute_keypoints(input, sub_kp_resolution, min, max);
-//            DescriptorsPtr descriptors = compute_descriptor(input,_keypoints->back(),sub_descr_rad);
-            
-//            int nb_desc_total = desc->size();
-//            Level level_current(nb_desc_total,0,0);
-//            //Loop over the number of descriptors available
-//            for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
-//                //For each descriptor, create a cell
-//                Cell* cell_desc = new Cell();
-//                //Then for each value of the current descriptor, fill in the cell
-//                for( int k = 0; k < desc->points[nb_desc].descriptorSize(); ++k){
-//                    cell_desc[k] = desc->points[nb_desc].descriptor[k];
-//                }
-//                //Add the cell to the current level
-//                level_current(nb_desc,0,0) = *cell_desc;
-//                //level_current->setValues({{{*cell_desc}}});
-//            }
-//            levels_.push_back(level_current);
-//        }
+
     }
 }
-
-//void GSHOTPyramid::test() const
-//{
-
-//    //Tensor = pile de matrice
-//    //Init array of float 32 x 1
-//    ArrayXf a = ArrayXf::Random(32,1);
-//    //Type,row,col
-//    //Create a cell with the array created before, corresponding to descriptors
-//    Eigen::Array<float, 32, 1> cell_test(a);
-//    std::cout << cell_test.size() << std::endl;
-//    //Rank 1 row = 2 col = 2
-//    //Ligne colomne et depth
-//    Tensor<Eigen::Array<float, 32, 1> > Level(2,2,2);
-//    Level.setValues({{{cell_test, cell_test}, {cell_test, cell_test}},
-//        {{cell_test, cell_test}, {cell_test, cell_test}}
-//    });
-
-//    // Result is a zero dimension tensor
-
-//    //m_Level
-//}
-
-
 
 
 void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3D<Scalar> >& convolutions) const
@@ -337,12 +281,12 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3D<Scalar> &
     
 //}
 
-//GSHOTPyramid::~GSHOTPyramid()
-//{
-//    _descriptors->clear();
-//    _keypoints->clear();
+GSHOTPyramid::~GSHOTPyramid()
+{
+//    descriptors_->clear();
+//    keypoints_.clear();
 //    height_ = 0;
-//}
+}
 
 
 /*
@@ -370,8 +314,8 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     return descriptors;
 }
 
-pcl::PointCloud<PointType>::Ptr
-GSHOTPyramid::compute_keypoints(pcl::PointCloud<PointType>::Ptr input, float grid_reso, PointType min, PointType max){
+PointCloudPtr
+GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max){
     
     int pt_nb_x = (int)((max.x-min.x)/grid_reso+1);
     int pt_nb_y = (int)((max.y-min.y)/grid_reso+1);
@@ -381,22 +325,21 @@ GSHOTPyramid::compute_keypoints(pcl::PointCloud<PointType>::Ptr input, float gri
     Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_x, pt_nb_y, pt_nb_z);
     topology.push_back(topo);
     
-    typename pcl::PointCloud<PointType>::Ptr keypoints (new pcl::PointCloud<PointType> (pt_nb,1,PointType()));
+    PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
     
-    unsigned int i;
+
 #if defined(_OPENMP)
 #pragma omp parallel for num_threads(omp_get_max_threads())
 #endif
-    for(i=0;i<pt_nb_x;i++){
-        unsigned int j;
-        for(j=0;j<pt_nb_y;j++){
-            unsigned int k;
-            for(k=0;k<pt_nb_z;k++){
+    for(int i=0;i<pt_nb_z;++i){
+        for(int j=0;j<pt_nb_y;++j){
+            for(int k=0;k<pt_nb_x;++k){
                 PointType p = PointType();
-                p.x = min.x + i*grid_reso;
+                p.x = min.x + k*grid_reso;
                 p.y = min.y + j*grid_reso;
-                p.z = min.z + k*grid_reso;
-                keypoints->at(pt_nb_y*pt_nb_z*i + pt_nb_z*j + k) = p;
+                p.z = min.z + i*grid_reso;
+                keypoints->at(k + j * pt_nb_x + i * pt_nb_y * pt_nb_x) = p;
+//                cout << k + j * pt_nb_x + i * pt_nb_y * pt_nb_x << " / " << pt_nb << endl;
             }
         }
     }

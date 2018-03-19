@@ -40,7 +40,7 @@ public:
 	
 	/// Constructs a mixture from parameters.
 	/// @param[in] models A list of models (mixture components).
-	explicit Mixture(const std::vector<Model> & models);
+    explicit Mixture(const std::vector<Model> & models);
 	
 	/// Constructs a mixture with the specified number of mixture components. The sizes of the
 	/// models are determined from the sizes of the objects using Felzenszwalb's heuristic.
@@ -96,7 +96,7 @@ public:
 	/// @param[out] positions Positions of each part of each model for each pyramid level
 	/// (<tt>models x parts x levels</tt>).
     ///     //Replace convolve
-    void computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3D> & scores,
+    void computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                              vector<Indices> & argmaxes,
                              vector<vector<vector<Model::Positions> > > * positions) const;
 //    void convolve(const HOGPyramid & pyramid, std::vector<HOGPyramid::Matrix> & scores,
@@ -125,7 +125,7 @@ private:
 	// Returns the scores of the convolutions + distance transforms of the models with a pyramid of
 	// features (useful to compute the SVM margins)
     void convolve(const GSHOTPyramid & pyramid,
-                  std::vector<std::vector<Tensor3D> > & scores,
+                  std::vector<std::vector<Tensor3DF> > & scores,
                   std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
 	
 	// Computes the size of the roots of the models

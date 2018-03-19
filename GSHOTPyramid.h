@@ -78,7 +78,7 @@ namespace FFLD
 //                        for (int k = 0; k < r; ++k) {
 //                            t(i,j,k) = *this(z+i, y+j, x+k);
 //                        }
-//                    }
+//                    }~/slsvm/Quentin/Code/DB_Builder/data/positive_1.pcd
 //                }
 //                return t;
 //            }
@@ -128,7 +128,7 @@ namespace FFLD
         /// @param[in] pad Amount of horizontal, vertical and depth zero padding (in cells).
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5);
+        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5, float starting_resolution = 0.1);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data

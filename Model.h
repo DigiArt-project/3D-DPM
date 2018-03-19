@@ -130,6 +130,7 @@ public:
     void initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, int lvl, Model & sample,
 						  const std::vector<std::vector<Positions> > * positions = 0) const;
 	
+    //Detection, energy computation
 	/// Returns the scores of the convolutions + distance transforms of the parts with a pyramid of
 	/// features.
 	/// @param[in] pyramid Pyramid of features.
@@ -140,6 +141,7 @@ public:
                   std::vector<std::vector<Positions> > * positions = 0,
                   std::vector<std::vector<Tensor3DF> > * convolutions = 0) const;
 	
+    //Similarity in the optimization process of the SVM
 	/// Returns the dot product between the model and a fixed training @p sample.
 	/// @note Returns NaN if the sample and the model are not compatible.
 	/// @note Do not compute dot products between two models or between two samples.

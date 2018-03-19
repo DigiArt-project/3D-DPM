@@ -1037,7 +1037,7 @@ istream & FFLD::operator>>(istream & is, Model & model)
         for (int z = 0; z < depths; ++z) {
             for (int y = 0; y < rows; ++y) {
                 for (int x = 0; x < cols; ++x) {
-                    for (int j = 0; j < nbFeaturMapes; ++j)
+                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j)
                         is >> parts[i].filter()(z, y, x)(j);
 
                     // Always put the truncation feature at the end
