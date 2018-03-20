@@ -181,6 +181,32 @@ Eigen::Vector3f Rectangle::bottomBackRight() const{
     return this->bottomBackRight_;
 }
 
+void Rectangle::setTopFrontLeft(Eigen::Vector3f pt){
+    this->topFrontLeft_ = pt;
+}
+void Rectangle::settopFrontRight(Eigen::Vector3f pt){
+    this->topFrontRight_ = pt;
+}
+void Rectangle::setTopBackLeft(Eigen::Vector3f pt){
+    this->topBackLeft_ = pt;
+}
+void Rectangle::setTopBackRight(Eigen::Vector3f pt){
+    this->topBackRight_ = pt;
+}
+
+void Rectangle::bottomFrontLeft(Eigen::Vector3f pt){
+    this->bottomFrontLeft_ = pt;
+}
+void Rectangle::bottomFrontRight(Eigen::Vector3f pt){
+    this->bottomFrontRight_ = pt;
+}
+void Rectangle::bottomBackLeft(Eigen::Vector3f pt){
+    this->bottomBackLeft_ = pt;
+}
+void Rectangle::bottomBackRight(Eigen::Vector3f pt){
+    this->bottomBackRight_ = pt;
+}
+
 
 bool Rectangle::empty() const
 {
