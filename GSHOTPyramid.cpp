@@ -55,7 +55,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         
         pcl::getMinMax3D(*subspace, min, max);
         keypoints_[i] = compute_keypoints(subspace, resolution, min, max);
-//        cout << keypoints_[i]->width << endl;
+        cout << keypoints_[i]->width << endl;
         DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[i], resolution);
         
         
@@ -83,9 +83,9 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 }
 
 
-void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3D<Scalar> >& convolutions) const
+void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutions) const
 {
-   // convolutions.resize(levels_.size());
+    convolutions.resize(levels_.size());
 
 #pragma omp parallel for
     for (int i = 0; i < levels_.size(); ++i)
@@ -93,7 +93,7 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3D<Scalar> >& con
 }
 
 //Its a correlation not a convolution
-void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3D<Scalar> & z)
+void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3DF & z)
 {
     // Nothing to do if x is smaller than y
     if ((x().dimension(0) < y().dimension(0)) || (x().dimension(1) < y().dimension(1) ) || (x().dimension(2) < y().dimension(2) )) {
@@ -310,6 +310,16 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     descr_est.setInputNormals (normals);
     descr_est.setSearchSurface (input);
     descr_est.compute (*descriptors);
+
+    for (size_t i = 0; i < descriptors->size(); ++i){
+        for (size_t j = 0; j < DescriptorType::descriptorSize(); ++j){
+
+            if (pcl_isnan(descriptors->points[i].descriptor[j])){
+                descriptors->points[i].descriptor[j] = 0;
+            }
+        }
+
+    }
     
     return descriptors;
 }

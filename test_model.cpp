@@ -31,9 +31,9 @@ int main(){
 
     Eigen::Vector3i pad(1,1,1);
     Model::triple<int,int,int> rootSize(5,5,5);
+    Model::triple<int,int,int>partSize( 10,10,10);
     Model model( rootSize);
-    //TODO
-//    model.initializeParts( 2, Model::triple<int,int,int>( 2,2,2));
+
 
     Model sample;
     PointCloudPtr cloud(new PointCloudT);
@@ -44,12 +44,20 @@ int main(){
     GSHOTPyramid scenePyramid(cloud, pad);
     model.initializeSample(scenePyramid, x, y, z, lvl,sample);
 
-//    cout<< sample <<endl;
-    cout<< cloud->size() <<endl;
-    vector<Tensor3DF> scores;
+    cout<< scenePyramid.levels()[1].size() <<endl;
+
+    GSHOTPyramid::Level root2x = scenePyramid.levels()[1];
+
+
+     model.initializeParts( 2, partSize, root2x);
+
+//    cout<< cloud->size() <<endl;
+    vector<Tensor3DF> scores(5);
+
+    //TODO
     sample.convolve(scenePyramid, scores);
 
-    cout<< "score : "<<scores[0]()<<endl;
+    cout<< "score : "<<scores[0].size()<<endl;
     
     return 0;
 }

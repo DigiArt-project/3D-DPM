@@ -30,78 +30,6 @@
 typedef float Scalar;
 
 template <typename Type>
-class Tensor3DBase{
-//public:
-//    //row d'une matrice --> renvoie ligne de la matrice
-//    Eigen::Matrix< Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> row( int i) const{
-//        Eigen::Matrix< Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(tensor.dimension(0),tensor.dimension(1));
-//        return res.setZero();
-//    }
-
-//    Eigen::Tensor< Type, 3, Eigen::RowMajor>& operator()(){
-//        return tensor;
-//    }
-
-//    const Eigen::Tensor< Type, 3, Eigen::RowMajor>& operator()() const{
-//        return tensor;
-//    }
-
-//    int rows() const{
-//        return tensor.dimension(0);
-//    }
-//    int cols() const {
-//        return tensor.dimension(1);
-//    }
-//    int depths() const{
-//        return tensor.dimension(2);
-//    }
-//    int size() const{
-//        return tensor.size();//rows() * cols() * depths();
-//    }
-
-//    //TODO replace by TensorMap
-//    //return a block of size (p, q, r) from point (z, y, x)
-//    Tensor3D< Type> block(int z, int y, int x, int p, int q, int r){
-//        Tensor3D< Type> t(p, q, r);
-//        for (int i = 0; i < p; ++i) {
-//            for (int j = 0; j < q; ++j) {
-//                for (int k = 0; k < r; ++k) {
-//                    t()(i,j,k) = tensor(z+i, y+j, x+k);
-//                }
-//            }
-//        }
-//        return t;
-//    }
-
-//    //return a block of size (p, q, r) from point (z, y, x)
-//    const Tensor3D< Type> block(int z, int y, int x, int p, int q, int r) const{
-//        Tensor3D< Type> t(p, q, r);
-//        for (int i = 0; i < p; ++i) {
-//            for (int j = 0; j < q; ++j) {
-//                for (int k = 0; k < r; ++k) {
-//                    t()(i,j,k) = tensor(z+i, y+j, x+k);
-//                }
-//            }
-//        }
-//        return t;
-//    }
-
-//     Type sum() const{
-//    //                double res = 0;
-//    //                for (int i = 0; i < depths(); ++i) {
-//    //                    for (int j = 0; j < rows(); ++j) {
-//    //                        for (int k = 0; k < cols(); ++k) {
-//    //                            res += tensor(i, j, k);
-//    //                        }
-//    //                    }
-//    //                }
-//        return ((Eigen::Tensor< Type, 3, Eigen::RowMajor>)tensor.sum())(0);
-//    }
-
-//    Eigen::Tensor<Type, 3, Eigen::RowMajor> tensor;
-};
-
-template <typename Type>
 class Tensor3D{
 public:
     Tensor3D() : tensor( Eigen::Tensor< Type, 3, Eigen::RowMajor>(0,0,0))
@@ -126,13 +54,13 @@ public:
     }
 
     int rows() const{
-        return tensor.dimension(0);
-    }
-    int cols() const {
         return tensor.dimension(1);
     }
-    int depths() const{
+    int cols() const {
         return tensor.dimension(2);
+    }
+    int depths() const{
+        return tensor.dimension(0);
     }
     int size() const{
         return tensor.size();//rows() * cols() * depths();
@@ -174,17 +102,19 @@ public:
         return res;
     }
 
-     Type sum() const{
-    //                double res = 0;
-    //                for (int i = 0; i < depths(); ++i) {
-    //                    for (int j = 0; j < rows(); ++j) {
-    //                        for (int k = 0; k < cols(); ++k) {
-    //                            res += tensor(i, j, k);
-    //                        }
-    //                    }
-    //                }
-        return ((Eigen::Tensor< Type, 3, Eigen::RowMajor>)tensor.sum())(0);
+    //TODO
+    Type sum() const{
+                    Type res = 0;
+                    for (int i = 0; i < depths(); ++i) {
+                        for (int j = 0; j < rows(); ++j) {
+                            for (int k = 0; k < cols(); ++k) {
+                                res += tensor(i, j, k);
+                            }
+                        }
+                    }
+        return res;//((Eigen::Tensor< Type, 3, Eigen::RowMajor>)tensor.sum())(0);
     }
+
 
     Eigen::Tensor<Type, 3, Eigen::RowMajor> tensor;
 };

@@ -45,67 +45,6 @@ namespace FFLD
         /// Type of a matrix.
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 
-//        template <typename Type>
-//        class Tensor : public Eigen::Tensor<Type, 3, Eigen::RowMajor>{
-//        public:
-////            Tensor() : Eigen::Tensor<Type, 3, Eigen::RowMajor>(0,0,0){
-//////                *this = NULL;
-////            }
-//            Tensor( int s1, int s2, int s3) : Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3){}
-//            //row d'une matrice --> renvoie ligne de la matrice
-            
-//            Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-//            row( int i) const{
-//                Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(this->dimension(0),this->dimension(1));
-//                return res.setZero();
-//            }
-
-//            int rows() const{
-//                return this->dimension(0);
-//            }
-//            int cols() const {
-//                return this->dimension(1);
-//            }
-//            int depths() const{
-//                return this->dimension(2);
-//            }
-            
-//            //return a block of size (p, q, r) from point (z, y, x)
-//            Tensor<Type> block(int z, int y, int x, int p, int q, int r){
-//                Tensor<Type> t(p, q, r);
-//                for (int i = 0; i < p; ++i) {
-//                    for (int j = 0; j < q; ++j) {
-//                        for (int k = 0; k < r; ++k) {
-//                            t(i,j,k) = *this(z+i, y+j, x+k);
-//                        }
-//                    }~/slsvm/Quentin/Code/DB_Builder/data/positive_1.pcd
-//                }
-//                return t;
-//            }
-
-////            void operator=(Eigen::TensorConvolutionOp<const std::array<long int, 3ul>,
-////                           const Eigen::Tensor<float, 3, 1>,
-////                           const Eigen::Tensor<float, 3, 1> > t)
-////            {
-////                Eigen::Tensor<float, 3, Eigen::RowMajor>* tt = new Eigen::Tensor<float, 3, Eigen::RowMajor>();
-////                *tt = t;
-
-////                //tt = new Tensor<float>();
-
-//////                Pet* pPet = addPetToVet();
-//////                Dog* pDog = dynamic_cast<Dog*>(pPet);
-////                this = (Tensor<float>*)dynamic_cast<Tensor<float>*>(tt);
-////            }
-
-//            virtual ~Tensor<Type>(){
-
-//            }
-            
-//        };
-
-
-
-
         /// Type of a pyramid level cell (fixed-size array of length NbFeatures).
         typedef Eigen::Array<Scalar, DescriptorSize, 1> Cell;
 
@@ -180,7 +119,7 @@ namespace FFLD
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
-        void convolve(const Level & filter, vector<Tensor3D<Scalar> >& convolutions) const;
+        void convolve(const Level & filter, vector<Tensor3DF >& convolutions) const;
         
         /// Returns the flipped version (horizontally) of a level.
 //        static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
