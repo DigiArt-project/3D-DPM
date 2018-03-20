@@ -62,90 +62,62 @@ public:
 	
 	/// Sets the x coordinate of the rectangle to @p x.
     void setX(int x);
-    
     void setY(int y);
-    
     void setZ(int z);
 
 
 	/// Returns the width of the rectangle.
     float width() const;
-	
 	/// Sets the height of the rectangle to the given @p width.
     void setWidth(float width);
 	
 	/// Returns the height of the rectangle.
     float height() const;
-	
 	/// Sets the height of the rectangle to the given @p height.
     void setHeight(float height);
     
+    //Return the depth of the rectangle
+    float depth() const ;
     /// Sets the depth of the rectangle to the given @p depth.
     void setDepth(float depth);
     
-    //Return the depth of the rectangle
-    float depth() const ;
-    
     /// Returns whether the rectangle is empty. An empty rectangle has no volume.
-    bool empty() const;
+    bool isEmpty() const;
     
     /// Returns the volume of the rectangle.
     /// @note Equivalent to max(width(), 0) * max(height(), 0)* max(depth(), 0).
     float volume() const;
-    
     void setVolume(float volume);
     
-	/// Returns the left side of the rectangle.
-	/// @note Equivalent to x().
-    float left() const;
-	
-	/// Sets the left side of the rectangle to @p left.
-	/// @note The right side of the rectangle is not modified.
-    void setLeft(int left);
-	
-	/// Returns the top side of the rectangle.
-	/// @note Equivalent to y().
-    float top() const;
-	
-	/// Sets the top side of the rectangle to @p top.
-	/// @note The bottom side of the rectangle is not modified.
-    void setTop(int top);
-	
-	/// Returns the right side of the rectangle.
-	/// @note Equivalent to x() + width() - 1.
-    float right() const;
-	
-	/// Sets the right side of the rectangle to @p right.
-	/// @note The left side of the rectangle is not modified.
-    void setRight(int right);
-	
-	/// Returns the bottom side of the rectangle.
-	/// @note Equivalent to y() + height() - 1.
-    float bottom() const;
-	
-	/// Sets the bottom side of the rectangle to @p bottom.
-	/// @note The top side of the rectangle is not modified.
-    void setBottom(int bottom);
 
-    /// Returns the back top side of the rectangle.
-    /// @note Equivalent to top() + depth() - 1.
-    float backTop() const;
-    /// Sets the back top side of the rectangle to @p backtop.
-    void setBackTop(int backT);
+    Eigen::Vector3f topFrontLeft() const;
+    Eigen::Vector3f topFrontRight() const;
+    Eigen::Vector3f topBackLeft() const;
+    Eigen::Vector3f topBackRight() const;
     
-    /// Returns the back bottom side of the rectangle.
-    /// @note Equivalent to bottom() + depth() - 1.
-    float backBottom() const;
-    /// Sets the back top side of the rectangle to @p backtop.
-    void setBackBottom(int backB);
+    Eigen::Vector3f bottomFrontLeft() const;
+    Eigen::Vector3f bottomFrontRight() const;
+    Eigen::Vector3f bottomBackLeft() const;
+    Eigen::Vector3f bottomBackRight() const;
+        
     
-  
+    void toString() const;
+    
+    void changeToPclCoordinateSystem();
 
 	
 private:
     int x_;
     int y_;
     int z_;
+    Eigen::Vector3f topFrontLeft_;
+    Eigen::Vector3f topFrontRight_;
+    Eigen::Vector3f topBackLeft_;
+    Eigen::Vector3f topBackRight_;
+    Eigen::Vector3f bottomFrontLeft_;
+    Eigen::Vector3f bottomFrontRight_;
+    Eigen::Vector3f bottomBackLeft_;
+    Eigen::Vector3f bottomBackRight_;
     float width_;
     float height_;
     float depth_;
