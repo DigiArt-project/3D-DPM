@@ -51,40 +51,36 @@ public:
 	{
 		if (score)
 			*score = 0.0;
-		
-        const int left = std::max(reference_.left(), rect.left());
-        const int right = std::min(reference_.right(), rect.right());
+		const int topFrontLeftX = std::max(reference_.topFrontLeft().x(), rect.topFrontLeft().x());
+        const int topFrontRightX = std::min(reference_.topFrontRight().x(), rect.topFrontRight().x());
         const int depth = std::min(reference_.depth(), rect.depth());
         
-        if (right < left)
+        if (topFrontRightX < topFrontLeftX)
             return false;
         
-        const int top = std::max(reference_.top(), rect.top());
-        const int bottom = std::min(reference_.bottom(), rect.bottom());
+        const int topFrontLeftY = std::max(reference_.topFrontLeft().y(), rect.topFrontLeft().y());
+        const int bottomFrontLeftY = std::min(reference_.bottomFrontLeft().y(), rect.bottomFrontLeft().y());
         
-        if (bottom < top)
+        if (bottomFrontLeftY < topFrontLeftY)
             return false;
         
-        const int front = std::max(reference_.top(), rect.top());
-        const int back = std::min(reference_.backBottom(), rect.backBottom());
+        const int topFrontLeftZ = std::max(reference_.topFrontLeft().z(), rect.topFrontLeft().z());
+        const int topBackLeftZ = std::min(reference_.topBackLeft().z(), rect.bottomBackLeft().z());
         
-        if (back < front)
-            return false;
-        
-        const int intersectionArea = (right - left + 1) * (bottom - top + 1) * (back - front + 1);
-        const int rectVolume = rect.volume();
+        const int intersectionArea = (topFrontRightX - topFrontLeftX + 1) * (bottomFrontLeftY - topFrontLeftY + 1) * (topBackLeftZ - topFrontLeftZ + 1);
+        const int cubeVolume = rect.volume();
         
         if (felzenszwalb_) {
-            if (intersectionArea >= rectVolume * threshold_) {
+            if (intersectionArea >= cubeVolume * threshold_) {
                 if (score)
-                    *score = static_cast<double>(intersectionArea) / rectVolume;
+                    *score = static_cast<double>(intersectionArea) / cubeVolume;
                 
                 return true;
             }
         }
         else {
             const int referenceArea = reference_.volume();
-            const int unionArea = referenceArea + rectVolume - intersectionArea;
+            const int unionArea = referenceArea + cubeVolume - intersectionArea;
             
             if (intersectionArea >= unionArea * threshold_) {
                 if (score)
