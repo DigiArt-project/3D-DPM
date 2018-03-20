@@ -99,7 +99,16 @@ public:
     Eigen::Vector3f bottomFrontRight() const;
     Eigen::Vector3f bottomBackLeft() const;
     Eigen::Vector3f bottomBackRight() const;
-        
+    
+    void setTopFrontLeft(Eigen::Vector3f pt);
+    void settopFrontRight(Eigen::Vector3f pt);
+    void setTopBackLeft(Eigen::Vector3f pt);
+    void setTopBackRight(Eigen::Vector3f pt);
+    
+    void bottomFrontLeft(Eigen::Vector3f pt);
+    void bottomFrontRight(Eigen::Vector3f pt);
+    void bottomBackLeft(Eigen::Vector3f pt);
+    void bottomBackRight(Eigen::Vector3f pt);
     
     void toString() const;
     

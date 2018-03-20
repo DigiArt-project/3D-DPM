@@ -424,19 +424,20 @@ void Mixture::cacheFilters() const
 
 static inline void clipBndBox(Rectangle & bndbox, const Scene & scene, double alpha = 0.0)
 {
+    //TODO COMPRENDRE A QUOI CA SERT
 	// Compromise between clamping the bounding box to the image and penalizing bounding boxes
 	// extending outside the image
-	if (bndbox.left() < 0)
-		bndbox.setLeft(bndbox.left() * alpha - 0.5);
+	if (bndbox.topFrontLeft().x() < 0)
+		bndbox.setLeft(bndbox.topFrontLeft().x()  * alpha - 0.5);
 	
-	if (bndbox.top() < 0)
-		bndbox.setTop(bndbox.top() * alpha - 0.5);
+	if (bndbox.topFrontLeft().y() < 0)
+		bndbox.setTop(bndbox.topFrontLeft().y() * alpha - 0.5);
 	
-	if (bndbox.right() >= scene.width())
-		bndbox.setRight(scene.width() - 1 + (bndbox.right() - scene.width() + 1) * alpha + 0.5);
+	if (bndbox.topFrontRight().x() >= scene.width())
+		bndbox.setRight(scene.width() - 1 + (bndbox.topFrontRight().x() - scene.width() + 1) * alpha + 0.5);
 	
-	if (bndbox.bottom() >= scene.height())
-		bndbox.setBottom(scene.height() - 1 + (bndbox.bottom() - scene.height() + 1) * alpha + 0.5);
+	if (bndbox.bottomFrontLeft().y() >= scene.height())
+		bndbox.setBottom(scene.height() - 1 + (bndbox.bottomFrontLeft().y() - scene.height() + 1) * alpha + 0.5);
 }
 
 void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
@@ -531,6 +532,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             if (zero_) {
                                 for (int k = 0; k < models_.size(); ++k) {
                                     // The bounding box of the model at this position
+                                    //TODO
                                     Rectangle bndbox;
                                     bndbox.setX((x - pad.x()) * scale + 0.5);
                                     bndbox.setY((y - pad.y()) * scale + 0.5);
@@ -554,6 +556,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             }
                             // Just take the model with the best score
                             else {
+                                //TODO
                                 // The bounding box of the model at this position
                                 Rectangle bndbox;
                                 bndbox.setX((x - pad.x()) * scale + 0.5);
