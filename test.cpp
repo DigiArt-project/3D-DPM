@@ -75,17 +75,18 @@ using namespace std;
 
 struct Detection : public Rectangle
 {
-	HOGPyramid::Scalar score;
+    GSHOTPyramid::Scalar score;
 	int x;
 	int y;
 	int z;
+    int lvl;
 	
-	Detection() : score(0), x(0), y(0), z(0)
+    Detection() : score(0), x(0), y(0), z(0), lvl(0)
 	{
 	}
 	
-	Detection(HOGPyramid::Scalar score, int x, int y, int z, Rectangle bndbox) : Rectangle(bndbox),
-	score(score), x(x), y(y), z(z)
+    Detection(GSHOTPyramid::Scalar score, int x, int y, int z, int lvl, Rectangle bndbox) : Rectangle(bndbox),
+    score(score), x(x), y(y), z(z), lvl(lvl)
 	{
 	}
 	

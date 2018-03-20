@@ -14,7 +14,7 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::Vector3i pad, int interval):
+GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval, float starting_resolution):
 pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
     if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
@@ -24,22 +24,18 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     
     pad_ = pad;
     interval_ = interval;
-    float subsections = 2;
-    
-    //const int maxScale = (subsections+1) * (interval+1);
-    //levels_.resize(maxScale + 1);
+
     
     PointType min;
     PointType max;
     
     
     //Exemple of starting resolution
-    float starting_resolution = 0.05;
-    float starting_kp_reso = 0.2;
-    float starting_descr_rad = 0.4;
+//    float starting_kp_reso = 0.2;
+//    float starting_descr_rad = 0.4;
     float resolution;
-    float kp_resolution;
-    float descr_rad;
+//    float kp_resolution;
+//    float descr_rad;
     pcl::UniformSampling<PointType> sampling;
 
     levels_.resize( interval_);
@@ -47,9 +43,9 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     
     //TODO #pragma omp parallel for i
     for (int i = 0; i < interval_; ++i) {
-        resolution = starting_resolution * pow(2, i-1);
-        kp_resolution = starting_kp_reso * i;
-        descr_rad = starting_descr_rad * i;
+        resolution = starting_resolution * pow(2.0, -static_cast<double>(i) / interval);
+//        resolution = starting_resolution * pow(2, i-1);
+//        descr_rad = starting_descr_rad * (i+1);
         
         PointCloudPtr subspace(new PointCloudT());
         
@@ -57,15 +53,16 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         sampling.setRadiusSearch (resolution);
         sampling.filter(*subspace);
         
-        pcl::getMinMax3D(*input, min, max);
-        keypoints_[i] = compute_keypoints(input, kp_resolution, min, max);
-        DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[i], descr_rad);
+        pcl::getMinMax3D(*subspace, min, max);
+        keypoints_[i] = compute_keypoints(subspace, resolution, min, max);
+        cout << keypoints_[i]->width << endl;
+        DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[i], resolution);
         
         
         int nb_kpt = keypoints_[i]->size();
         
         Level level( topology[i](0), topology[i](1), topology[i](2));
-        Cell* levelCell = &(level(0));
+        Cell* levelCell = &(level()(0));
         //Loop over the number of keypoints available
         for (int kpt = 0; kpt < nb_kpt; ++kpt){
             //For each keypoint, create a cell which will contain the corresponding shot descriptor
@@ -81,67 +78,14 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         }
         //Once the first level is done, push it to the array of level
         levels_[i] = level;
-        
-//        for (int j = 0; j < subsections; j++){
-//            float subresolution = resolution;
-//            float sub_kp_resolution = kp_resolution;
-//            float sub_descr_rad = descr_rad;
-            
-//            sampling.setInputCloud(input);
-//            sampling.setRadiusSearch (subresolution);
-//            sampling.filter(*subspace);
-            
-//            pcl::getMinMax3D(*input,min,max);
-//            keypoints_[j] = compute_keypoints(input, sub_kp_resolution, min, max);
-//            DescriptorsPtr descriptors = compute_descriptor(input,_keypoints->back(),sub_descr_rad);
-            
-//            int nb_desc_total = desc->size();
-//            Level level_current(nb_desc_total,0,0);
-//            //Loop over the number of descriptors available
-//            for (int nb_desc = 0; nb_desc < nb_desc_total; nb_desc++){
-//                //For each descriptor, create a cell
-//                Cell* cell_desc = new Cell();
-//                //Then for each value of the current descriptor, fill in the cell
-//                for( int k = 0; k < desc->points[nb_desc].descriptorSize(); ++k){
-//                    cell_desc[k] = desc->points[nb_desc].descriptor[k];
-//                }
-//                //Add the cell to the current level
-//                level_current(nb_desc,0,0) = *cell_desc;
-//                //level_current->setValues({{{*cell_desc}}});
-//            }
-//            levels_.push_back(level_current);
-//        }
+
     }
 }
 
-//void GSHOTPyramid::test() const
-//{
 
-//    //Tensor = pile de matrice
-//    //Init array of float 32 x 1
-//    ArrayXf a = ArrayXf::Random(32,1);
-//    //Type,row,col
-//    //Create a cell with the array created before, corresponding to descriptors
-//    Eigen::Array<float, 32, 1> cell_test(a);
-//    std::cout << cell_test.size() << std::endl;
-//    //Rank 1 row = 2 col = 2
-//    //Ligne colomne et depth
-//    Tensor<Eigen::Array<float, 32, 1> > Level(2,2,2);
-//    Level.setValues({{{cell_test, cell_test}, {cell_test, cell_test}},
-//        {{cell_test, cell_test}, {cell_test, cell_test}}
-//    });
-
-//    // Result is a zero dimension tensor
-
-//    //m_Level
-//}
-
-
-
-
-void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Scalar> >& convolutions) const
+void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutions) const
 {
-   // convolutions.resize(levels_.size());
+    convolutions.resize(levels_.size());
 
 #pragma omp parallel for
     for (int i = 0; i < levels_.size(); ++i)
@@ -149,17 +93,45 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor<Scalar> >& convo
 }
 
 //Its a correlation not a convolution
-void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor<Scalar> & z)
+void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3DF & z)
 {
     // Nothing to do if x is smaller than y
-    if ((x.dimension(0) < y.dimension(0)) || (x.dimension(1) < y.dimension(1) ) || (x.dimension(2) < y.dimension(2) )) {
-        z = Tensor<Scalar>(0,0,0);
+    if ((x().dimension(0) < y().dimension(0)) || (x().dimension(1) < y().dimension(1) ) || (x().dimension(2) < y().dimension(2) )) {
         return;
     }
 
+    Eigen::Tensor<float, 3, RowMajor> dx(x().dimension(0), x().dimension(1), x().dimension(2) * DescriptorSize),
+                                      dy(y().dimension(0), y().dimension(1), y().dimension(2) * DescriptorSize);
+//    Eigen::Tensor<float, 3, RowMajor> res( dx.dimension(0) - dy.dimension(0) + 1,
+//                                   dx.dimension(1) - dy.dimension(1) + 1,
+//                                   dx.dimension(2) - dy.dimension(2) + 1);
+
+    for (int i = 0; i < x().dimension(0); ++i) {
+        for (int j = 0; j < x().dimension(1); ++j) {
+            for (int k = 0; k < x().dimension(2); ++k) {
+                for (int l = 0; l < DescriptorSize; ++l) {
+                    dx(i,j, k * DescriptorSize + l) = x()(i,j,k).coeff(l);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < y().dimension(0); ++i) {
+        for (int j = 0; j < y().dimension(1); ++j) {
+            for (int k = 0; k < y().dimension(2); ++k) {
+                for (int l = 0; l < DescriptorSize; ++l) {
+                    dy(i,j, k * DescriptorSize + l) = y()(i,j,k).coeff(l);
+                }
+            }
+        }
+    }
+
+    z().resize( dx.dimension(0) - dy.dimension(0) + 1,
+              dx.dimension(1) - dy.dimension(1) + 1,
+              dx.dimension(2) - dy.dimension(2) + 1);
+
     Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
-    z = x.convolve(y, dims);
-     
+    z() = dx.convolve(dy, dims);
 }
 
 //void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
@@ -186,35 +158,35 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor<Scalar> & z
 //}
 
 //TODO: do we need the flip function ?
-GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
-{
-    //TODO: adapt --> 352 for shot
-    // Symmetric features
-    const int symmetry[GSHOTPyramid::DescriptorSize] =
-    {
-        9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 17, 16, 15, 14, 13, 12, 11, 10, // Contrast-sensitive
-        18, 26, 25, 24, 23, 22, 21, 20, 19, // Contrast-insensitive
-        28, 27, 30, 29, // Texture
-#ifndef FFLD_HOGPYRAMID_EXTRA_FEATURES
-        31 // Truncation
-#else
-        31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // Uniform LBP
-        41, 42, 43, 44, 45, 46, // Color
-        47 // Truncation
-#endif
-    };
+//GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
+//{
+//    //TODO: adapt --> 352 for shot
+//    // Symmetric features
+//    const int symmetry[GSHOTPyramid::DescriptorSize] =
+//    {
+//        9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 17, 16, 15, 14, 13, 12, 11, 10, // Contrast-sensitive
+//        18, 26, 25, 24, 23, 22, 21, 20, 19, // Contrast-insensitive
+//        28, 27, 30, 29, // Texture
+//#ifndef FFLD_HOGPYRAMID_EXTRA_FEATURES
+//        31 // Truncation
+//#else
+//        31, 32, 33, 34, 35, 36, 37, 38, 39, 40, // Uniform LBP
+//        41, 42, 43, 44, 45, 46, // Color
+//        47 // Truncation
+//#endif
+//    };
 
-    // Symmetric filter
-    GSHOTPyramid::Level result(level.rows(), level.cols(), level.depths());
+//    // Symmetric filter
+//    GSHOTPyramid::Level result(level.rows(), level.cols(), level.depths());
 
-    for (int y = 0; y < level.rows(); ++y)
-        for (int x = 0; x < level.cols(); ++x)
-            for (int z = 0; z < level.depths(); ++z)
-                for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                    result(y, x, z)(i) = level(y, level.cols() - 1 - x,z)(symmetry[i]);
+//    for (int y = 0; y < level.rows(); ++y)
+//        for (int x = 0; x < level.cols(); ++x)
+//            for (int z = 0; z < level.depths(); ++z)
+//                for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+//                    result(y, x, z)(i) = level(y, level.cols() - 1 - x,z)(symmetry[i]);
 
-    return result;
-}
+//    return result;
+//}
 
 
 
@@ -309,12 +281,12 @@ GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
     
 //}
 
-//GSHOTPyramid::~GSHOTPyramid()
-//{
-//    _descriptors->clear();
-//    _keypoints->clear();
+GSHOTPyramid::~GSHOTPyramid()
+{
+//    descriptors_->clear();
+//    keypoints_.clear();
 //    height_ = 0;
-//}
+}
 
 
 /*
@@ -338,12 +310,22 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     descr_est.setInputNormals (normals);
     descr_est.setSearchSurface (input);
     descr_est.compute (*descriptors);
+
+    for (size_t i = 0; i < descriptors->size(); ++i){
+        for (size_t j = 0; j < DescriptorType::descriptorSize(); ++j){
+
+            if (pcl_isnan(descriptors->points[i].descriptor[j])){
+                descriptors->points[i].descriptor[j] = 0;
+            }
+        }
+
+    }
     
     return descriptors;
 }
 
-pcl::PointCloud<PointType>::Ptr
-GSHOTPyramid::compute_keypoints(pcl::PointCloud<PointType>::Ptr input, float grid_reso, PointType min, PointType max){
+PointCloudPtr
+GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max){
     
     int pt_nb_x = (int)((max.x-min.x)/grid_reso+1);
     int pt_nb_y = (int)((max.y-min.y)/grid_reso+1);
@@ -353,36 +335,42 @@ GSHOTPyramid::compute_keypoints(pcl::PointCloud<PointType>::Ptr input, float gri
     Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_x, pt_nb_y, pt_nb_z);
     topology.push_back(topo);
     
-    typename pcl::PointCloud<PointType>::Ptr keypoints (new pcl::PointCloud<PointType> (pt_nb,1,PointType()));
+    PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
     
-    unsigned int i;
+
 #if defined(_OPENMP)
 #pragma omp parallel for num_threads(omp_get_max_threads())
 #endif
-    for(i=0;i<pt_nb_x;i++){
-        unsigned int j;
-        for(j=0;j<pt_nb_y;j++){
-            unsigned int k;
-            for(k=0;k<pt_nb_z;k++){
+    for(int i=0;i<pt_nb_z;++i){
+        for(int j=0;j<pt_nb_y;++j){
+            for(int k=0;k<pt_nb_x;++k){
                 PointType p = PointType();
-                p.x = min.x + i*grid_reso;
+                p.x = min.x + k*grid_reso;
                 p.y = min.y + j*grid_reso;
-                p.z = min.z + k*grid_reso;
-                keypoints->at(pt_nb_y*pt_nb_z*i + pt_nb_z*j + k) = p;
+                p.z = min.z + i*grid_reso;
+                keypoints->at(k + j * pt_nb_x + i * pt_nb_y * pt_nb_x) = p;
+//                cout << k + j * pt_nb_x + i * pt_nb_y * pt_nb_x << " / " << pt_nb << endl;
             }
         }
     }
     
     return keypoints;
 }
-/*
-Eigen::Map<Matrix, Eigen::Aligned> GSHOTPyramid::Map(Level & level){
-    //return Eigen::Map<Matrix, Aligned>(level.data()->data(), level.rows(),level.cols() * NbFeatures);
+
+Tensor3DF GSHOTPyramid::TensorMap(Level & level){
+    Tensor3DF res( level.depths(), level.rows(), level.cols() * DescriptorSize);
+    res() = Eigen::TensorMap< Eigen::Tensor< Scalar, 3, Eigen::RowMajor> >(level().data()->data(),
+                                                                          level.depths(), level.rows(),
+                                                                          level.cols() * DescriptorSize);
+    return res;
 }
 
-const Eigen::Map<const Matrix, Eigen::Aligned> GSHOTPyramid::Map(const Level & level){
-    //return Eigen::Map<const Matrix, Aligned>(level.data()->data(), level.rows(),level.cols() * NbFeatures);
-}*/
+Tensor3DF GSHOTPyramid::TensorMap(Level level){
+    const Tensor3DF res( Eigen::TensorMap< Eigen::Tensor< Scalar, 3, Eigen::RowMajor> >(level().data()->data(),
+                                                                   level.depths(), level.rows(),
+                                                                   level.cols() * DescriptorSize));
+    return res;
+}
 
 
 ///** GETTER AND SETTERS **/
@@ -408,7 +396,7 @@ Eigen::Vector3i GSHOTPyramid::pad() const
     return pad_;
 }
 
-bool GSHOTPyramid::isEmpty() const
+bool GSHOTPyramid::empty() const
 {
     return levels_.empty();
 }

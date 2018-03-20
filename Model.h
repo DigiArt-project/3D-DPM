@@ -22,7 +22,7 @@
 #ifndef FFLD_MODEL_H
 #define FFLD_MODEL_H
 #include <tuple>
-#include "HOGPyramid.h"
+//#include "HOGPyramid.h"
 #include "GSHOTPyramid.h"
 
 namespace FFLD
@@ -38,11 +38,11 @@ namespace FFLD
 class Model
 {
 public:
-	/// Type of a 3d position (x y z).
-	typedef Eigen::Vector3i Position;
+    /// Type of a 3d position (z y x lvl).
+    typedef Eigen::Vector4i Position;
 	
 	/// Type of a matrix of 3d positions.
-	typedef Eigen::Matrix<Position, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Positions;
+    typedef Tensor3D<Position> Positions;
 	
 	/// Type of a 3d quadratic deformation (dx^2 dx dy^2 dy dz^2 dz).
     typedef Eigen::Matrix<double, 8, 1> Deformation;
@@ -68,7 +68,6 @@ public:
 	struct Part
 	{
         GSHOTPyramid::Level filter;
-        HOGPyramid::Level filter_hog;	///< Part filter.
 		Position offset;			///< Part offset (dx dy dz) relative to the root.
 		Deformation deformation;	///< Deformation cost (dx^2 dx dy^2 dy dz^2 dz).
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -117,7 +116,7 @@ public:
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
 	/// @note The model stay unmodified if any of the parameter is invalid.
 	/// @note The parts are always initialized at twice the root resolution.
-	void initializeParts(int nbParts, Model::triple<int, int, int> partSize);
+    void initializeParts(int nbParts, Model::triple<int, int, int> partSize, GSHOTPyramid::Level root2x);
 	
 	/// Initializes a training sample with fixed latent variables from a specified position in
 	/// a pyramid of features.
@@ -131,16 +130,18 @@ public:
     void initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, int lvl, Model & sample,
 						  const std::vector<std::vector<Positions> > * positions = 0) const;
 	
+    //Detection, energy computation
 	/// Returns the scores of the convolutions + distance transforms of the parts with a pyramid of
 	/// features.
 	/// @param[in] pyramid Pyramid of features.
 	/// @param[out] scores Scores for each pyramid level.
 	/// @param[out] positions Positions of each part and each pyramid level.
 	/// @param[in] Precomputed convolutions of each part and each pyramid level.
-    void convolve(const GSHOTPyramid & pyramid, std::vector<GSHOTPyramid::Tensor> & scores,
-				  std::vector<std::vector<Positions> > * positions = 0,
-                  std::vector<std::vector<GSHOTPyramid::Tensor> > * convolutions = 0) const;
+    void convolve(const GSHOTPyramid & pyramid, std::vector<Tensor3DF> & scores,
+                  std::vector<std::vector<Positions> > * positions = 0,
+                  std::vector<std::vector<Tensor3DF> > * convolutions = 0) const;
 	
+    //Similarity in the optimization process of the SVM
 	/// Returns the dot product between the model and a fixed training @p sample.
 	/// @note Returns NaN if the sample and the model are not compatible.
 	/// @note Do not compute dot products between two models or between two samples.
@@ -173,8 +174,10 @@ public:
 	/// @param[in] part Part from which to read the deformation cost and offset.
 	/// @param tmp Temporary matrix.
 	/// @param[out] positions Optimal position of each part for each root location.
-    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
-					 Positions * positions = 0);
+//    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
+//					 Positions * positions = 0);
+    static void DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp,
+                     Positions * positions = 0);
 	
 private:
 	std::vector<Part> parts_;

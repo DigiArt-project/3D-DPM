@@ -264,7 +264,7 @@ void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize
 	zero_ = false;
 }
 
-void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyramid::Tensor> & scores,
+void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                                   vector<Indices> & argmaxes,
                                   vector<vector<vector<Model::Positions> > > * positions) const
 {
@@ -282,7 +282,7 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<GSHOTPyra
     const int nbLevels = static_cast<int>(pyramid.levels().size());
 
     // Convolve with all the models
-    vector<vector<GSHOTPyramid::Tensor> > convolutions;
+    vector<vector<Tensor3DF> > convolutions;
 
     convolve(pyramid, convolutions, positions);
 
@@ -477,7 +477,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			return;
 		}
 		
-        vector<GSHOTPyramid::Tensor> scores;
+        vector<Tensor3DF> scores;
 		vector<Indices> argmaxes;
 		vector<vector<vector<Model::Positions> > > positions;
 		
@@ -520,9 +520,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                     depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().third + 1;
 				}
 				
-				for (int y = 0; y < rows; ++y) {
-                    for (int x = 0; x < cols; ++x) {
-                        for (int z = 0; z < depths; ++z) {
+                for (int z = 0; z < depths; ++z) {
+                    for (int y = 0; y < rows; ++y) {
+                        for (int x = 0; x < cols; ++x) {
                             // Find the best matching model (highest score or else most intersecting)
                             int model = zero_ ? 0 : argmaxes[lvl](z, y, x);
                             double intersection = 0.0;
@@ -567,7 +567,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 intersector(bndbox, &intersection);
                             }
 
-                            if ((intersection > maxInter) && (zero_ || (scores[lvl](y, x) > maxScore))) {
+                            if ((intersection > maxInter) && (zero_ || (scores[lvl](z, y, x) > maxScore))) {
                                 argModel = model;
                                 argX = x;
                                 argY = y;
@@ -655,7 +655,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             return;
         }
 
-        vector<GSHOTPyramid::Tensor> scores;
+        vector<Tensor3DF> scores;
         vector<Indices> argmaxes;
         vector<vector<vector<Model::Positions> > > positions;
 
@@ -949,7 +949,7 @@ double Mixture::train(const vector<pair<Model, int> > & positives,
 }
 
 void Mixture::convolve(const GSHOTPyramid & pyramid,
-                       vector<vector<GSHOTPyramid::Tensor> > & scores,
+                       vector<vector<Tensor3DF> > & scores,
 					   vector<vector<vector<Model::Positions> > > * positions) const
 {
 	if (empty() || pyramid.empty()) {
@@ -981,7 +981,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 	const Patchwork patchwork(pyramid);
 	
 	// Convolve the patchwork with the filters
-    vector<vector<GSHOTPyramid::Tensor> > convolutions(filterCache_.size());
+    vector<vector<Tensor3DF> > convolutions(filterCache_.size());
 	
 	patchwork.convolve(filterCache_, convolutions);
 	
@@ -1006,7 +1006,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 	// For each model
 #pragma omp parallel for
 	for (int i = 0; i < nbModels; ++i) {
-        vector<vector<GSHOTPyramid::Tensor> > tmp(models_[i].parts().size());
+        vector<vector<Tensor3DF> > tmp(models_[i].parts().size());
 		
 		for (int j = 0; j < tmp.size(); ++j)
             tmp[j] = convolutions[offsets[i] + j];

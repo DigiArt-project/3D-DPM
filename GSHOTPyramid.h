@@ -20,6 +20,7 @@
 
 //Other
 #include "typedefs.h"
+#include "tensor3d.h"
 
 //Subsection = interval ?
 //Padding ?
@@ -44,49 +45,11 @@ namespace FFLD
         /// Type of a matrix.
         typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 
-        template <typename Type>
-        struct Tensor : Eigen::Tensor<Type, 3, Eigen::RowMajor>{
-            Tensor() : Eigen::Tensor<Type, 3, Eigen::RowMajor>(0,0,0){}
-            Tensor( int s1, int s2, int s3) : Eigen::Tensor<Type, 3, Eigen::RowMajor>(s1, s2, s3){}
-            //row d'une matrice --> renvoie ligne de la matrice
-            
-            Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-            row( int i) const{
-                Eigen::Matrix<Type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> res(this->dimension(0),this->dimension(1));
-                return res.setZero();
-            }
-
-            int rows() const{
-                return this->dimension(0);
-            }
-            int cols() const {
-                return this->dimension(1);
-            }
-            int depths() const{
-                return this->dimension(2);
-            }
-            
-            //return a block of size (p, q, r) from point (z, y, x)
-            Tensor<Type> block(int z, int y, int x, int p, int q, int r){
-                Tensor<Type> t(p, q, r);
-                for (int i = 0; i < p; ++i) {
-                    for (int j = 0; j < q; ++j) {
-                        for (int k = 0; k < r; ++k) {
-                            t(i,j,k) = *this(z+i, y+j, x+k);
-                        }
-                    }
-                }
-                return t;
-            }
-            
-        };
-   
-        
         /// Type of a pyramid level cell (fixed-size array of length NbFeatures).
         typedef Eigen::Array<Scalar, DescriptorSize, 1> Cell;
-        
+
         /// Type of a pyramid level (matrix of cells).
-        typedef Tensor<Cell> Level;
+        typedef Tensor3D<Cell> Level;
         
         
         void test() const;
@@ -99,12 +62,12 @@ namespace FFLD
         // Copy constructor
         GSHOTPyramid(const GSHOTPyramid&);
         
-        /// Constructs a pyramid from the JPEGImage of a Scene.
+        /// Constructs a pyramid from the PointCloud of a Scene.
         /// @param[in] input The PointCloud data
         /// @param[in] pad Amount of horizontal, vertical and depth zero padding (in cells).
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const pcl::PointCloud<PointType>::Ptr input, Eigen::Vector3i pad, int interval = 5);
+        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5, float starting_resolution = 0.1);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
@@ -114,7 +77,7 @@ namespace FFLD
         /// in order to reduce computation and define a standard.
         /// @param[in] starting_kp_grid_reso Resolution keypoint
         /// @note TODO Need to take a container of parameters instead of the descr_rad to generalize to different descriptors.
-        GSHOTPyramid(pcl::PointCloud<PointType>::Ptr input,  int octaves, int interval,
+        GSHOTPyramid(PointCloudPtr input,  int octaves, int interval,
                      float starting_resolution, float starting_kp_grid_reso, float descr_rad);
         
         // Destructor
@@ -123,7 +86,7 @@ namespace FFLD
         /** GETTERS AND SETTER **/
         
         /// Returns whether the pyramid is empty. An empty pyramid has no level.
-        bool isEmpty() const;
+        bool empty() const;
 
         Eigen::Vector3i pad() const;
         
@@ -156,19 +119,19 @@ namespace FFLD
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
-        void convolve(const Level & filter, vector<Tensor<Scalar> >& convolutions) const;
+        void convolve(const Level & filter, vector<Tensor3DF >& convolutions) const;
         
         /// Returns the flipped version (horizontally) of a level.
-        static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
+//        static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
         
         /// Maps a pyramid level to a simple matrix (useful to apply standard matrix operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
-        static Eigen::Map<Matrix, Eigen::Aligned> Map(Level & level);
+        static Tensor3DF TensorMap(Level & level);
         
         /// Maps a const pyramid level to a simple const matrix (useful to apply standard matrix
         /// operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
-        static const Eigen::Map<const Matrix, Eigen::Aligned> Map(const Level & level);
+        static Tensor3DF TensorMap(Level level);
         
         
         
@@ -191,7 +154,7 @@ namespace FFLD
         
 
         // Computes the 2D convolution of a pyramid level with a filter
-        static void Convolve(const Level & x, const Level & y, Tensor<Scalar> & z);
+        static void Convolve(const Level & x, const Level & y, Tensor3D<Scalar> & z);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
         std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;
