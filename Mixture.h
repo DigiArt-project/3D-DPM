@@ -26,6 +26,9 @@
 #include "Patchwork.h"
 #include "Scene.h"
 
+#include <pcl/io/pcd_io.h>
+
+
 namespace FFLD
 {
 /// The Mixture class represents a mixture of deformable part-based models.
@@ -33,8 +36,9 @@ class Mixture
 {
 public:
 	/// Type of a matrix of indices.
-	typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Indices;
-	
+//	typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Indices;
+    typedef Tensor3DF Indices;
+
 	/// Constructs an empty mixture. An empty mixture has no model.
 	Mixture();
 	
@@ -85,7 +89,7 @@ public:
 	/// Initializes the specidied number of parts from the root of each model.
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
-    void initializeParts(int nbParts, Model::triple<int, int, int> partSize);
+    void initializeParts(int nbParts, Model::triple<int, int, int> partSize, GSHOTPyramid::Level root2x);
 	
 	/// Returns the scores of the convolutions + distance transforms of the models with a
 	/// pyramid of features (useful to compute the SVM margins).

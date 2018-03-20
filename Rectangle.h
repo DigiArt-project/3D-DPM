@@ -82,7 +82,7 @@ public:
     void setDepth(float depth);
     
     /// Returns whether the rectangle is empty. An empty rectangle has no volume.
-    bool isEmpty() const;
+    bool empty() const;
     
     /// Returns the volume of the rectangle.
     /// @note Equivalent to max(width(), 0) * max(height(), 0)* max(depth(), 0).

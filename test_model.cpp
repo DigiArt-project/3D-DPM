@@ -1,6 +1,5 @@
 #include "Model.h"
 
-#include <pcl/io/pcd_io.h>
 
 #include <cstdlib>
 #include <sys/timeb.h>

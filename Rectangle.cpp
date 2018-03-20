@@ -182,7 +182,7 @@ Eigen::Vector3f Rectangle::bottomBackRight() const{
 }
 
 
-bool Rectangle::isEmpty() const
+bool Rectangle::empty() const
 {
     return (width() <= 0) || (height() <= 0) || (depth() <= 0 ) || (volume() <=0);
 }
