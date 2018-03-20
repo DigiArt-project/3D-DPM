@@ -53,7 +53,6 @@ public:
 			*score = 0.0;
 		const int topFrontLeftX = std::max(reference_.topFrontLeft().x(), rect.topFrontLeft().x());
         const int topFrontRightX = std::min(reference_.topFrontRight().x(), rect.topFrontRight().x());
-        const int depth = std::min(reference_.depth(), rect.depth());
         
         if (topFrontRightX < topFrontLeftX)
             return false;
@@ -66,6 +65,9 @@ public:
         
         const int topFrontLeftZ = std::max(reference_.topFrontLeft().z(), rect.topFrontLeft().z());
         const int topBackLeftZ = std::min(reference_.topBackLeft().z(), rect.bottomBackLeft().z());
+        
+        if (topBackLeftZ < topFrontLeftZ)
+            return false;
         
         const int intersectionArea = (topFrontRightX - topFrontLeftX + 1) * (bottomFrontLeftY - topFrontLeftY + 1) * (topBackLeftZ - topFrontLeftZ + 1);
         const int cubeVolume = rect.volume();
