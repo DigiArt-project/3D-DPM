@@ -65,8 +65,8 @@ public:
         if (bottom < top)
             return false;
         
-        const int front = std::max(reference_.front(), rect.front());
-        const int back = std::min(reference_.back(), rect.back());
+        const int front = std::max(reference_.top(), rect.top());
+        const int back = std::min(reference_.backBottom(), rect.backBottom());
         
         if (back < front)
             return false;

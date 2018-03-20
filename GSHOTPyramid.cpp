@@ -156,8 +156,10 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor<Scalar> & z
         z = Tensor<Scalar>(0,0,0);
         return;
     }
+
     Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
     z = x.convolve(y, dims);
+     
 }
 
 //void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)

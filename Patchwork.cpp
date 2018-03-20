@@ -48,10 +48,10 @@ Patchwork::Patchwork() : padx_(0), pady_(0), interval_(0)
 namespace detail
 {
 // Order rectangles by decreasing area.
-class AreaComparator
+class VolumeComparator
 {
 public:
-	AreaComparator(const vector<pair<Rectangle, int> > & rectangles) :
+	VolumeComparator(const vector<pair<Rectangle, int> > & rectangles) :
 	rectangles_(rectangles)
 	{
 	}
@@ -100,7 +100,7 @@ static int blf(vector<pair<Rectangle, int> > & rectangles, int maxWidth, int max
 		ordering[i] = i;
 	}
 	
-	sort(ordering.begin(), ordering.end(), detail::AreaComparator(rectangles));
+	sort(ordering.begin(), ordering.end(), detail::VolumeComparator(rectangles));
 	
 	// Index of the plane containing each rectangle
 	for (int i = 0; i < rectangles.size(); ++i)

@@ -27,6 +27,7 @@ int main(){
     //Create tensor et parcour valeur par valeur avec pointeur
     //Tester convolution
     
+    
     int size = 3;
     GSHOTPyramid::Tensor<int> level(size,size, size);
     level.setZero();
