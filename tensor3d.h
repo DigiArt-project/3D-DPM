@@ -66,6 +66,19 @@ public:
         return tensor.size();//rows() * cols() * depths();
     }
 
+    bool isZero() const{
+        for (int i = 0; i < depths(); ++i) {
+            for (int j = 0; j < rows(); ++j) {
+                for (int k = 0; k < cols(); ++k) {
+                    if ( tensor(i, j, k) != 0){
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     //TODO replace by TensorMap
     //return a block of size (p, q, r) from point (z, y, x)
     Tensor3D< Type> block(int z, int y, int x, int p, int q, int r){
@@ -121,5 +134,6 @@ public:
 
 /// Type of a pyramid level (matrix of cells).
 typedef Tensor3D<Scalar> Tensor3DF;
+typedef Tensor3D<int> Tensor3DI;
 
 #endif // TENSOR3D_H

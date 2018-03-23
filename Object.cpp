@@ -38,7 +38,7 @@ name_(name), pose_(pose), truncated_(truncated), difficult_(difficult), bndbox_(
 bool Object::empty() const
 {
 	return (name() == UNKNOWN) && (pose() == UNSPECIFIED) && !truncated() && !difficult() &&
-		   bndbox().isEmpty();
+           bndbox().empty();
 }
 
 Object::Name Object::name() const

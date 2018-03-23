@@ -500,6 +500,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
 void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, int lvl, Model & sample,
 							 const vector<vector<Positions> > * positions) const
 {
+    cout << "initializeSample ..." << endl;
     // All the constants relative to the model and the pyramid
     const int nbFilters = static_cast<int>(parts_.size());
     const int nbParts = nbFilters - 1;
@@ -514,7 +515,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
         (z + rootSize().first > pyramid.levels()[lvl].depths()) ||
         (nbParts && (!positions || (positions->size() != nbParts)))) {
         sample = Model();
-        cerr << "Attempting to initialize an empty sample" << endl;
+        cerr << "Attempting to initialize an empty sample 1" << endl;
         return;
     }
 	
@@ -529,9 +530,14 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
     for (int i = 0; i < nbParts; ++i) {
         // Position of the part
         if ((lvl >= (*positions)[i].size()) || (x >= (*positions)[i][lvl].cols()) ||
-            (y >= (*positions)[i][lvl].rows()) /*/*|| (z >= (*positions)[i][lvl].depths())*/) {
+            (y >= (*positions)[i][lvl].rows()) || (z >= (*positions)[i][lvl].depths())) {
             sample = Model();
-            cerr << "Attempting to initialize an empty sample" << endl;
+            cerr << "Attempting to initialize an empty sample 2" << endl;
+            cerr << "lvl : "<<lvl<<" >= "<<(*positions)[i].size()<< endl;
+            cerr << "x : "<<x<<" >= "<<(*positions)[i][lvl].cols()<< endl;
+            cerr << "y : "<<y<<" >= "<<(*positions)[i][lvl].rows()<< endl;
+            cerr << "z : "<<z<<" >= "<<(*positions)[i][lvl].depths()<< endl;
+
             return;
         }
 		
@@ -540,7 +546,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
         // Level of the part
         if ((position(3) < 0) || (position(3) >= nbLevels)) {
             sample = Model();
-            cerr << "Attempting to initialize an empty sample" << endl;
+            cerr << "Attempting to initialize an empty sample 3" << endl;
             return;
         }
 		
@@ -551,7 +557,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, 
             (position(1) + partSize().second > level.rows()) ||
             (position(0) + partSize().first > level.depths())) {
             sample = Model();
-            cerr << "Attempting to initialize an empty sample" << endl;
+            cerr << "Attempting to initialize an empty sample 4" << endl;
             return;
         }
 		
@@ -592,13 +598,25 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 					 vector<vector<Positions> > * positions,
                      vector<vector<Tensor3DF> > * convolutions) const
 {
+
+
+//    cout<<"Model::convolve ..." <<endl;
+//    cout<<"Model::convolve pyramid.size() : "<<pyramid.levels().size()<<endl;
+//    cout<<"Model::convolve scores.size() : "<<scores.size()<<endl;
+
+
+//    cout<<"Model:: parts_.size() : "<<parts_.size()<<" / parts_[0].filter.size() : "<<parts_[0].filter.size()<<endl;
+
 	// Invalid parameters
-	if (empty() || pyramid.empty() ||
+    if (empty() || pyramid.empty() /*||*/
 #ifdef FFLD_MODEL_3D
-		!positions ||
+//		!positions ||
 #endif
-		(convolutions && (convolutions->size() != parts_.size()))) {
-		scores.clear();
+        /*(convolutions && (convolutions->size() != parts_.size()))*/) {
+        if(empty()) cout<<"Model::convolve model is empty "<<endl;
+        else cout<<"Model::convolve pyramid is empty "<<endl;
+        scores.clear();
+        cout<<"Model::scores cleared "<<endl;
 		
 		if (positions)
 			positions->clear();
@@ -620,6 +638,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 		for (int i = 0; i < nbFilters; ++i) {
 			if ((*convolutions)[i].size() != nbLevels) {
 				scores.clear();
+                cout<<"Model::convolve score clear"<<endl;
 				
 				if (positions)
 					positions->clear();
@@ -632,11 +651,19 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 		tmpConvolutions.resize(nbFilters);
 		
 //#pragma omp parallel for
-        for (int i = 0; i < nbFilters; ++i)
+        for (int i = 0; i < nbFilters; ++i){
+//            cout<<"Model::convolve pyramid.convolve model.part["<<i<<"].filter with all levels of the pyramid"<<endl;
             pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
+            cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
+               << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
+            cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
+        }
 		
-        convolutions = &tmpConvolutions;
+//        convolutions = &tmpConvolutions;
+
 	}
+    convolutions = new vector<vector<Tensor3DF> >();
+    convolutions = &tmpConvolutions;
 	
     // Resize the positions
     if (positions) {
@@ -650,7 +677,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
     Tensor3DF tmp;
 	
     // For each root level in reverse order
-    for (int lvl = nbLevels - 1; lvl >= interval; --lvl) {
+    for (int lvl = interval - 1; lvl >= 0; --lvl) {
         // For each part
         for (int i = 0; i < nbParts; ++i) {
             // Transform the part one octave below
@@ -672,6 +699,13 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                         const int yr = 2 * y - pad.y() + parts_[i + 1].offset(1);
                         const int xr = 2 * x - pad.x() + parts_[i + 1].offset(2);
 
+                        cout<<"Model::convolve zr : "<<zr<<" / (*convolutions)[i + 1][lvl - interval].depths() : "
+                           <<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
+                        cout<<"Model::convolve yr : "<<yr<<" / (*convolutions)[i + 1][lvl - interval].rows() : "
+                           <<(*convolutions)[i + 1][lvl - interval].rows()<<endl;
+                        cout<<"Model::convolve xr : "<<xr<<" / (*convolutions)[i + 1][lvl - interval].cols() : "
+                           <<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
+
                         if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
                             (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&
                             (yr < (*convolutions)[i + 1][lvl - interval].rows()) &&
@@ -683,6 +717,8 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                                                                  (*positions)[i][lvl - interval]()(zr, yr, xr)(1),
                                                                  (*positions)[i][lvl - interval]()(zr, yr, xr)(2),
                                                                  lvl - interval;
+                            if (positions)
+                                cout<<"Model::convolve positions are set !!!!!!!"<<endl;
                         }
                         else {
                             (*convolutions)[0][lvl]()(z, y, x) =
@@ -698,14 +734,20 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
     }
 	
     scores = (*convolutions)[0];
+//    cout<<"Model::convolve scores[1].size() after assignment : "<<scores[1].size()<<endl;
+//    cout<<"Model::convolve scores[0].depths() : "<<scores[0].depths()<<endl;
+//    cout<<"Model::convolve (*convolutions)[0][0].depths() : "<<(*convolutions)[0][0].depths()<<endl;
+
+
+
     //scores.swap((*convolutions)[0]);
 	
-    for (int i = 0; i < interval; ++i) {
-        scores[i] = Tensor3DF();
+//    for (int i = 0; i < interval; ++i) {
+//        scores[i] = Tensor3DF();
 		
-        for (int j = 0; j < nbParts; ++j)
-            (*positions)[j][i] = Positions();
-    }
+//        for (int j = 0; j < nbParts; ++j)
+//            (*positions)[j][i] = Positions();
+//    }
 	
     // Add the bias if necessary
     if (bias_) {

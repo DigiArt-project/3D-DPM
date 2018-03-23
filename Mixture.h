@@ -37,7 +37,7 @@ class Mixture
 public:
 	/// Type of a matrix of indices.
 //	typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Indices;
-    typedef Tensor3DF Indices;
+    typedef Tensor3DI Indices;
 
 	/// Constructs an empty mixture. An empty mixture has no model.
 	Mixture();

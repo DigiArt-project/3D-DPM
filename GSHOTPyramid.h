@@ -67,7 +67,8 @@ namespace FFLD
         /// @param[in] pad Amount of horizontal, vertical and depth zero padding (in cells).
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5, float starting_resolution = 0.1);
+        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5,
+                     float starting_resolution = 0.07);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
@@ -145,7 +146,8 @@ namespace FFLD
         PointCloudPtr
         compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max);
         
-        
+        double
+        computeCloudResolution (const pcl::PointCloud<PointType>::ConstPtr &cloud);
         
 //        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)
 //        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;

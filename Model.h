@@ -49,6 +49,11 @@ public:
 
     template< typename T1, typename T2, typename T3>
     struct triple : std::tuple<T1, T2, T3>{
+        triple(){
+            first = 0;
+            second = 0;
+            third = 0;
+        }
         triple( std::tuple<T1, T2, T3> t){
             first = std::get<0>(t);
             second = std::get<1>(t);
@@ -82,7 +87,7 @@ public:
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of all the parts (<tt>rows x cols</tt>).
 	/// @note The model will be empty if any of the parameter is invalid.
-	explicit Model(Model::triple<int, int, int> rootSize, int nbParts = 0,
+    explicit Model(Model::triple<int, int, int> rootSize, int nbParts = 0,
                    Model::triple<int, int, int> partSize = Model::triple<int, int, int>(0, 0, 0));
 	
 	/// Constructs a model from a list of parts and a bias.
@@ -105,11 +110,11 @@ public:
 	
 	/// Returns the size of the root (<tt>rows x cols</tt>).
 	/// @note Equivalent to std::pair<int, int>(parts()[0].rows(), parts()[0].cols()).
-	Model::triple<int, int, int> rootSize() const;
+    Model::triple<int, int, int> rootSize() const;
 	
 	/// Returns the size of the parts (<tt>rows x cols</tt>).
 	/// @note Equivalent to make_pair(parts()[1].rows(), parts()[1].cols()) if the model has parts.
-	Model::triple<int, int, int> partSize() const;
+    Model::triple<int, int, int> partSize() const;
 	
 	/// Initializes the specidied number of parts from the root.
 	/// @param[in] nbParts Number of parts (without the root).

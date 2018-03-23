@@ -49,8 +49,8 @@ public:
 	/// @param[out] score The score of the intersection.
 	bool operator()(const Rectangle & rect, double * score = 0) const
 	{
-		if (score)
-			*score = 0.0;
+        if (score)
+            *score = 0.0;
 		const int topFrontLeftX = std::max(reference_.topFrontLeft().x(), rect.topFrontLeft().x());
         const int topFrontRightX = std::min(reference_.topFrontRight().x(), rect.topFrontRight().x());
         
