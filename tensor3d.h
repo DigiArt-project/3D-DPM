@@ -128,6 +128,18 @@ public:
         return res;//((Eigen::Tensor< Type, 3, Eigen::RowMajor>)tensor.sum())(0);
     }
 
+    Type squaredNorm() const{
+                    Type res = 0;
+                    for (int i = 0; i < depths(); ++i) {
+                        for (int j = 0; j < rows(); ++j) {
+                            for (int k = 0; k < cols(); ++k) {
+                                res += tensor(i, j, k) * tensor(i, j, k);
+                            }
+                        }
+                    }
+        return res;//((Eigen::Tensor< Type, 3, Eigen::RowMajor>)tensor.sum())(0);
+    }
+
 
     Eigen::Tensor<Type, 3, Eigen::RowMajor> tensor;
 };

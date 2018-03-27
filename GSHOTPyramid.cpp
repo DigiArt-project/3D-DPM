@@ -14,7 +14,7 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval, float starting_resolution):
+GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval, float starting_resolution, int nbOctave):
 pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
     if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
@@ -24,10 +24,6 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     
     pad_ = pad;
     interval_ = interval;
-
-    
-    PointType min;
-    PointType max;
     
     
     //Exemple of starting resolution
@@ -38,58 +34,59 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 //    float kp_resolution;
 //    float descr_rad;
-    pcl::UniformSampling<PointType> sampling;
 
-    levels_.resize( interval_);
-    keypoints_.resize( interval_);
+
+    levels_.resize( interval_ * nbOctave);
+    keypoints_.resize( interval_ * nbOctave);
+    topology.resize( interval_ * nbOctave);
     
     //TODO #pragma omp parallel for i
     for (int i = 0; i < interval_; ++i) {
-        resolution = 10 * starting_resolution * pow(2.0, -static_cast<double>(i) / interval);
-        cout << "GSHOTPyr::constructor resolution at lvl "<<i<<" = "<<resolution<<endl;
-//        resolution = starting_resolution * pow(2, i-1);
-//        descr_rad = starting_descr_rad * (i+1);
-        
-        PointCloudPtr subspace(new PointCloudT());
-        
-        sampling.setInputCloud(input);
-        sampling.setRadiusSearch (resolution);
-        sampling.filter(*subspace);
-        
-        pcl::getMinMax3D(*subspace, min, max);
-        keypoints_[i] = compute_keypoints(subspace, resolution, min, max);
-//        cout << keypoints_[i]->width << endl;
-        DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[i], resolution);
-        
+        for (int j = 0; j < nbOctave; ++j) {
+            int index = i + j * interval_;
+            resolution = 10 * starting_resolution * pow(2.0, -static_cast<double>(i) / interval) / pow(2.0, j);
+            cout << "GSHOTPyr::constructor resolution at lvl "<<i<<" = "<<resolution<<endl;
+            cout << "GSHOTPyr::constructor index "<<index<<endl;
 
-        
-        int nb_kpt = keypoints_[i]->size();
-        
-        bool isZero = true;
-        Level level( topology[i](0), topology[i](1), topology[i](2));
-        Cell* levelCell = &(level()(0));
-        //Loop over the number of keypoints available
-        for (int kpt = 0; kpt < nb_kpt; ++kpt){
-            //For each keypoint, create a cell which will contain the corresponding shot descriptor
-            Cell cell(GSHOTPyramid::DescriptorSize);
-            //Then for each value of the associated descriptor, fill in the cell
-            for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
-                cell.row(k) = descriptors->points[kpt].descriptor[k];
-//                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] "
-//                     << descriptors->points[kpt].descriptor[k] << endl;
-//                cout << "GSHOTPyr::constructor cell.row("<<k<<") "
-//                     << cell.row(k) << endl;
-                if( descriptors->points[kpt].descriptor[k] != 0) isZero = false;
+
+            PointCloudPtr subspace(new PointCloudT());
+            pcl::UniformSampling<PointType> sampling;
+            sampling.setInputCloud(input);
+            sampling.setRadiusSearch (resolution);
+            sampling.filter(*subspace);
+
+            PointType min;
+            PointType max;
+            pcl::getMinMax3D(*subspace, min, max);
+
+            keypoints_[index] = compute_keypoints(subspace, resolution, min, max, index);
+            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], resolution);
+
+            bool isZero = true;
+            Level level( topology[index](0), topology[index](1), topology[index](2));
+            Cell* levelCell = &(level()(0));
+            //Loop over the number of keypoints available
+            for (int kpt = 0; kpt < keypoints_[index]->size(); ++kpt){
+                //For each keypoint, create a cell which will contain the corresponding shot descriptor
+                Cell cell(GSHOTPyramid::DescriptorSize);
+                //Then for each value of the associated descriptor, fill in the cell
+                for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+                    cell.row(k) = descriptors->points[kpt].descriptor[k];
+    //                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] "
+    //                     << descriptors->points[kpt].descriptor[k] << endl;
+    //                cout << "GSHOTPyr::constructor cell.row("<<k<<") "
+    //                     << cell.row(k) << endl;
+                    if( descriptors->points[kpt].descriptor[k] != 0) isZero = false;
+                }
+               //Add the cell to the current level
+                //TODO check the order of the cells
+                *levelCell = cell;
+                ++levelCell;
             }
-           //Add the cell to the current level
-            //TODO check the order of the cells
-            *levelCell = cell;
-            ++levelCell;
+            //Once the first level is done, push it to the array of level
+            levels_[index] = level;
+            cout << "GSHOTPyr::constructor pyramid octave "<<j<<" isZero : " << isZero << endl;
         }
-        //Once the first level is done, push it to the array of level
-        levels_[i] = level;
-        cout << "GSHOTPyr::constructor pyramid isZero : " << isZero << endl;
-
     }
 }
 
@@ -348,7 +345,7 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
 }
 
 PointCloudPtr
-GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max){
+GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max, int index){
     
     int pt_nb_x = (int)((max.x-min.x)/grid_reso+1);
     int pt_nb_y = (int)((max.y-min.y)/grid_reso+1);
@@ -356,7 +353,7 @@ GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType 
     int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
     
     Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_x, pt_nb_y, pt_nb_z);
-    topology.push_back(topo);
+    topology[index] = topo;
     
     PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
     
@@ -381,8 +378,7 @@ GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType 
 }
 
 
-double
-GSHOTPyramid::computeCloudResolution (const pcl::PointCloud<PointType>::ConstPtr &cloud)
+double GSHOTPyramid::computeCloudResolution (PointCloudConstPtr cloud)
 {
   double res = 0.0;
   int n_points = 0;
@@ -414,13 +410,13 @@ GSHOTPyramid::computeCloudResolution (const pcl::PointCloud<PointType>::ConstPtr
 }
 
 
-Tensor3DF GSHOTPyramid::TensorMap(Level & level){
-    Tensor3DF res( level.depths(), level.rows(), level.cols() * DescriptorSize);
-    res() = Eigen::TensorMap< Eigen::Tensor< Scalar, 3, Eigen::RowMajor> >(level().data()->data(),
-                                                                          level.depths(), level.rows(),
-                                                                          level.cols() * DescriptorSize);
-    return res;
-}
+//Tensor3DF GSHOTPyramid::TensorMap(Level & level){
+//    Tensor3DF res( level.depths(), level.rows(), level.cols() * DescriptorSize);
+//    res() = Eigen::TensorMap< Eigen::Tensor< Scalar, 3, Eigen::RowMajor> >(level().data()->data(),
+//                                                                          level.depths(), level.rows(),
+//                                                                          level.cols() * DescriptorSize);
+//    return res;
+//}
 
 Tensor3DF GSHOTPyramid::TensorMap(Level level){
     const Tensor3DF res( Eigen::TensorMap< Eigen::Tensor< Scalar, 3, Eigen::RowMajor> >(level().data()->data(),

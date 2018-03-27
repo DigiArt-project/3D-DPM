@@ -68,7 +68,7 @@ namespace FFLD
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
         GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5,
-                     float starting_resolution = 0.07);
+                     float starting_resolution = 0.07, int nbOctave = 2);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
@@ -127,14 +127,14 @@ namespace FFLD
         
         /// Maps a pyramid level to a simple matrix (useful to apply standard matrix operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
-        static Tensor3DF TensorMap(Level & level);
+//        static Tensor3DF TensorMap(Level & level);
         
         /// Maps a const pyramid level to a simple const matrix (useful to apply standard matrix
         /// operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
         static Tensor3DF TensorMap(Level level);
         
-        
+        static double computeCloudResolution (PointCloudConstPtr cloud);
         
         private:
         
@@ -144,10 +144,8 @@ namespace FFLD
         
         // Method creating the keypoint grid using the min/max values of the input
         PointCloudPtr
-        compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max);
+        compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max, int index);
         
-        double
-        computeCloudResolution (const pcl::PointCloud<PointType>::ConstPtr &cloud);
         
 //        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)
 //        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;
@@ -159,12 +157,7 @@ namespace FFLD
         static void Convolve(const Level & x, const Level & y, Tensor3D<Scalar> & z);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
-        std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;
-//        int _octaves;
-//        float _original_resolution;
-//        int interval_;
-//        int height_;
-//        Tensor<Cell> levels_;
+        std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;//number of points at [lvl]
 
         Eigen::Vector3i pad_;
         int interval_;

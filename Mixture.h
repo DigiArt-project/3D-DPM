@@ -84,7 +84,7 @@ public:
 	/// @note The magic constants come from Felzenszwalb's implementation.
     double train(const std::vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad = Eigen::Vector3i( 12, 12, 12),
 				 int interval = 5, int nbRelabel = 5, int nbDatamine = 10, int maxNegatives = 24000,
-				 double C = 0.002, double J = 2.0, double overlap = 0.7);
+                 double C = 0.002, double J = 2.0, double overlap = 0.4);
 	
 	/// Initializes the specidied number of parts from the root of each model.
 	/// @param[in] nbParts Number of parts (without the root).

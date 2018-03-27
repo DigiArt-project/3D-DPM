@@ -14,8 +14,6 @@ int main(){
     //Turn pcl message to OFF !!!!!!!!!!!!!!!!!!!!
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-    float starting_resolution = 0.07;
-
 
     char* filename = "/home/ubuntu/3DDataset/3DDPM/chair.pcd";
     PointCloudPtr cloud( new PointCloudT);
@@ -24,7 +22,7 @@ int main(){
         return 0;
     }
 
-
+    float starting_resolution = GSHOTPyramid::computeCloudResolution(cloud);
 ///////////////////
 
 //    float resolution = starting_resolution;
@@ -105,28 +103,38 @@ int main(){
     PointType min;
     PointType max;
     pcl::getMinMax3D(*cloud , min, max);
-    Model::triple<int, int, int> rootSize( (max.z-min.z)/starting_resolution/1.5,
-                                           (max.y-min.y)/starting_resolution/1.5,
-                                           (max.x-min.x)/starting_resolution/1.5);
-    Rectangle rec( min.x, max.y, min.z, rootSize.third, rootSize.second, rootSize.first);
+    float resolution = 10 * starting_resolution;
+    Model::triple<int, int, int> sceneSize( (max.z-min.z)/resolution+1,
+                                           (max.y-min.y)/resolution+1,
+                                           (max.x-min.x)/resolution+1);
+    Model::triple<int, int, int> rootSize( sceneSize.first/2,
+                                           sceneSize.second/2,
+                                           sceneSize.third/2);
+    Model::triple<int, int, int> partSize( sceneSize.first/3,
+                                           sceneSize.second/3,
+                                           sceneSize.third/3);
+    Rectangle sceneRec( Eigen::Vector3i(1, 1, 1), rootSize.third, rootSize.second, rootSize.first);
 
+    cout<<"test::sceneRec : "<< sceneRec <<endl;
+    cout<<"test::sceneSize : "<<sceneSize.first<<" "<<sceneSize.second<<" "<<sceneSize.third<<endl;
     cout<<"test::rootSize : "<<rootSize.first<<" "<<rootSize.second<<" "<<rootSize.third<<endl;
+    cout<<"test::partSize : "<<partSize.first<<" "<<partSize.second<<" "<<partSize.third<<endl;
 
-    Model model( rootSize, 2, Model::triple<int, int, int>( rootSize.first/3, rootSize.second/3, rootSize.third/3));
+    Model model( rootSize, 1, partSize);
     std::vector<Model> models = { model,
                                   model};
     cout<<"test::filter size : "<<models[1].parts()[0].filter.size()<<endl;
     cout<<"test::model empty : "<<models.empty()<<endl;
 
     vector<Object> objects;
-    Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, rec);
+    Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, sceneRec);
     objects.push_back(obj);
-    vector<Scene> scenes = {Scene( rootSize.third, rootSize.second, rootSize.first, filename, objects)};
+    vector<Scene> scenes = {Scene( sceneSize.third, sceneSize.second, rootSize.first, filename, objects)};
 
 
     Mixture mixture( models);
 
-    int interval = 2;
+    int interval = 1;
     mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval);
 
 

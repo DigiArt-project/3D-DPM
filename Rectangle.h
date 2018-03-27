@@ -45,92 +45,103 @@ public:
     Rectangle(const Rectangle& rect);
 	
 	/// Constructs a rectangle with the given @p width and @p height.
-    Rectangle(float width, float height, float depth,float volume);
+    Rectangle(int width, int height, int depth);
 	
 	/// Constructs a rectangle with coordinates (@p x, @p y) and the given @p width and @p height.
-    Rectangle(int x, int y, int z, int width, int height, int depth);
+    Rectangle(Eigen::Vector3i origin, int width, int height, int depth);
 	
     ///Correspond to the top left corner of the rectangle
 	/// Returns the x-coordinate of the rectangle.
-    int x() const;
-    
-    /// Returns the y-coordinate of the rectangle.
-    int y() const;
-    
-     /// Returns the z-coordinate of the rectangle.
-    int z() const;
+    Eigen::Vector3i origin() const;
+
+    Eigen::Vector3i diagonal() const;
 	
 	/// Sets the x coordinate of the rectangle to @p x.
-    void setX(int x);
-    void setY(int y);
-    void setZ(int z);
+    void setOrigin(Eigen::Vector3i origin);
+
+    void setDiagonal(Eigen::Vector3i diagonal);
 
 
 	/// Returns the width of the rectangle.
-    float width() const;
+    int width() const;
 	/// Sets the height of the rectangle to the given @p width.
-    void setWidth(float width);
+    void setWidth(int width);
 	
 	/// Returns the height of the rectangle.
-    float height() const;
+    int height() const;
 	/// Sets the height of the rectangle to the given @p height.
-    void setHeight(float height);
+    void setHeight(int height);
     
     //Return the depth of the rectangle
-    float depth() const ;
+    int depth() const ;
     /// Sets the depth of the rectangle to the given @p depth.
-    void setDepth(float depth);
+    void setDepth(int depth);
     
     /// Returns whether the rectangle is empty. An empty rectangle has no volume.
     bool empty() const;
     
     /// Returns the volume of the rectangle.
     /// @note Equivalent to max(width(), 0) * max(height(), 0)* max(depth(), 0).
-    float volume() const;
-    void setVolume(float volume);
+    int volume() const;
+    void setVolume(int volume);
+
+    int right() const;
+    int left() const;
+    int top() const;
+    int bottom() const;
+    int front() const;
+    int back() const;
+
+
+    void setLeft(int left);
+    void setRight(int right);
+    void setBottom(int bottom);
+    void setTop(int top);
+    void setBack(int back);
+    void setFront(int front);
     
 
-    Eigen::Vector3f topFrontLeft() const;
-    Eigen::Vector3f topFrontRight() const;
-    Eigen::Vector3f topBackLeft() const;
-    Eigen::Vector3f topBackRight() const;
+//    Eigen::Vector3i topFrontLeft() const;
+//    Eigen::Vector3i topFrontRight() const;
+//    Eigen::Vector3i topBackLeft() const;
+//    Eigen::Vector3i topBackRight() const;
     
-    Eigen::Vector3f bottomFrontLeft() const;
-    Eigen::Vector3f bottomFrontRight() const;
-    Eigen::Vector3f bottomBackLeft() const;
-    Eigen::Vector3f bottomBackRight() const;
+//    Eigen::Vector3i bottomFrontLeft() const;
+//    Eigen::Vector3i bottomFrontRight() const;
+//    Eigen::Vector3i bottomBackLeft() const;
+//    Eigen::Vector3i bottomBackRight() const;
     
-    void setTopFrontLeft(Eigen::Vector3f pt);
-    void settopFrontRight(Eigen::Vector3f pt);
-    void setTopBackLeft(Eigen::Vector3f pt);
-    void setTopBackRight(Eigen::Vector3f pt);
+//    void setTopFrontLeft(Eigen::Vector3f pt);
+//    void settopFrontRight(Eigen::Vector3f pt);
+//    void setTopBackLeft(Eigen::Vector3f pt);
+//    void setTopBackRight(Eigen::Vector3f pt);
     
-    void bottomFrontLeft(Eigen::Vector3f pt);
-    void bottomFrontRight(Eigen::Vector3f pt);
-    void bottomBackLeft(Eigen::Vector3f pt);
-    void bottomBackRight(Eigen::Vector3f pt);
+//    void bottomFrontLeft(Eigen::Vector3f pt);
+//    void bottomFrontRight(Eigen::Vector3f pt);
+//    void bottomBackLeft(Eigen::Vector3f pt);
+//    void bottomBackRight(Eigen::Vector3f pt);
     
-    void toString() const;
+//    void toString() const;
     
-    void changeToPclCoordinateSystem();
+    Rectangle changeToPclCoordinateSystem() const;
 
 	
 private:
-    int x_;
-    int y_;
-    int z_;
-    Eigen::Vector3f topFrontLeft_;
-    Eigen::Vector3f topFrontRight_;
-    Eigen::Vector3f topBackLeft_;
-    Eigen::Vector3f topBackRight_;
-    Eigen::Vector3f bottomFrontLeft_;
-    Eigen::Vector3f bottomFrontRight_;
-    Eigen::Vector3f bottomBackLeft_;
-    Eigen::Vector3f bottomBackRight_;
-    float width_;
-    float height_;
-    float depth_;
-    float volume_;
+
+    Eigen::Vector3i origin_;//bottomBackLeft
+    Eigen::Vector3i diagonal_;//topFrontRight
+//    Eigen::Vector3f topFrontLeft_;
+//    Eigen::Vector3f topFrontRight_;
+//    Eigen::Vector3f topBackLeft_;
+//    Eigen::Vector3f topBackRight_;
+//    Eigen::Vector3f bottomFrontLeft_;
+//    Eigen::Vector3f bottomFrontRight_;
+//    Eigen::Vector3f bottomBackLeft_;
+//    Eigen::Vector3f bottomBackRight_;
+    int width_;
+    int height_;
+    int depth_;
+    int volume_;
 };
 
 /// Serializes a rectangle to a stream.

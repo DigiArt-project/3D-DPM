@@ -26,7 +26,7 @@
 #include "LBFGS.h"
 
 #include <Eigen/Core>
-
+#include <iostream>
 #include <algorithm>
 #include <cassert>
 
@@ -54,22 +54,28 @@ LBFGS::LBFGS(const IFunction * function, double epsilon, int maxIterations, int 
 
 double LBFGS::operator()(double * argx) const
 {
+    std::cout << "LBFGS::() optimization computation ..." << std::endl;
 	// Define the types ourselves to make sure that the matrices are col-major
 	typedef Eigen::Matrix<double, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXd;
 	typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixXd;
 	
 	assert(function_);
 	assert(argx);
-	
+    std::cout << "LBFGS::() optimization test1" << std::endl;
 	// Convert the current solution to an Eigen::Map
 	Eigen::Map<VectorXd> x(argx, function_->dim());
-	
+    std::cout << "LBFGS::() optimization test2" << std::endl;
+
 	// Initial value of the objective function and gradient
 	VectorXd g(x.rows());
+    std::cout << "LBFGS::() optimization test" << std::endl;
+
 	double fx = (*function_)(x.data(), g.data());
+    std::cout << "LBFGS::() optimization test3" << std::endl;
 	function_->progress(argx, g.data(), static_cast<int>(x.rows()), fx, x.norm(), g.norm(), 0.0, 0,
 						1);
-	
+    std::cout << "LBFGS::() optimization progress done" << std::endl;
+
 	// Histories of the previous solution (required by L-BFGS)
 	VectorXd px; // Previous solution x_{t-1}
 	VectorXd pg; // Previous gradient g_{t-1}
@@ -130,7 +136,8 @@ double LBFGS::operator()(double * argx) const
 			i = 0;
 			descent = -z.dot(g);
 		}
-		
+        std::cout << "LBFGS::() optimization backtracking ..." << std::endl;
+
 		// Backtracking using Wolfe's first condition (Armijo condition)
 		double step = i ? 1.0 : (1.0 / g.norm());
 		bool down = false;

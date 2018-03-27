@@ -58,7 +58,7 @@ static inline Result content(const xmlNodePtr cur)
 	return result;
 }
 
-//TODO: deprecated because we don't use pre segmented data
+//deprecated because we don't use pre segmented data
 /*
 Scene::Scene(const string & filename)
 {

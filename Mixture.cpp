@@ -158,11 +158,13 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 		vector<pair<Model, int> > positives;
 		
         posLatentSearch(scenes, name, pad, interval, overlap, positives);
-		
+
+        if(positives.size() > 0) cout << "Mix::train positives isZero = " << GSHOTPyramid::TensorMap(positives[0].first.parts()[0].filter).isZero() << endl;
+
         // Left-right clustering at the first iteration
         if (zero_)
             Cluster(static_cast<int>(models_.size()), positives);
-		
+
         // Cache of hard negative samples of maximum size maxNegatives
         vector<pair<Model, int> > negatives;
 		
@@ -179,37 +181,37 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
                     negatives[j++] = negatives[i];
 			
             negatives.resize(j);
-			
+
             // Sample new hard negatives
             negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
-			
+
             // Stop if there are no new hard negatives
             if (datamine && (negatives.size() == j))
                 break;
 			
-            // Merge the left / right samples for more efficient training
-            vector<int> posComponents(positives.size());
+//            // Merge the left / right samples for more efficient training
+//            vector<int> posComponents(positives.size());
 			
-            for (int i = 0; i < positives.size(); ++i) {
-                posComponents[i] = positives[i].second;
+//            for (int i = 0; i < positives.size(); ++i) {
+//                posComponents[i] = positives[i].second;
 				
-                // if positives[i].second is impair flip the model
-                if (positives[i].second & 1)
-                    positives[i].first = positives[i].first.flip();
-                // positives[i].second = 0,0,1,1,2,...
-                positives[i].second >>= 1;
-            }
+//                // if positives[i].second is impair flip the model
+//                if (positives[i].second & 1)
+//                    positives[i].first = positives[i].first.flip();
+//                // positives[i].second = 0,0,1,1,2,...
+//                positives[i].second >>= 1;
+//            }
 			
-            vector<int> negComponents(negatives.size());
+//            vector<int> negComponents(negatives.size());
 			
-            for (int i = 0; i < negatives.size(); ++i) {
-                negComponents[i] = negatives[i].second;
+//            for (int i = 0; i < negatives.size(); ++i) {
+//                negComponents[i] = negatives[i].second;
 				
-                if (negatives[i].second & 1)
-                    negatives[i].first = negatives[i].first.flip();
+//                if (negatives[i].second & 1)
+//                    negatives[i].first = negatives[i].first.flip();
 				
-                negatives[i].second >>= 1;
-            }
+//                negatives[i].second >>= 1;
+//            }
 			
 //            for(int i=0;i<models_.size(); ++i){
 //                for(int j=0;j<models_[i].parts().size(); ++j){
@@ -231,28 +233,28 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
             const int maxIterations =
                 min(max(10.0 * sqrt(static_cast<double>(positives.size())), 100.0), 1000.0);
-			
+
             loss = train(positives, negatives, C, J, maxIterations);
-			
+
             cout << "Relabel: " << relabel << ", datamine: " << datamine
                  << ", # positives: " << positives.size() << ", # hard negatives: " << j
                  << " (already in the cache) + " << (negatives.size() - j) << " (new) = "
                  << negatives.size() << ", loss (cache): " << loss << endl;
 			
-            // Unmerge the left / right samples
-            for (int i = 0; i < positives.size(); ++i) {
-                positives[i].second = posComponents[i];
+//            // Unmerge the left / right samples
+//            for (int i = 0; i < positives.size(); ++i) {
+//                positives[i].second = posComponents[i];
 				
-                if (positives[i].second & 1)
-                    positives[i].first = positives[i].first.flip();
-            }
+//                if (positives[i].second & 1)
+//                    positives[i].first = positives[i].first.flip();
+//            }
 			
-            for (int i = 0; i < negatives.size(); ++i) {
-                negatives[i].second = negComponents[i];
+//            for (int i = 0; i < negatives.size(); ++i) {
+//                negatives[i].second = negComponents[i];
 				
-                if (negatives[i].second & 1)
-                    negatives[i].first = negatives[i].first.flip();
-            }
+//                if (negatives[i].second & 1)
+//                    negatives[i].first = negatives[i].first.flip();
+//            }
 			
 //            // Unmerge the left / right models
 //            models_.resize(models_.size() * 2);
@@ -488,17 +490,23 @@ static inline void clipBndBox(Rectangle & bndbox, const Scene & scene, double al
     //TODO COMPRENDRE A QUOI CA SERT
 	// Compromise between clamping the bounding box to the image and penalizing bounding boxes
 	// extending outside the image
-//	if (bndbox.topFrontLeft().x() < 0)
-//		bndbox.setLeft(bndbox.topFrontLeft().x()  * alpha - 0.5);
-	
-//	if (bndbox.topFrontLeft().y() < 0)
-//		bndbox.setTop(bndbox.topFrontLeft().y() * alpha - 0.5);
-	
-//	if (bndbox.topFrontRight().x() >= scene.width())
-//		bndbox.setRight(scene.width() - 1 + (bndbox.topFrontRight().x() - scene.width() + 1) * alpha + 0.5);
-	
-//	if (bndbox.bottomFrontLeft().y() >= scene.height())
-//		bndbox.setBottom(scene.height() - 1 + (bndbox.bottomFrontLeft().y() - scene.height() + 1) * alpha + 0.5);
+//    if (bndbox.left() < 0)
+//        bndbox.setLeft(bndbox.left() * alpha - 0.5);
+
+//    if (bndbox.top() < 0)
+//        bndbox.setTop(bndbox.top() * alpha - 0.5);
+
+//    if (bndbox.front() < 0)
+//        bndbox.setFront(bndbox.front() * alpha - 0.5);
+
+//    if (bndbox.right() >= scene.width())
+//        bndbox.setRight(scene.width() - 1 + (bndbox.right() - scene.width() + 1) * alpha + 0.5);
+
+//    if (bndbox.bottom() >= scene.height())
+//        bndbox.setBottom(scene.height() - 1 + (bndbox.bottom() - scene.height() + 1) * alpha + 0.5);
+
+//    if (bndbox.back() >= scene.depth())
+//        bndbox.setBack(scene.depth() - 1 + (bndbox.back() - scene.depth() + 1) * alpha + 0.5);
 }
 
 void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
@@ -547,13 +555,13 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 		
         vector<Tensor3DF> scores;
 		vector<Indices> argmaxes;
-		vector<vector<vector<Model::Positions> > > positions;
+        vector<vector<vector<Model::Positions> > > positions;//positions[nbModels][nbLvl][nbPart]
 		
         if (!zero_){
 //            cout << "pos computeEnergyScores ..." << endl;
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
 
-            cout << "Mix::computeEnergyScores scores["<<0<<"] = " << scores[0].size() << endl;
+            cout << "Mix::computeEnergyScores scores["<<0<<"] is Zero = " << scores[0].isZero() << endl;
         }
 
         // For each object, set as positive the best (highest score or else most intersecting)
@@ -592,7 +600,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                     cout << "Mix::posLatentSearch rows = scores["<<lvl<<"].rows() = " << rows << endl;
                     cout << "Mix::posLatentSearch cols = scores["<<lvl<<"].cols() = " << cols << endl;
                 }
-                else if (lvl <= interval) {
+                else if (lvl >= interval) {
                     depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().first + 1;
                     rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().second + 1;
                     cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().third + 1;
@@ -614,15 +622,14 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     // The bounding box of the model at this position
                                     //TODO
 
-                                    Rectangle bndbox;//indices of the cube in the PC
-                                    //TODO
+                                    Eigen::Vector3i origin(x - pad.x(), y - pad.y(), z - pad.z());
+                                    int w = models_[k].rootSize().third * scale;
+                                    int h = models_[k].rootSize().second * scale;
+                                    int d = models_[k].rootSize().first * scale;
+
+                                    Rectangle bndbox( origin * scale, w, h, d);//indices of the cube in the PC
                                     //bndbox.setX( topology[ min(0, x - pad.x())].x)
-                                    bndbox.setX((x - pad.x()) * scale);
-                                    bndbox.setY((y - pad.y()) * scale);
-                                    bndbox.setZ((z - pad.z()) * scale);
-                                    bndbox.setWidth(models_[k].rootSize().third * scale);
-                                    bndbox.setHeight(models_[k].rootSize().second * scale);
-                                    bndbox.setDepth(models_[k].rootSize().first * scale);
+
 
                                     // Trade-off between clipping and penalizing
                                     clipBndBox(bndbox, scenes[i], 0.5);
@@ -630,7 +637,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     double inter = 0.0;
 
                                     if (intersector(bndbox, &inter)) {
+                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
                                         if (inter > intersection) {
+                                            cout << "Mix::posLatentSearch intersector true" << endl;
                                             model = k;
                                             intersection = inter;
                                         }
@@ -641,16 +650,20 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             else {
                                 //TODO
                                 // The bounding box of the model at this position
-                                Rectangle bndbox;
-                                bndbox.setX((x - pad.x()) * scale);
-                                bndbox.setY((y - pad.y()) * scale);
-                                bndbox.setZ((z - pad.z()) * scale);
-                                bndbox.setWidth(models_[model].rootSize().third * scale);
-                                bndbox.setHeight(models_[model].rootSize().second * scale);
-                                bndbox.setDepth(models_[model].rootSize().first * scale);
+                                Eigen::Vector3i origin(x - pad.x(), y - pad.y(), z - pad.z());
+                                int w = models_[model].rootSize().third * scale;
+                                int h = models_[model].rootSize().second * scale;
+                                int d = models_[model].rootSize().first * scale;
+
+                                Rectangle bndbox( origin * scale, w, h, d);//indices of the cube in the PC
+
 
                                 clipBndBox(bndbox, scenes[i]);
                                 intersector(bndbox, &intersection);
+
+//                                cout << "Mix::posLatentSearch intersector bndbox : " << scenes[i].objects()[j].bndbox() << endl;
+//                                cout << "Mix::posLatentSearch rectangle bndbox : " << bndbox << endl;
+//                                cout << "Mix::posLatentSearch intersector score / maxInter : " << intersection << " / " <<  maxInter << endl;
                             }
 
 
@@ -751,7 +764,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         vector<vector<vector<Model::Positions> > > positions;
 
         if (!zero_){
-            cout << "neg computeEnergyScores ..." << endl;
+            cout << "Mix::NegLatentSearch computeEnergyScores ..." << endl;
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
         }
 
@@ -847,6 +860,7 @@ public:
 	
 	virtual double operator()(const double * x, double * g = 0) const
 	{
+        std::cout << "LOSS::() ..." << std::endl;
 		// Recopy the features into the models
 		ToModels(x, models_);
 		
@@ -863,7 +877,8 @@ public:
 									 static_cast<int>(models_[i].parts().size()) - 1,
 									 models_[i].partSize());
 		}
-		
+        std::cout << "LOSS::() posMargins ... size : " << positives_.size() << std::endl;
+        if(positives_.size()>0) std::cout << "LOSS::() positives_[0].second : " << positives_[0].second << std::endl;
 		vector<double> posMargins(positives_.size());
 		
 #pragma omp parallel for
@@ -879,7 +894,9 @@ public:
 			}
 		}
 		
-		// Reweight the positives
+        std::cout << "LOSS::() Reweight the positives ..." << std::endl;
+
+        // Reweight thpositives
 		if (J_ != 1.0) {
 			loss *= J_;
 			
@@ -888,7 +905,8 @@ public:
 					gradients[i] *= J_;
 			}
 		}
-		
+        std::cout << "LOSS::() negMargins ..." << std::endl;
+
 		vector<double> negMargins(negatives_.size());
 		
 #pragma omp parallel for
@@ -903,7 +921,8 @@ public:
 					gradients[negatives_[i].second] += negatives_[i].first;
 			}
 		}
-		
+        std::cout << "LOSS::() test1" << std::endl;
+
 		// Add the loss and gradient of the regularization term
 		double maxNorm = 0.0;
 		int argNorm = 0;
@@ -911,15 +930,18 @@ public:
 		for (int i = 0; i < models_.size(); ++i) {
 			if (g)
 				gradients[i] *= C_;
-			
+            std::cout << "LOSS::() model norm()..." << std::endl;
+
 			const double norm = models_[i].norm();
-			
+            std::cout << "LOSS::() norm = "<<norm<<" / maxNorm = "<<maxNorm << std::endl;
+
 			if (norm > maxNorm) {
 				maxNorm = norm;
 				argNorm = i;
 			}
 		}
-		
+        std::cout << "LOSS::() test2" << std::endl;
+
 		// Recopy the gradient if needed
 		if (g) {
 			// Regularization gradient
@@ -932,7 +954,8 @@ public:
 			
 			// Do not regularize the bias
 			gradients[argNorm].bias() -= models_[argNorm].bias();
-			
+            std::cout << "LOSS::() test3" << std::endl;
+
 			// In case minimum constraints were applied
 			for (int i = 0; i < models_.size(); ++i) {
 				for (int j = 1; j < models_[i].parts().size(); ++j) {
@@ -947,9 +970,14 @@ public:
 					if (models_[i].parts()[j].deformation(4) >= -0.005)
 						gradients[i].parts()[j].deformation(4) =
 							max(gradients[i].parts()[j].deformation(4), 0.0);
+
+                    if (models_[i].parts()[j].deformation(6) >= -0.005)
+                        gradients[i].parts()[j].deformation(6) =
+                            max(gradients[i].parts()[j].deformation(6), 0.0);
 				}
 			}
-			
+            std::cout << "LOSS::() test4" << std::endl;
+
 			FromModels(gradients, g);
 		}
 		
@@ -958,6 +986,7 @@ public:
 	
 	static void ToModels(const double * x, vector<Model> & models)
 	{
+        std::cout << "LOSS::ToModels ..." << std::endl;
 		for (int i = 0, j = 0; i < models.size(); ++i) {
 			for (int k = 0; k < models[i].parts().size(); ++k) {
 				const int nbFeatures = static_cast<int>(models[i].parts()[k].filter.size()) *
@@ -969,13 +998,13 @@ public:
 				
 				if (k) {
 					// Apply minimum constraints
-					models[i].parts()[k].deformation(0) = min((x + j)[0],-0.005);
+                    models[i].parts()[k].deformation(0) = std::min((x + j)[0],-0.005);
 					models[i].parts()[k].deformation(1) = (x + j)[1];
-					models[i].parts()[k].deformation(2) = min((x + j)[2],-0.005);
+                    models[i].parts()[k].deformation(2) = std::min((x + j)[2],-0.005);
 					models[i].parts()[k].deformation(3) = (x + j)[3];
-					models[i].parts()[k].deformation(4) = min((x + j)[4],-0.005);
+                    models[i].parts()[k].deformation(4) = std::min((x + j)[4],-0.005);
 					models[i].parts()[k].deformation(5) = (x + j)[5];
-                    models[i].parts()[k].deformation(6) = min((x + j)[6],-0.005);
+                    models[i].parts()[k].deformation(6) = std::min((x + j)[6],-0.005);
                     models[i].parts()[k].deformation(7) = (x + j)[7];
 					
                     j += 8;
@@ -1028,8 +1057,14 @@ double Mixture::train(const vector<pair<Model, int> > & positives,
 					  const vector<pair<Model, int> > & negatives, double C, double J,
 					  int maxIterations)
 {
+    cout << "Mix::trainSVM ..." << endl;
+
 	detail::Loss loss(models_, positives, negatives, C, J, maxIterations);
+    cout << "Mix::trainSVM loss created" << endl;
+
 	LBFGS lbfgs(&loss, 0.001, maxIterations, 20, 20);
+    cout << "Mix::trainSVM lbfgs created" << endl;
+
 	
 	// Start from the current models
 	VectorXd x(loss.dim());

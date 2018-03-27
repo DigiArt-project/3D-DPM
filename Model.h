@@ -174,7 +174,7 @@ public:
 	/// Returns the flipped version (horizontally) of a model or a fixed sample.
 	Model flip() const;
 	
-	/// Computes an in-place 2D quadratic distance transform.
+    /// Computes an in-place 3D quadratic distance transform.
 	/// @param[in,out] matrix Matrix to tranform in-place.
 	/// @param[in] part Part from which to read the deformation cost and offset.
 	/// @param tmp Temporary matrix.
