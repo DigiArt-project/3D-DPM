@@ -42,6 +42,8 @@ Mixture::Mixture(const vector<Model> & models) : models_(models), cached_(false)
     for(int i=0;i<models_.size(); ++i){
         for(int j=0;j<models_[i].parts().size(); ++j){
             cout<<"Mix::contructor models_["<<i<<"].parts_["<<j<<"].filter.size() : "<< models_[i].parts()[j].filter.size() <<endl;
+            cout<<"Mix::contructor models_["<<i<<"].parts_["<<j<<"].filter.isZero() : "
+               << GSHOTPyramid::TensorMap( models_[i].parts()[j].filter).isZero() << endl;
         }
     }
 
@@ -182,6 +184,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 			
             negatives.resize(j);
 
+            //TODO
             // Sample new hard negatives
             negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
 
@@ -336,9 +339,8 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
 
     // Convolve with all the models
     vector<vector<Tensor3DF> > convolutions;
-//    cout<<"Mix::computeEnergyScores::convolve ..."<<endl;
     convolve(pyramid, convolutions, positions);
-//    cout<<"Mix::computeEnergyScores::convolve done, convolutions.size : "<< convolutions.size() << " / " << convolutions[0].size()<<endl;
+
 
     // In case of error
     if (convolutions.empty()) {
@@ -361,19 +363,15 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
 
 
         for (int i = 1; i < nbModels; ++i) {
-//            cout<<"Mix::computeEnergyScores:: for model : "<< i << " on level :" << lvl <<endl;
-//            cout<<"Mix::computeEnergyScores::convolutions[i][lvl] : "<< convolutions[i][lvl].size() <<endl;
             rows = std::min(rows, static_cast<int>(convolutions[i][lvl].rows()));
             cols = std::min(cols, static_cast<int>(convolutions[i][lvl].cols()));
             depths = std::min(depths, static_cast<int>(convolutions[i][lvl].depths()));
         }
+        cout << "Mix::computeEnergyScores convolutions is zero = "
+             <<convolutions[0][lvl].isZero() << endl;
 
-//        cout<<"computeEnergyScores::depths : "<< depths <<endl;
-//        cout<<"computeEnergyScores::rows : "<< rows <<endl;
-//        cout<<"computeEnergyScores::cols : "<< cols <<endl;
         scores[lvl]().resize(depths, rows, cols);
         argmaxes[lvl]().resize(depths, rows, cols);
-//        cout<<"computeEnergyScores::lvl : "<< lvl <<endl;
 
         for (int z = 0; z < depths; ++z) {
             for (int y = 0; y < rows; ++y) {
@@ -388,6 +386,7 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
 //                        cout << "Mix::computeEnergyScores convolutions["<<i<<"]["<<lvl<<"]()(z, y, x) = " << convolutions[i][lvl]()(z, y, x) << endl;
 //                        cout << "Mix::computeEnergyScores convolutions["<<argmax<<"]["<<lvl<<"]()(z, y, x) = " << convolutions[argmax][lvl]()(z, y, x) << endl;
                     }
+
                     scores[lvl]()(z, y, x) = convolutions[argmax][lvl]()(z, y, x);
                     argmaxes[lvl]()(z, y, x) = argmax;
                 }
@@ -558,7 +557,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         vector<vector<vector<Model::Positions> > > positions;//positions[nbModels][nbLvl][nbPart]
 		
         if (!zero_){
-//            cout << "pos computeEnergyScores ..." << endl;
+            //only remaines score for the last octave !!!!!!!
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
 
             cout << "Mix::computeEnergyScores scores["<<0<<"] is Zero = " << scores[0].isZero() << endl;
@@ -637,9 +636,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     double inter = 0.0;
 
                                     if (intersector(bndbox, &inter)) {
-                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
+//                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
                                         if (inter > intersection) {
-                                            cout << "Mix::posLatentSearch intersector true" << endl;
+//                                            cout << "Mix::posLatentSearch intersector true" << endl;
                                             model = k;
                                             intersection = inter;
                                         }
@@ -686,7 +685,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             cout << "maxInter : " << maxInter << " >= overlap :" << overlap << endl;
 
             if (maxInter >= overlap) {
-                cout << "Mix:PosLatentSearch found a positive sample" << endl;
+                cout << "Mix:PosLatentSearch found a positive sample at lvl : " << argLvl << endl;
 
                 Model sample;
 				
@@ -1115,6 +1114,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
         models_[i].convolve(pyramid, scores[i], positions ? &(*positions)[i] : 0/*, &convolutions*/);
 //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
         cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
+        cout<<"Mix::convolve for each models_ : convolutions["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
 
     }
 }

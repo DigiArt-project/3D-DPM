@@ -110,12 +110,12 @@ public:
 	/// Caches the transformed version of the models' filters.
 	void cacheFilters() const;
 	
-private:
-	// Extracts all the positives
+//private:
+    // Extracts all the positives
 	void posLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
                          Eigen::Vector3i pad, int interval, double overlap,
 						 std::vector<std::pair<Model, int> > & positives) const;
-	
+
 	// Bootstraps negatives with a non zero loss
 	void negLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
                          Eigen::Vector3i pad, int interval, int maxNegatives,
