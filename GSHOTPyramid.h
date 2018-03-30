@@ -154,7 +154,7 @@ namespace FFLD
         
 
         // Computes the 2D convolution of a pyramid level with a filter
-        static void Convolve(const Level & x, const Level & y, Tensor3D<Scalar> & z);
+        static void Convolve(const Level & x, const Level & y, Tensor3DF & z);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
         std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;//number of points at [lvl]

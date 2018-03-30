@@ -181,7 +181,7 @@ public:
 	/// @param[out] positions Optimal position of each part for each root location.
 //    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
 //					 Positions * positions = 0);
-    static void DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp,
+    static void DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor3DF & tmp2,
                      Positions * positions = 0);
 	
 private:

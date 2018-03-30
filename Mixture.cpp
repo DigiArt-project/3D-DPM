@@ -237,7 +237,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             const int maxIterations =
                 min(max(10.0 * sqrt(static_cast<double>(positives.size())), 100.0), 1000.0);
 
-            loss = train(positives, negatives, C, J, maxIterations);
+            loss = trainSVM(positives, negatives, C, J, maxIterations);
 
             cout << "Relabel: " << relabel << ", datamine: " << datamine
                  << ", # positives: " << positives.size() << ", # hard negatives: " << j
@@ -722,6 +722,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                               int interval, int maxNegatives,
                               vector<pair<Model, int> > & negatives) const
 {
+    cout<<"Mix::negLatentSearch ..."<<endl;
     // Sample at most (maxNegatives - negatives.size()) negatives with a score above -1.0
     if (scenes.empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1) || (maxNegatives <= 0) ||
             (negatives.size() >= maxNegatives)) {
@@ -740,24 +741,27 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         for (int k = 0; k < scenes[i].objects().size(); ++k)
             if (scenes[i].objects()[k].name() == name)
                 positive = true;
-
+cout<<"Mix::negLatentSearch positive = "<<positive<<endl;
         if (positive)
             continue;
-
+cout<<"Mix::negLatentSearch test0"<<endl;
         PointCloudPtr cloud( new PointCloudT);
 
         if (pcl::io::loadPCDFile<PointType>(scenes[i].filename().c_str(), *cloud) == -1) {
+            cout<<"Mix::negLatentSearch couldnt load PCD file"<<endl;
             negatives.clear();
             return;
         }
+        cout<<"Mix::negLatentSearch test1"<<endl;
 
         const GSHOTPyramid pyramid(cloud, pad, interval);
 
         if (pyramid.empty()) {
+            cout<<"Mix::negLatentSearch pyramid empty"<<endl;
             negatives.clear();
             return;
         }
-
+cout<<"Mix::negLatentSearch test2"<<endl;
         vector<Tensor3DF> scores;
         vector<Indices> argmaxes;
         vector<vector<vector<Model::Positions> > > positions;
@@ -766,6 +770,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             cout << "Mix::NegLatentSearch computeEnergyScores ..." << endl;
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
         }
+        cout<<"Mix::negLatentSearch test3"<<endl;
 
         for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
             int rows = 0;
@@ -795,6 +800,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             models_[argmax].initializeSample(pyramid, x, y, z, lvl, sample,
                                                              zero_ ? 0 : &positions[argmax]);
                             if (!sample.empty()) {
+                                //TODO
                                 // Store all the information about the sample in the offset and
                                 // deformation of its root
                                 sample.parts()[0].offset(0) = i;
@@ -804,6 +810,8 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 sample.parts()[0].deformation(2) = x;
                                 sample.parts()[0].deformation(3) = argmax;
                                 sample.parts()[0].deformation(4) = zero_ ? 0.0 : scores[lvl]()(z, y, x);
+                                sample.parts()[0].deformation(5) = 11;
+                                sample.parts()[0].deformation(6) = 12;
 
                                 // Look if the same sample was already sampled
                                 while ((j < nbCached) && (negatives[j].first < sample))
@@ -859,7 +867,6 @@ public:
 	
 	virtual double operator()(const double * x, double * g = 0) const
 	{
-        std::cout << "LOSS::() ..." << std::endl;
 		// Recopy the features into the models
 		ToModels(x, models_);
 		
@@ -876,9 +883,9 @@ public:
 									 static_cast<int>(models_[i].parts().size()) - 1,
 									 models_[i].partSize());
 		}
-        std::cout << "LOSS::() posMargins ... size : " << positives_.size() << std::endl;
-        if(positives_.size()>0) std::cout << "LOSS::() positives_[0].second : " << positives_[0].second << std::endl;
-		vector<double> posMargins(positives_.size());
+
+
+        vector<double> posMargins(positives_.size());
 		
 #pragma omp parallel for
 		for (int i = 0; i < positives_.size(); ++i)
@@ -893,7 +900,6 @@ public:
 			}
 		}
 		
-        std::cout << "LOSS::() Reweight the positives ..." << std::endl;
 
         // Reweight thpositives
 		if (J_ != 1.0) {
@@ -904,7 +910,6 @@ public:
 					gradients[i] *= J_;
 			}
 		}
-        std::cout << "LOSS::() negMargins ..." << std::endl;
 
 		vector<double> negMargins(negatives_.size());
 		
@@ -920,7 +925,6 @@ public:
 					gradients[negatives_[i].second] += negatives_[i].first;
 			}
 		}
-        std::cout << "LOSS::() test1" << std::endl;
 
 		// Add the loss and gradient of the regularization term
 		double maxNorm = 0.0;
@@ -929,7 +933,6 @@ public:
 		for (int i = 0; i < models_.size(); ++i) {
 			if (g)
 				gradients[i] *= C_;
-            std::cout << "LOSS::() model norm()..." << std::endl;
 
 			const double norm = models_[i].norm();
             std::cout << "LOSS::() norm = "<<norm<<" / maxNorm = "<<maxNorm << std::endl;
@@ -939,7 +942,6 @@ public:
 				argNorm = i;
 			}
 		}
-        std::cout << "LOSS::() test2" << std::endl;
 
 		// Recopy the gradient if needed
 		if (g) {
@@ -953,7 +955,6 @@ public:
 			
 			// Do not regularize the bias
 			gradients[argNorm].bias() -= models_[argNorm].bias();
-            std::cout << "LOSS::() test3" << std::endl;
 
 			// In case minimum constraints were applied
 			for (int i = 0; i < models_.size(); ++i) {
@@ -975,7 +976,6 @@ public:
                             max(gradients[i].parts()[j].deformation(6), 0.0);
 				}
 			}
-            std::cout << "LOSS::() test4" << std::endl;
 
 			FromModels(gradients, g);
 		}
@@ -985,7 +985,6 @@ public:
 	
 	static void ToModels(const double * x, vector<Model> & models)
 	{
-        std::cout << "LOSS::ToModels ..." << std::endl;
 		for (int i = 0, j = 0; i < models.size(); ++i) {
 			for (int k = 0; k < models[i].parts().size(); ++k) {
 				const int nbFeatures = static_cast<int>(models[i].parts()[k].filter.size()) *
@@ -1052,17 +1051,15 @@ private:
 };}
 }
 
-double Mixture::train(const vector<pair<Model, int> > & positives,
+double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 					  const vector<pair<Model, int> > & negatives, double C, double J,
 					  int maxIterations)
 {
     cout << "Mix::trainSVM ..." << endl;
 
 	detail::Loss loss(models_, positives, negatives, C, J, maxIterations);
-    cout << "Mix::trainSVM loss created" << endl;
 
 	LBFGS lbfgs(&loss, 0.001, maxIterations, 20, 20);
-    cout << "Mix::trainSVM lbfgs created" << endl;
 
 	
 	// Start from the current models

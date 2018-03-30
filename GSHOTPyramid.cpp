@@ -119,10 +119,8 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3DF & z)
 
     Eigen::Tensor<float, 3, RowMajor> dx(x().dimension(0), x().dimension(1), x().dimension(2) * DescriptorSize),
                                       dy(y().dimension(0), y().dimension(1), y().dimension(2) * DescriptorSize);
-//    Eigen::Tensor<float, 3, RowMajor> res( dx.dimension(0) - dy.dimension(0) + 1,
-//                                   dx.dimension(1) - dy.dimension(1) + 1,
-//                                   dx.dimension(2) - dy.dimension(2) + 1);
 
+//TODO use TensorMap
     bool xIsZero = true;
     for (int i = 0; i < x().dimension(0); ++i) {
         for (int j = 0; j < x().dimension(1); ++j) {

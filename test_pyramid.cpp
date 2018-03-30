@@ -60,6 +60,32 @@ public:
     }
 
     //Tester convolution
+    void block(){
+        Tensor3DF y(3,3,3);
+        float cpt = 0.0;
+        for (int i = 0; i < y().dimension(0); ++i) {
+            for (int j = 0; j < y().dimension(1); ++j) {
+                for (int k = 0; k < y().dimension(2); ++k) {
+                    y()(i,j,k) = cpt;
+                    cpt += 1.0;
+                }
+            }
+        }
+
+        auto b = y.block( 1, 2, 0, 1, 1, 3);
+
+        std::cout << "y = \n" << y << std::endl;
+//        std::cout << "b = \n" << b() << std::endl;
+
+        b()(0,0,1) = 4.72;
+
+//        std::cout << "b = \n";
+//        std::cout << b() << std::endl;
+
+        std::cout << "y = \n" << y << std::endl;
+    }
+
+    //Tester convolution
     void convolve(){
         int descriptorSize = 3;
         GSHOTPyramid::Level x(5,5,5), y(3,3,3);
@@ -122,7 +148,7 @@ int main(){
     
     Test t;
     //t.tensorParcours();
-    t.convolve();
+    t.block();
 
    
 

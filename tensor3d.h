@@ -106,11 +106,36 @@ public:
         return t;
     }
 
+
+
+//    Eigen::Map< Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> > block(int z, int y, int x, int p, int q, int r){
+////        Type* pointer = tensor.data() ;/*+ x + y * cols() + z * rows() * cols();*/
+////        return Eigen::TensorMap< Eigen::Tensor<Type, 3, Eigen::RowMajor> >(pointer, p, q, r);
+//        Type* pointer = tensor.data();
+
+//    }
+
     //row d'une matrice --> renvoie ligne de la matrice
     Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> row( int z, int y) const{
         Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> res(tensor.dimension(2));
         for (int x = 0; x < tensor.dimension(2); ++x) {
             res( 0, x) = tensor(z, y, x);
+        }
+        return res;
+    }
+
+    Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> col( int z, int x) const{
+        Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> res(tensor.dimension(1));
+        for (int y = 0; y < tensor.dimension(1); ++y) {
+            res( 0, y) = tensor(z, y, x);
+        }
+        return res;
+    }
+
+    Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> depth( int y, int x) const{
+        Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> res(tensor.dimension(0));
+        for (int z = 0; z < tensor.dimension(0); ++z) {
+            res( 0, z) = tensor(z, y, x);
         }
         return res;
     }

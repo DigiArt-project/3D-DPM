@@ -122,7 +122,7 @@ public:
 						 std::vector<std::pair<Model, int> > & negatives) const;
 	
 	// Trains the mixture from positive and negative samples with fixed latent variables
-	double train(const std::vector<std::pair<Model, int> > & positives,
+    double trainSVM(const std::vector<std::pair<Model, int> > & positives,
 				 const std::vector<std::pair<Model, int> > & negatives, double C, double J,
 				 int maxIterations = 400);
 	

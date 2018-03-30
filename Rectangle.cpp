@@ -41,9 +41,9 @@ Rectangle::Rectangle(int width, int height, int depth) :
 }
 
 Rectangle::Rectangle(Eigen::Vector3i origin, int width, int height, int depth) :
-    origin_( origin), width_(width), height_(height), depth_(depth),
-    diagonal_( origin.x() + width_, origin.y() + height_, origin.z() + depth_)
+    origin_( origin), width_(width), height_(height), depth_(depth)
 {
+    diagonal_ = Eigen::Vector3i( origin.x() + width_, origin.y() + height_, origin.z() + depth_);
     volume_ = volume();
 }
 
@@ -272,8 +272,9 @@ int Rectangle::volume() const
 
 Rectangle Rectangle::changeToPclCoordinateSystem() const{
     Eigen::Vector3i pclOrigin( origin().x(), diagonal().y(), diagonal().z());
-
-    return Rectangle( pclOrigin, width(), height(), depth());
+    Rectangle rec( pclOrigin, width(), height(), depth());
+    rec.setDiagonal(Eigen::Vector3i( diagonal().x(), origin().y(), origin().z()));
+    return rec;
 //    this->topFrontLeft_ = substractValue(this->topFrontLeft(),Eigen::Vector3f(0,-this->height(),0));
 //    this->topFrontRight_ = substractValue(this->topFrontRight(),Eigen::Vector3f(0,-this->height(),0));
 //    this->bottomFrontLeft_ = substractValue(this->bottomFrontLeft(),Eigen::Vector3f(0,this->height(),0));
