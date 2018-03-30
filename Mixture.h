@@ -25,6 +25,7 @@
 #include "Model.h"
 #include "Patchwork.h"
 #include "Scene.h"
+#include "viewer.h"
 
 #include <pcl/io/pcd_io.h>
 

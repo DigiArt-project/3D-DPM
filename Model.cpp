@@ -676,7 +676,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 	else {
 		tmpConvolutions.resize(nbFilters);
 		
-//#pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < nbFilters; ++i){
 
             pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);

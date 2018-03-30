@@ -355,7 +355,7 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
     }
 
 
-//#pragma omp parallel for
+#pragma omp parallel for
     for (int lvl = 0; lvl < nbLevels; ++lvl) {
         int rows = static_cast<int>(convolutions[0][lvl].rows());
         int cols = static_cast<int>(convolutions[0][lvl].cols());
@@ -1104,7 +1104,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 	// Transform the filters if needed
 
 
-//#pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < nbModels; ++i){
 //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
 

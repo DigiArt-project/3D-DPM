@@ -30,7 +30,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 //    float starting_kp_reso = 0.2;
 //    float starting_descr_rad = 0.4;
     float resolution;
-    starting_resolution = computeCloudResolution(input);
+    starting_resolution = 0.00338117;//computeCloudResolution(input);
     cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 //    float kp_resolution;
 //    float descr_rad;
@@ -45,7 +45,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         for (int j = 0; j < nbOctave; ++j) {
             int index = i + j * interval_;
 //            resolution = 10 * starting_resolution * pow(2.0, -static_cast<double>(i) / interval) / pow(2.0, j);
-            resolution = 7 * starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
+            resolution = 30 * starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
 
 
 
@@ -54,6 +54,12 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             sampling.setInputCloud(input);
             sampling.setRadiusSearch (resolution);
             sampling.filter(*subspace);
+
+
+//            pcl::VoxelGrid<PointCloudT> sor;
+//            sor.setInputCloud (input);
+//            sor.setLeafSize (resolution, resolution, resolution);
+//            sor.filter (*subspace);
 
             cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
             cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
@@ -64,7 +70,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             pcl::getMinMax3D(*subspace, min, max);
 
             keypoints_[index] = compute_keypoints(subspace, resolution, min, max, index);
-            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], resolution*10);
+            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 0.01);
 
             bool isZero = true;
             Level level( topology[index](0), topology[index](1), topology[index](2));
@@ -100,7 +106,7 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
 
     convolutions.resize(levels_.size());
 
-//#pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < levels_.size(); ++i){
         cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
            << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;

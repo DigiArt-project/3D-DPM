@@ -3,6 +3,19 @@
 #include <cstdlib>
 #include <sys/timeb.h>
 
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
+#include <pcl/features/board.h>
+#include <pcl/filters/uniform_sampling.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/shot_omp.h>
+#include <pcl/common/transforms.h>
+#include <pcl/common/common_headers.h>
+
 
 using namespace FFLD;
 using namespace std;
@@ -145,19 +158,17 @@ public:
         out << (positives[0].first);
     }
 
-    void testTrain(){
+    Mixture testTrain( Model::triple<int, int, int> rootSize, Rectangle sceneRec){
 
-        Model::triple<int, int, int> rootSize( sceneSize.first/4,
-                                           sceneSize.second/4,
-                                               sceneSize.third/4);
-        Model::triple<int, int, int> partSize( sceneSize.first/6,
-                                               sceneSize.second/6,
-                                               sceneSize.third/6);
-        Rectangle sceneRec( Eigen::Vector3i(1, 1, 1), rootSize.third, rootSize.second, rootSize.first);
-        Rectangle sceneRec2( Eigen::Vector3i(2, 2, 2), rootSize.third*0.75, rootSize.second*2, rootSize.first);
+
+        Model::triple<int, int, int> partSize( rootSize.first/3,
+                                               rootSize.second/3,
+                                               rootSize.third/3);
+//        Rectangle sceneRec( Eigen::Vector3i(1, 1, 1), rootSize.third, rootSize.second, rootSize.first);
+//        Rectangle sceneRec2( Eigen::Vector3i(2, 2, 2), rootSize.third*0.75, rootSize.second*2, rootSize.first);
 
         cout<<"test::sceneRec : "<< sceneRec <<endl;
-        cout<<"test::sceneRec2 : "<< sceneRec2 <<endl;
+//        cout<<"test::sceneRec2 : "<< sceneRec2 <<endl;
         cout<<"test::rootSize : "<<rootSize.first<<" "<<rootSize.second<<" "<<rootSize.third<<endl;
         cout<<"test::partSize : "<<partSize.first<<" "<<partSize.second<<" "<<partSize.third<<endl;
 
@@ -166,9 +177,9 @@ public:
 
         vector<Object> objects;
         Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, sceneRec);
-        Object obj2(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, sceneRec2);
+//        Object obj2(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, sceneRec2);
         objects.push_back(obj);
-        objects.push_back(obj2);
+//        objects.push_back(obj2);
 
         vector<Scene> scenes = {Scene( sceneSize.third, sceneSize.second, rootSize.first, sceneName, objects)};
 
@@ -177,6 +188,8 @@ public:
 
         int interval = 1;
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval);
+
+        return mixture;
 
     }
 
@@ -257,13 +270,93 @@ int main(){
     //Turn pcl message to OFF !!!!!!!!!!!!!!!!!!!!
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-    cout << "Start ..." << endl;
-    Test test( "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd");
+/////////Construct scene
+    PointCloudPtr sceneCloud( new PointCloudT);
+    PointCloudPtr chairCloud( new PointCloudT);
+    PointCloudPtr tableCloud( new PointCloudT);
+    PointCloudPtr tmpCloud( new PointCloudT);
+
+    if (pcl::io::loadPCDFile<PointType>("/home/ubuntu/3DDataset/3DDPM/chair.pcd", *chairCloud) == -1) {
+        cout<<"test::couldnt open pcd file"<<endl;
+    }
+    if (pcl::io::loadPCDFile<PointType>("/home/ubuntu/3DDataset/3DDPM/table.pcd", *tableCloud) == -1) {
+        cout<<"test::couldnt open pcd file"<<endl;
+    }
+    if (pcl::io::loadPCDFile<PointType>("/home/ubuntu/3DDataset/3DDPM/smallScene.pcd", *sceneCloud) == -1) {
+        cout<<"test::couldnt open pcd file"<<endl;
+    }
+
+    float sceneResolution = 30 * GSHOTPyramid::computeCloudResolution(sceneCloud);
+
+    float chairResolution = sceneResolution;//30 * GSHOTPyramid::computeCloudResolution(chairCloud);
+    float tableTesolution = sceneResolution;//30 * GSHOTPyramid::computeCloudResolution(tableCloud);
+
+    cout<<"test::sceneResolution : "<<sceneResolution<<endl;
+    cout<<"test::chairResolution : "<<chairResolution<<endl;
+    cout<<"test::tableTesolution : "<<tableTesolution<<endl;
+
+    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+
+    // Define a translation of 2.5 meters on the x axis.
+    transform.translation() << 1, 0.0, 0.0;
+
+    pcl::transformPointCloud (*chairCloud, *tmpCloud, transform);
+
+    pcl::UniformSampling<PointType> sampling;
+    sampling.setInputCloud(tmpCloud);
+    sampling.setRadiusSearch (chairResolution);
+    sampling.filter(*sceneCloud);
+
+    PointType minChair;
+    PointType maxChair;
+    pcl::getMinMax3D(*sceneCloud , minChair, maxChair);
+
+
+    Model::triple<int, int, int> chairSize( (maxChair.z-minChair.z)/chairResolution+1,
+                                            (maxChair.y-minChair.y)/chairResolution+1,
+                                            (maxChair.x-minChair.x)/chairResolution+1);
+
+    Rectangle chairBox(Eigen::Vector3i(0,0,0), chairSize.third, chairSize.second, chairSize.first);
+
+    tmpCloud = tableCloud;
+    sampling.setInputCloud(tmpCloud);
+    sampling.setRadiusSearch (tableTesolution);
+    sampling.filter(*tableCloud);
+
+    PointType minTable;
+    PointType maxTable;
+    pcl::getMinMax3D(*tableCloud , minTable, maxTable);
+
+    Model::triple<int, int, int> tableSize( (maxTable.z-minTable.z)/tableTesolution+1,
+                                            (maxTable.y-minTable.y)/tableTesolution+1,
+                                            (maxTable.x-minTable.x)/tableTesolution+1);
+
+    Rectangle tableBox(Eigen::Vector3i(0,0,0), tableSize.third, tableSize.second, tableSize.first);
+
+
+    *sceneCloud += *tableCloud;
+///////////////////////////
+
+
+    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd");
 
     //    test.testNegLatSearch();
     //test.testTrainSVM();
-//    test.testTrain();
-    test.testPosLatSearch();
+    Mixture mix = test.testTrain(chairSize, chairBox);
+//    test.testPosLatSearch();
+
+    Viewer viewer;
+    viewer.addPC( sceneCloud);
+    viewer.displayCubeLine(chairBox, chairResolution, minChair);
+    Rectangle expChairBox( Eigen::Vector3i(mix.models_[0].parts()[0].offset(0),
+                                               mix.models_[0].parts()[0].offset(1),
+                                               mix.models_[0].parts()[0].offset(2)),
+                            chairSize.third, chairSize.second, chairSize.first);
+    viewer.displayCubeLine(expChairBox, chairResolution, minChair, Eigen::Vector3i(255,255,0));
+
+    viewer.show();
+
+
 
     return 0;
 }

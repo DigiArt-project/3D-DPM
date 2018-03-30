@@ -16,17 +16,19 @@
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/shot_omp.h>
 #include <pcl/common/common_headers.h>
+#include <pcl/filters/voxel_grid.h>
 #include <vector>
 
 //Other
 #include "typedefs.h"
 #include "tensor3d.h"
+#include <omp.h>
 
 //Subsection = interval ?
 //Padding ?
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+//#ifdef _OPENMP
+//#include <omp.h>
+//#endif
 
 
 namespace FFLD
