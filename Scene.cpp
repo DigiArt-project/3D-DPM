@@ -34,8 +34,8 @@ Scene::Scene() : width_(0), height_(0), depth_(0)
 {
 }
 
-Scene::Scene(int width, int height, int depth, const string & filename,
-			 const vector<Object> & objects) : width_(width), height_(height), depth_(depth),
+Scene::Scene(Eigen::Vector3i origin, int width, int height, int depth, const string & filename,
+             const vector<Object> & objects) : origin_(origin), width_(width), height_(height), depth_(depth),
 filename_(filename), objects_(objects)
 {
 }
@@ -189,6 +189,17 @@ Scene::Scene(const string & filename)
 }
  */
 
+
+
+Eigen::Vector3i Scene::origin() const{
+    return origin_;
+}
+
+void Scene::setOrigin(Eigen::Vector3i origin){
+    origin_ = origin;
+}
+
+
 int Scene::width() const
 {
 	return width_;
@@ -252,9 +263,9 @@ ostream & FFLD::operator<<(ostream & os, const Scene & scene)
 
 istream & FFLD::operator>>(istream & is, Scene & scene)
 {
-	int width, height, depth, nbObjects;
+    int x, y, z, width, height, depth, nbObjects;
     
-    is >> width >> height >> depth >> nbObjects;
+    is >> x >> y >> z >> width >> height >> depth >> nbObjects;
 	is.get(); // Remove the space
 	
 	string filename;
@@ -270,7 +281,7 @@ istream & FFLD::operator>>(istream & is, Scene & scene)
 		return is;
 	}
 	
-	scene = Scene(width, height, depth, filename, objects);
+    scene = Scene(Eigen::Vector3i(x, y, z), width, height, depth, filename, objects);
 	
 	return is;
 }

@@ -46,7 +46,7 @@ public:
     /// @param[in] depth Depth of the PC.
     /// @param[in] filename Filename of the PC.
 	/// @param[in] objects List of objects present in the scene.
-	Scene(int width, int height, int depth, const std::string & filename,
+    Scene(Eigen::Vector3i origin, int width, int height, int depth, const std::string & filename,
 		  const std::vector<Object> & objects);
 	
 	/// Constructs a scene and tries to load the scene from the xml file with the given @p filename.
@@ -55,6 +55,12 @@ public:
 	/// Returns whether the scene is empty. An empty scene has an empty image and no object.
 	bool empty() const;
 	
+    /// Returns the origin of the PC.
+    Eigen::Vector3i origin() const;
+
+    /// Sets the origin of the PC.
+    void setOrigin(Eigen::Vector3i origin);
+
     /// Returns the width of the PC.
 	int width() const;
 	
@@ -86,6 +92,7 @@ public:
 	void setObjects(const std::vector<Object> & objects);
 	
 private:
+    Eigen::Vector3i origin_;
 	int width_;
 	int height_;
 	int depth_;

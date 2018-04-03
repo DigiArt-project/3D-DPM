@@ -1038,7 +1038,7 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 
     // Temporary vectors
     int maxi = max(depths,max(rows, cols));
-    int maxi2 = maxi * maxi;
+//    int maxi2 = maxi * maxi;
     vector<GSHOTPyramid::Scalar> distance(maxi + 1);
     vector<int> index(maxi + 1);
     vector<GSHOTPyramid::Scalar> t(maxi);

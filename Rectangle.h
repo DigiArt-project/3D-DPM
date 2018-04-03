@@ -128,16 +128,8 @@ public:
 	
 private:
 
-    Eigen::Vector3i origin_;//bottomBackLeft
-    Eigen::Vector3i diagonal_;//topFrontRight
-//    Eigen::Vector3f topFrontLeft_;
-//    Eigen::Vector3f topFrontRight_;
-//    Eigen::Vector3f topBackLeft_;
-//    Eigen::Vector3f topBackRight_;
-//    Eigen::Vector3f bottomFrontLeft_;
-//    Eigen::Vector3f bottomFrontRight_;
-//    Eigen::Vector3f bottomBackLeft_;
-//    Eigen::Vector3f bottomBackRight_;
+    Eigen::Vector3i origin_;
+    Eigen::Vector3i diagonal_;
     int width_;
     int height_;
     int depth_;

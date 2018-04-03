@@ -489,23 +489,23 @@ static inline void clipBndBox(Rectangle & bndbox, const Scene & scene, double al
     //TODO COMPRENDRE A QUOI CA SERT
 	// Compromise between clamping the bounding box to the image and penalizing bounding boxes
 	// extending outside the image
-//    if (bndbox.left() < 0)
-//        bndbox.setLeft(bndbox.left() * alpha - 0.5);
+    if (bndbox.left() < scene.origin()(0))
+        bndbox.setLeft(scene.origin()(0));
 
-//    if (bndbox.top() < 0)
-//        bndbox.setTop(bndbox.top() * alpha - 0.5);
+    if (bndbox.top() < scene.origin()(1))
+        bndbox.setTop(scene.origin()(1));
 
-//    if (bndbox.front() < 0)
-//        bndbox.setFront(bndbox.front() * alpha - 0.5);
+    if (bndbox.front() < scene.origin()(2))
+        bndbox.setFront(scene.origin()(2));
 
-//    if (bndbox.right() >= scene.width())
-//        bndbox.setRight(scene.width() - 1 + (bndbox.right() - scene.width() + 1) * alpha + 0.5);
+    if (bndbox.right() >= scene.width())
+        bndbox.setRight(scene.width() - 1);
 
-//    if (bndbox.bottom() >= scene.height())
-//        bndbox.setBottom(scene.height() - 1 + (bndbox.bottom() - scene.height() + 1) * alpha + 0.5);
+    if (bndbox.bottom() >= scene.height())
+        bndbox.setBottom(scene.height() - 1);
 
-//    if (bndbox.back() >= scene.depth())
-//        bndbox.setBack(scene.depth() - 1 + (bndbox.back() - scene.depth() + 1) * alpha + 0.5);
+    if (bndbox.back() >= scene.depth())
+        bndbox.setBack(scene.depth() - 1);
 }
 
 void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
@@ -543,7 +543,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 		
         const GSHOTPyramid pyramid(cloud, pad, interval);
 		
-        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
+//        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
 
 
 		if (pyramid.empty()) {

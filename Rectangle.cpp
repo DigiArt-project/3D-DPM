@@ -302,7 +302,7 @@ Rectangle Rectangle::changeToPclCoordinateSystem() const{
 
 ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)
 {
-    return os << rect.origin().x() << ' ' << rect.origin().y() << ' ' << rect.origin().z()
+    return os << rect.origin().z() << ' ' << rect.origin().y() << ' ' << rect.origin().x()
               <<' ' << rect.width() << ' ' << rect.height() << ' ' << rect.depth() << ' ' << rect.volume();
 }
 
