@@ -115,56 +115,72 @@ public:
 
     }
 
-//    void testNegLatSearch(){
-//        cout << "testNegLatSearch ..." << endl;
-//        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-//        Model::triple<int, int, int> chairPartSize( chairBox.depth()/3,
-//                                                    chairBox.height()/2,
-//                                                    chairBox.width()/3);
+    void testNegLatSearch(){
+        cout << "testNegLatSearch ..." << endl;
+        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
+                                                    chairBox.height()/2,
+                                                    chairBox.width()/2);
 
-//        Model model( chairSize, 1, chairPartSize);
-//        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3));
-//        model.parts()[0].filter = pyramid.levels()[0].block( 1, 1, 1, rootSize.first, rootSize.second, rootSize.third);
-//        model.parts()[1].filter = pyramid.levels()[0].block( 2, 2, 1, partSize.first, partSize.second, partSize.third);
-//        std::vector<Model> models = { model};
+        cout<<"test::chairPartSize : "<<chairPartSize.first<<" "<<chairPartSize.second<<" "<<chairPartSize.third<<endl;
 
-//        vector<Object> objects;
-//        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, sceneRec);
-//        Object obj2(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, sceneRec2);
-//        objects.push_back(obj);
+        Model model( chairSize, 1, chairPartSize);
+        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3));
+        std::vector<Model> models = { model};
+
+        vector<Object> objects;
+        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+//        Object obj2(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+        objects.push_back(obj);
 //        objects.push_back(obj2);
 
-//        vector<Scene> scenes = {Scene( sceneSize.third, sceneSize.second, rootSize.first, sceneName, objects)};
+        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)};
+
+        Mixture mixture( models);
+
+        for(int mod = 0; mod<mixture.models().size(); ++mod){
+            mixture.models()[mod].initializeParts( mixture.models()[mod].parts().size() - 1,
+                                                           mixture.models()[mod].partSize(), pyramid.levels()[0]);
+        }
+
+        Model sample;
+        sample.parts().resize(1);
+        sample.parts()[0].filter = pyramid.levels()[0].block(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2),
+                                                              chairSize.first, chairSize.second, chairSize.third);
+        sample.parts()[0].offset.setZero();
+        sample.parts()[0].deformation.setZero();
+        mixture.models()[0].parts()[0].filter = sample.parts()[0].filter;
 
 
-//        Mixture mixture( models);
-//        mixture.zero_ = false;
+        mixture.zero_ = false;
 
-//        int interval = 1;
-//        int maxNegatives = 24000;
-//        vector<pair<Model, int> >  negatives;
+        int interval = 1;
+        int maxNegatives = 24000;
+        vector<pair<Model, int> >  negatives;
 
-//        int j = 0;
+        int j = 0;
 
-//        for (int i = 0; i < negatives.size(); ++i)
-//            if ((negatives[i].first.parts()[0].deformation(3) =
-//                 models[negatives[i].second].dot(negatives[i].first)) > -1.01)
-//                negatives[j++] = negatives[i];
+        for (int i = 0; i < negatives.size(); ++i)
+            if ((negatives[i].first.parts()[0].deformation(3) =
+                 models[negatives[i].second].dot(negatives[i].first)) > -1.01)
+                negatives[j++] = negatives[i];
 
-//        negatives.resize(j);
-//        mixture.negLatentSearch(scenes, Object::BICYCLE, Eigen::Vector3i( 3,3,3), interval, maxNegatives, negatives);
-//        cout<<"test::negatives.size = "<<negatives.size()<<endl;
-//        cout<<"test::negatives[0].first.parts()[0].filter.isZero() : "<< GSHOTPyramid::TensorMap( negatives[0].first.parts()[0].filter).isZero() << endl;
-//    //    //offset Null for the root
-//    //    cout<<"test::positives[0].first.parts()[0].offset : "<< positives[0].first.parts()[1].offset << endl;
-//    //    cout<<"test::positives[0].first.parts()[0].deformation : "<< positives[0].first.parts()[1].deformation << endl;
+        negatives.resize(j);
+        mixture.negLatentSearch(scenes, Object::BICYCLE, Eigen::Vector3i( 3,3,3), interval, maxNegatives, negatives);
+        cout<<"test::negatives.size = "<<negatives.size()<<endl;
+        if(negatives.size()>0){
+            cout<<"test::negatives[0].first.parts()[0].filter.isZero() : "<< GSHOTPyramid::TensorMap( negatives[0].first.parts()[0].filter).isZero() << endl;
+            //    //offset Null for the root
+            //    cout<<"test::positives[0].first.parts()[0].offset : "<< positives[0].first.parts()[1].offset << endl;
+            //    cout<<"test::positives[0].first.parts()[0].deformation : "<< positives[0].first.parts()[1].deformation << endl;
 
 
 
-//        ofstream out("tmp.txt");
+            ofstream out("tmp.txt");
 
-//        out << (negatives[0].first);
-//    }
+            out << (negatives[0].first);
+        }
+    }
 
     void testPosLatSearch(){
 
@@ -262,44 +278,35 @@ public:
 
     }
 
-//    Mixture testTrain( Vector3i originScene, Model::triple<int, int, int> rootSize, Rectangle objectRec){
+    Mixture testTrain(){
 
 
-//        Model::triple<int, int, int> partSize( rootSize.first/3,
-//                                               rootSize.second/2,
-//                                               rootSize.third/3);
-////        Rectangle sceneRec( Eigen::Vector3i(1, 1, 1), rootSize.third, rootSize.second, rootSize.first);
-////        Rectangle sceneRec2( Eigen::Vector3i(2, 2, 2), rootSize.third*0.75, rootSize.second*2, rootSize.first);
+        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
+                                                    chairBox.height()/2,
+                                                    chairBox.width()/2);
 
-//        cout<<"test::objectRec : "<< objectRec <<endl;
-////        cout<<"test::sceneRec2 : "<< sceneRec2 <<endl;
-//        cout<<"test::rootSize : "<<rootSize.first<<" "<<rootSize.second<<" "<<rootSize.third<<endl;
-//        cout<<"test::partSize : "<<partSize.first<<" "<<partSize.second<<" "<<partSize.third<<endl;
+        cout<<"test::chairPartSize : "<<chairPartSize.first<<" "<<chairPartSize.second<<" "<<chairPartSize.third<<endl;
 
-//        Model model( rootSize, 1, partSize);
-//        std::vector<Model> models = { model};
+        Model model( chairSize, 1, chairPartSize);
+        std::vector<Model> models = { model};
 
-//        vector<Object> objects;
-//        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, objectRec);
-////        Object obj2(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, sceneRec2);
-//        objects.push_back(obj);
-
-////        objects.push_back(obj2);
-
-//        vector<Scene> scenes = {Scene( originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneName, objects)};
+        vector<Object> objects;
+        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+        objects.push_back(obj);
 
 
-//        cout<<"test:: scenes chairBox left = "<<scenes[0].objects()[0].bndbox().left()<<endl;
-//        cout<<"test:: scenes chairBox right = "<<scenes[0].objects()[0].bndbox().right()<<endl;
+        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)};
 
-//        Mixture mixture( models);
 
-//        int interval = 1, nbIterations = 3;
-//        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations);
+        Mixture mixture( models);
 
-//        return mixture;
+        int interval = 1, nbIterations = 3;
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations);
 
-//    }
+        return mixture;
+
+    }
 
 //    void testTrainSVM(){
 
@@ -394,6 +401,9 @@ int main(){
 //    test.testTrainSVM();//OK
     //TODO test trainSVM because train doesnt update filters. Maybe because it looks for null filters during posLatentSearch ???
     test.testPosLatSearch();
+//    test.testNegLatSearch();
+
+//    test.testTrain();
 
     test.viewer.show();
 

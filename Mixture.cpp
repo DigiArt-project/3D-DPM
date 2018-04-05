@@ -560,6 +560,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         if (!zero_){
             //only remaines score for the last octave !!!!!!!
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
+
         }
         if(zero_){
             cout<<"PosLateSearch:: pyramid.levels()[1].size() = "<< pyramid.levels()[1].size() <<endl;
@@ -820,33 +821,46 @@ cout<<"Mix::negLatentSearch test2"<<endl;
         cout<<"Mix::negLatentSearch test3"<<endl;
 
         for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
+            const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
+
             int rows = 0;
             int cols = 0;
             int depths = 0;
 
             if (!zero_) {
-                rows = static_cast<int>(scores[lvl].rows());
-                cols = static_cast<int>(scores[lvl].cols());
-                depths = static_cast<int>(scores[lvl].depths());
+                depths = scores[lvl].depths();
+                rows = scores[lvl].rows();
+                cols = scores[lvl].cols()/GSHOTPyramid::DescriptorSize;
+                cout<<"Mix::negLatentSearch depths1 = "<<depths<<endl;
+                cout<<"Mix::negLatentSearch rows1 = "<<rows<<endl;
+                cout<<"Mix::negLatentSearch cols1 = "<<cols<<endl;
             }
             else if (lvl >= interval) {
-                depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().first + 1;
-                rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().second + 1;
-                cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().third + 1;
+                depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().first*scale + 1;
+                rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().second*scale + 1;
+                cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().third*scale + 1;
+                cout<<"Mix::negLatentSearch depths2 = "<<depths<<endl;
+                cout<<"Mix::negLatentSearch rows2 = "<<rows<<endl;
+                cout<<"Mix::negLatentSearch cols2 = "<<cols<<endl;
             }
+
+
 
             for (int z = 0; z < depths; ++z) {
                 for (int y = 0; y < rows; ++y) {
                     for (int x = 0; x < cols; ++x) {
 
-                        const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
+                        const int argmax = 0;//zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
 
+                        cout<<"Mix::negLatentSearch scores[lvl]()(z, y, x) = "<<scores[lvl]()(z, y, x)<<endl;
                         if (zero_ || (scores[lvl]()(z, y, x) > -1)) {
                             Model sample;
 
                             models_[argmax].initializeSample(pyramid, z, y, x, lvl, sample,
                                                              zero_ ? 0 : &positions[argmax]);
                             if (!sample.empty()) {
+                                cout<<"Mix::negLatentSearch test4"<<endl;
+
                                 //TODO
                                 // Store all the information about the sample in the offset and
                                 // deformation of its root
@@ -866,6 +880,8 @@ cout<<"Mix::negLatentSearch test2"<<endl;
 
                                 // Make sure not to put the same sample twice
                                 if ((j >= nbCached) || !(negatives[j].first == sample)) {
+                                    cout<<"Mix::negLatentSearch test5"<<endl;
+
                                     negatives.push_back(make_pair(sample, argmax));
 
                                     if (negatives.size() == maxNegatives)
