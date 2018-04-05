@@ -24,6 +24,8 @@
 #include <tuple>
 //#include "HOGPyramid.h"
 #include "GSHOTPyramid.h"
+#include <pcl/io/pcd_io.h>
+
 
 namespace FFLD
 {
@@ -132,7 +134,7 @@ public:
 	/// (<tt>parts x levels</tt>, only required if the model has parts).
 	/// @note The sample will be empty if any of the parameter is invalid or if any of the part
 	/// filter is unreachable.
-    void initializeSample(const GSHOTPyramid & pyramid, int x, int y, int z, int lvl, Model & sample,
+    void initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, int lvl, Model & sample,
 						  const std::vector<std::vector<Positions> > * positions = 0) const;
 	
     //Detection, energy computation

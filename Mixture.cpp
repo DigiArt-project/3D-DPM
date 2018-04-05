@@ -146,6 +146,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
     }
 
 	double loss = numeric_limits<double>::infinity();
+
 	
 	for (int relabel = 0; relabel < nbRelabel; ++relabel) {
         cout<<"Mix::train relabel : "<< relabel <<endl;
@@ -299,9 +300,9 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
 void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize, GSHOTPyramid::Level root2x)
 {
-	for (int i = 0; i < models_.size(); i += 2) {
+    for (int i = 0; i < models_.size(); ++i) {
         models_[i].initializeParts(nbParts, partSize, root2x);
-		models_[i + 1] = models_[i].flip();
+//		models_[i + 1] = models_[i].flip();
 	}
 	
 	// The filters definitely changed
@@ -338,7 +339,7 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
     }
 
     // Convolve with all the models
-    vector<vector<Tensor3DF> > convolutions;
+    vector<vector<Tensor3DF> > convolutions;//[mod][lvl]
     convolve(pyramid, convolutions, positions);
 
 
@@ -370,8 +371,8 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
         cout << "Mix::computeEnergyScores convolutions is zero = "
              <<convolutions[0][lvl].isZero() << endl;
 
-        scores[lvl]().resize(depths, rows, cols);
-        argmaxes[lvl]().resize(depths, rows, cols);
+        scores[lvl]().resize(depths, rows, cols);//convolution score of the best model at x, y, z
+        argmaxes[lvl]().resize(depths, rows, cols);//indice of the best model at x, y, z
 
         for (int z = 0; z < depths; ++z) {
             for (int y = 0; y < rows; ++y) {
@@ -392,8 +393,7 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
                 }
             }
         }
-        cout << "Mix::computeEnergyScores scores[lvl] is zero = ["<<lvl<<"] : "
-             <<scores[lvl].isZero() << endl;
+        cout << "Mix::computeEnergyScores scores["<<lvl<<"] is zero = "<<scores[lvl].isZero() << endl;
     }
 }
 
@@ -510,7 +510,7 @@ static inline void clipBndBox(Rectangle & bndbox, const Scene & scene, double al
 
 void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
 							  int interval, double overlap,
-							  vector<pair<Model, int> > & positives) const
+                              vector<pair<Model, int> > & positives) /*const*/
 {
     cout << "Mix::posLatentSearch ..." << endl;
     if (scenes.empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1) || (overlap <= 0.0) ||
@@ -543,7 +543,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 		
         const GSHOTPyramid pyramid(cloud, pad, interval);
 		
-//        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
+
+        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
 
 
 		if (pyramid.empty()) {
@@ -552,15 +553,21 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			return;
 		}
 		
-        vector<Tensor3DF> scores;
-		vector<Indices> argmaxes;
+        vector<Tensor3DF> scores;//[lvl]
+        vector<Indices> argmaxes;//indices of model
         vector<vector<vector<Model::Positions> > > positions;//positions[nbModels][nbLvl][nbPart]
 		
         if (!zero_){
             //only remaines score for the last octave !!!!!!!
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
-
-            cout << "Mix::computeEnergyScores scores["<<0<<"] is Zero = " << scores[0].isZero() << endl;
+        }
+        if(zero_){
+            cout<<"PosLateSearch:: pyramid.levels()[1].size() = "<< pyramid.levels()[1].size() <<endl;
+            for(int mod = 0; mod<models_.size(); ++mod){
+                //TODO root2x ???
+                models_[mod].initializeParts( models_[mod].parts().size() - 1, models_[mod].partSize(), pyramid.levels()[0]);
+            }
+//            zero_ = false;
         }
 
         // For each object, set as positive the best (highest score or else most intersecting)
@@ -577,13 +584,21 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             int argX = -1;
             int argY = -1;
             int argZ = -1;
+            int argOffX = -1;
+            int argOffY = -1;
+            int argOffZ = -1;
             int argLvl =-1;
             double maxScore = -numeric_limits<double>::infinity();
             double maxInter = 0.0;
+
 			
             for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
+                const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
+                int offz = scenes[i].origin()(0)*scale;
+                int offy = scenes[i].origin()(1)*scale;
+                int offx = scenes[i].origin()(2)*scale;
 
-                const double scale = 1;//0.05 * pow(2.0, static_cast<double>(lvl) / interval /*+ 2*/);
+
                 cout << "Mix::posLatentSearch scale : " << scale << endl;
                 int rows = 0;
                 int cols = 0;
@@ -594,25 +609,35 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                     depths = scores[lvl].depths();
                     rows = scores[lvl].rows();
-                    cols = scores[lvl].cols();
+                    cols = scores[lvl].cols()/GSHOTPyramid::DescriptorSize;
                     cout << "Mix::posLatentSearch depths = scores["<<lvl<<"].depths() = " << depths << endl;
                     cout << "Mix::posLatentSearch rows = scores["<<lvl<<"].rows() = " << rows << endl;
                     cout << "Mix::posLatentSearch cols = scores["<<lvl<<"].cols() = " << cols << endl;
                 }
                 else if (lvl >= interval) {
-                    depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().first + 1;
-                    rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().second + 1;
-                    cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().third + 1;
-                    cout << "Mix:: depths = pyramid.levels()[lvl].depths()) - maxSize().first + 1 = " << depths << endl;
-                    cout << "Mix:: rows = pyramid.levels()[lvl].rows()) - maxSize().second + 1 = " << rows << endl;
-                    cout << "Mix:: cols = pyramid.levels()[lvl].cols()) - maxSize().third + 1 = " << cols << endl;
+                    depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().first*scale + 1;
+                    rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().second*scale + 1;
+                    cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().third*scale+ 1;
+                    cout << "Mix:: depths =  maxSize().first  = " << maxSize().first*scale << endl;
+                    cout << "Mix:: rows = maxSize().second  = " << maxSize().second*scale << endl;
+                    cout << "Mix:: cols = maxSize().third  = " << int(maxSize().third*scale) << endl;
+//                    depths = pyramid.levels()[lvl].depths();
+//                    rows = pyramid.levels()[lvl].rows();
+//                    cols = pyramid.levels()[lvl].cols();
+                    cout << "Mix::posLatentSearch depths scene = " << depths << endl;
+                    cout << "Mix::posLatentSearch rows scene = " << rows << endl;
+                    cout << "Mix::posLatentSearch cols scene = " << cols << endl;
                 }
-				
+
+
+
+                //TODO !!!!!!!!!!!!!
+                //for( scene.origin() to
                 for (int z = 0; z < depths; ++z) {
                     for (int y = 0; y < rows; ++y) {
                         for (int x = 0; x < cols; ++x) {
                             // Find the best matching model (highest score or else most intersecting)
-                            int model = zero_ ? 0 : argmaxes[lvl]()(z, y, x);
+                            int model = 0;//zero_ ? 0 : argmaxes[lvl]()(z, y, x);
                             double intersection = 0.0;
 
                             // Try all models and keep the most intersecting one
@@ -621,17 +646,23 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     // The bounding box of the model at this position
                                     //TODO
 
-                                    Eigen::Vector3i origin(x - pad.x(), y - pad.y(), z - pad.z());
-                                    int w = models_[k].rootSize().third * scale;
-                                    int h = models_[k].rootSize().second * scale;
-                                    int d = models_[k].rootSize().first * scale;
+                                    Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
+                                                           (y+offy)/*- pad.y()*/,
+                                                           (x+offx)/* - pad.x()*/);
+                                    int w = models_[k].rootSize().third /** scale*/;
+                                    int h = models_[k].rootSize().second /** scale*/;
+                                    int d = models_[k].rootSize().first /** scale*/;
 
-                                    Rectangle bndbox( origin * scale, w, h, d);//indices of the cube in the PC
+                                    Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
+                                    cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
+//                                    cout << "Mix::posLatentSearch search box left / right = "
+//                                         << bndbox.left()*bndbox.resolution() << " / " << bndbox.right()*bndbox.resolution()<< endl;
                                     //bndbox.setX( topology[ min(0, x - pad.x())].x)
 
 
                                     // Trade-off between clipping and penalizing
-                                    clipBndBox(bndbox, scenes[i], 0.5);
+                                    //No use in 3D
+                                    //clipBndBox(bndbox, scenes[i], 0.5);
 
                                     double inter = 0.0;
 
@@ -649,16 +680,25 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             else {
                                 //TODO
                                 // The bounding box of the model at this position
-                                Eigen::Vector3i origin(x - pad.x(), y - pad.y(), z - pad.z());
-                                int w = models_[model].rootSize().third * scale;
-                                int h = models_[model].rootSize().second * scale;
-                                int d = models_[model].rootSize().first * scale;
+                                Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
+                                                       (y+offy)/*- pad.y()*/,
+                                                       (x+offx)/* - pad.x()*/);
+                                int w = models_[model].rootSize().third /** scale*/;
+                                int h = models_[model].rootSize().second /** scale*/;
+                                int d = models_[model].rootSize().first /** scale*/;
 
-                                Rectangle bndbox( origin * scale, w, h, d);//indices of the cube in the PC
+                                Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
+                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
+//                                cout << "Mix::posLatentSearch coord = "
+//                                     << z +offz << " " << y+offy << " " << x +offx << " " << pyramid.resolutions()[lvl] << endl;
+//                                cout << "Mix::posLatentSearch search box left / right = "
+//                                     << bndbox.left()*bndbox.resolution() << " / " << bndbox.right()*bndbox.resolution()<< endl;
 
-
-                                clipBndBox(bndbox, scenes[i]);
-                                intersector(bndbox, &intersection);
+                                //No use in 3D
+                                //clipBndBox(bndbox, scenes[i]);
+                                if(intersector(bndbox, &intersection)){
+                                    cout << "Mix::posLatentSearch intersector True, scores = " << scores[lvl]()(z, y, x) << endl;
+                                }
 
 //                                cout << "Mix::posLatentSearch intersector bndbox : " << scenes[i].objects()[j].bndbox() << endl;
 //                                cout << "Mix::posLatentSearch rectangle bndbox : " << bndbox << endl;
@@ -671,6 +711,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 argX = x;
                                 argY = y;
                                 argZ = z;
+                                argOffX = offx;
+                                argOffY = offy;
+                                argOffZ = offz;
                                 argLvl = lvl;
 
                                 if (!zero_)
@@ -685,15 +728,19 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             cout << "maxInter : " << maxInter << " >= overlap :" << overlap << endl;
 
             if (maxInter >= overlap) {
-                cout << "Mix:PosLatentSearch found a positive sample at lvl : " << argLvl << endl;
+                cout << "Mix:PosLatentSearch found a positive sample at : "
+                     << argZ+argOffZ << " " << argY+argOffY << " " << argX+argOffX << " / " << pyramid.resolutions()[argLvl] << endl;
+                cout << "Mix:PosLatentSearch found a positive sample with offsets : "
+                     << argOffZ << " " << argOffY << " " << argOffX << endl;
 
                 Model sample;
 				
-                models_[argModel].initializeSample(pyramid, argX, argY, argZ, argLvl, sample,
+                models_[argModel].initializeSample(pyramid, argZ, argY, argX, argLvl, sample,
                                                    zero_ ? 0 : &positions[argModel]);
 				
                 if (!sample.empty())
                     positives.push_back(make_pair(sample, argModel));
+
             }
         }
     }
@@ -741,7 +788,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         for (int k = 0; k < scenes[i].objects().size(); ++k)
             if (scenes[i].objects()[k].name() == name)
                 positive = true;
-cout<<"Mix::negLatentSearch positive = "<<positive<<endl;
+cout<<"Mix::negLatentSearch not found = "<<positive<<endl;
         if (positive)
             continue;
 cout<<"Mix::negLatentSearch test0"<<endl;
@@ -797,7 +844,7 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                         if (zero_ || (scores[lvl]()(z, y, x) > -1)) {
                             Model sample;
 
-                            models_[argmax].initializeSample(pyramid, x, y, z, lvl, sample,
+                            models_[argmax].initializeSample(pyramid, z, y, x, lvl, sample,
                                                              zero_ ? 0 : &positions[argmax]);
                             if (!sample.empty()) {
                                 //TODO
@@ -1111,7 +1158,9 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
         models_[i].convolve(pyramid, scores[i], positions ? &(*positions)[i] : 0/*, &convolutions*/);
 //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
         cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
-        cout<<"Mix::convolve for each models_ : convolutions["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
+        cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
+        cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
+        cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
 
     }
 }

@@ -99,6 +99,8 @@ namespace FFLD
         /// Returns the pyramid levels.
         /// @note Scales are given by the following formula: 2^(1 - @c index / @c interval).
         const std::vector<Level> & levels() const;
+
+        const std::vector<float> & resolutions() const;
 //        //Get keypoints at a given level
 //        Eigen::Vector3i getLayerTopology(int i);
 //        pcl::PointCloud<DescriptorType> get_descriptors_layer(unsigned int);
@@ -166,6 +168,9 @@ namespace FFLD
         // Represent a vector of 3D scene of descriptors computed at different resolution
         //from 0 (original resolution) to n (lowest resolution, last octave)
         std::vector<Level> levels_;
+
+        std::vector<float> resolutions_;
+
         //TODO: I don't think we need it
         // The corresponding positions of the descriptors in the space for each level
         std::vector<PointCloudPtr > keypoints_;

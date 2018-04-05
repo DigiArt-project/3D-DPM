@@ -46,7 +46,7 @@ public:
     /// @param[in] depth Depth of the PC.
     /// @param[in] filename Filename of the PC.
 	/// @param[in] objects List of objects present in the scene.
-    Scene(Eigen::Vector3i origin, int width, int height, int depth, const std::string & filename,
+    Scene(Eigen::Vector3i origin, int depth, int height, int width, const std::string & filename,
 		  const std::vector<Object> & objects);
 	
 	/// Constructs a scene and tries to load the scene from the xml file with the given @p filename.

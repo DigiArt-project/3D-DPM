@@ -45,10 +45,10 @@ public:
     Rectangle(const Rectangle& rect);
 	
 	/// Constructs a rectangle with the given @p width and @p height.
-    Rectangle(int width, int height, int depth);
+    Rectangle(int depth, int height, int width, float resolution);
 	
 	/// Constructs a rectangle with coordinates (@p x, @p y) and the given @p width and @p height.
-    Rectangle(Eigen::Vector3i origin, int width, int height, int depth);
+    Rectangle(Eigen::Vector3i origin, int depth, int height, int width, float resolution);
 	
     ///Correspond to the top left corner of the rectangle
 	/// Returns the x-coordinate of the rectangle.
@@ -82,8 +82,8 @@ public:
     
     /// Returns the volume of the rectangle.
     /// @note Equivalent to max(width(), 0) * max(height(), 0)* max(depth(), 0).
-    int volume() const;
-    void setVolume(int volume);
+    float volume() const;
+    void setVolume(float volume);
 
     int right() const;
     int left() const;
@@ -91,6 +91,9 @@ public:
     int bottom() const;
     int front() const;
     int back() const;
+
+    float resolution() const;
+    void setResolution( float resolution);
 
 
     void setLeft(int left);
@@ -133,7 +136,8 @@ private:
     int width_;
     int height_;
     int depth_;
-    int volume_;
+    float volume_;
+    float resolution_;
 };
 
 /// Serializes a rectangle to a stream.

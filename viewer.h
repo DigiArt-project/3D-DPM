@@ -34,19 +34,18 @@ public:
         ++id;
     }
 
-    void displayCubeLine(Rectangle& rectangle, float resolution, PointType offset,
-                         Eigen::Vector3i color = Eigen::Vector3i(255, 0, 0), string name = ""){
+    void displayCubeLine(Rectangle& rectangle, Eigen::Vector3i color = Eigen::Vector3i(255, 0, 0), string name = ""){
 
         Rectangle rec = rectangle.changeToPclCoordinateSystem();
 
 //        cout << "rec pcl : "<< rec << endl;
 //        cout << "rec pcl diagonal : "<< rec.diagonal() << endl;
-        float left = rec.left()*resolution+offset.x;
-        float top = rec.top()*resolution+offset.y;
-        float right = rec.right()*resolution+offset.x;
-        float front = rec.front()*resolution+offset.z;
-        float bottom = rec.bottom()*resolution+offset.y;
-        float back = rec.back()*resolution+offset.z;
+        float left = rec.left()*rec.resolution();
+        float top = rec.top()*rec.resolution();
+        float right = rec.right()*rec.resolution();
+        float front = rec.front()*rec.resolution();
+        float bottom = rec.bottom()*rec.resolution();
+        float back = rec.back()*rec.resolution();
 
 //        cout << "line left : "<< left << endl;
 //        cout << "line right : "<< right << endl;

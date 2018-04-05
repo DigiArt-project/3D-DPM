@@ -37,6 +37,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
 
     levels_.resize( interval_ * nbOctave);
+    resolutions_.resize( interval_ * nbOctave);
     keypoints_.resize( interval_ * nbOctave);
     topology.resize( interval_ * nbOctave);
     
@@ -55,7 +56,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             sampling.setRadiusSearch (resolution);
             sampling.filter(*subspace);
 
-
+            resolutions_[index] = resolution;
 //            pcl::VoxelGrid<PointCloudT> sor;
 //            sor.setInputCloud (input);
 //            sor.setLeafSize (resolution, resolution, resolution);
@@ -70,7 +71,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             pcl::getMinMax3D(*subspace, min, max);
 
             keypoints_[index] = compute_keypoints(subspace, resolution, min, max, index);
-            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 100*resolution);
+            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 10*resolution);
 
             bool isZero = true;
             Level level( topology[index](0), topology[index](1), topology[index](2));
@@ -120,6 +121,9 @@ void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3DF & z)
     // Nothing to do if x is smaller than y
     if ((x().dimension(0) < y().dimension(0)) || (x().dimension(1) < y().dimension(1) ) || (x().dimension(2) < y().dimension(2) )) {
         cout<<"GSHOTPyramid::convolve error : level size is smaller than filter" << endl;
+        cout<<"GSHOTPyramid::convolve error : " <<x().dimension(0)<<" < "<<y().dimension(0)
+           <<" / " << x().dimension(1)<<" < "<<y().dimension(1)
+          <<" / " << x().dimension(2)<<" < "<<y().dimension(2)<< endl;
         return;
     }
 
@@ -360,7 +364,7 @@ GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType 
     int pt_nb_z = (int)((max.z-min.z)/grid_reso+1);
     int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
     
-    Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_x, pt_nb_y, pt_nb_z);
+    Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_z, pt_nb_y, pt_nb_x);
     topology[index] = topo;
     
     PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
@@ -465,6 +469,11 @@ bool GSHOTPyramid::empty() const
 const vector<GSHOTPyramid::Level> & GSHOTPyramid::levels() const{
     
     return levels_;
+}
+
+const vector<float> & GSHOTPyramid::resolutions() const{
+
+    return resolutions_;
 }
 
 //int GSHOTPyramid::get_octaves()

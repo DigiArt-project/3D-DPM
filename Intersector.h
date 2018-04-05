@@ -51,60 +51,52 @@ public:
 	{
         if (score)
             *score = 0.0;
-//		const int topFrontLeftX = std::max(reference_.topFrontLeft().x(), rect.topFrontLeft().x());
-//        const int topFrontRightX = std::min(reference_.topFrontRight().x(), rect.topFrontRight().x());
-        
-//        if (topFrontRightX < topFrontLeftX)
-//            return false;
-        
-//        const int topFrontLeftY = std::max(reference_.topFrontLeft().y(), rect.topFrontLeft().y());
-//        const int bottomFrontLeftY = std::min(reference_.bottomFrontLeft().y(), rect.bottomFrontLeft().y());
-        
-//        if (bottomFrontLeftY < topFrontLeftY)
-//            return false;
-        
-//        const int topFrontLeftZ = std::max(reference_.topFrontLeft().z(), rect.topFrontLeft().z());
-//        const int topBackLeftZ = std::min(reference_.topBackLeft().z(), rect.bottomBackLeft().z());
-        
-//        if (topBackLeftZ < topFrontLeftZ)
-//            return false;
 
-        const int left = std::max(reference_.left(), rect.left());
-        const int right = std::min(reference_.right(), rect.right());
+        const float left = std::max(reference_.left() * reference_.resolution(), rect.left() * rect.resolution());
+        const float right = std::min(reference_.right() * reference_.resolution(), rect.right() * rect.resolution());
+//        std::cout<<"Inter:: reference_.left() * reference_.resolution() = "<<reference_.left() /** reference_.resolution()*/
+//                <<" / rect.left() * rect.resolution() = "<<rect.left() /** rect.resolution()*/<<std::endl;
+//        std::cout<<"Inter:: reference_.right() * reference_.resolution() = "<<reference_.right() /** reference_.resolution()*/
+//                <<" / rect.right() * rect.resolution() = "<<rect.right() /** rect.resolution()*/<<std::endl;
+//        std::cout<<"Inter:: reference_.resolution() = "<<reference_.resolution()
+//                <<" / rect.resolution() = "<<rect.resolution()<<std::endl;
+//        std::cout<<"Inter:: left = "<<left<<" / right = "<<right<<std::endl;
 
         if (right < left)
             return false;
 
-        const int top = std::max(reference_.top(), rect.top());
-        const int bottom = std::min(reference_.bottom(), rect.bottom());
+        const float top = std::max(reference_.top() * reference_.resolution(), rect.top() * rect.resolution());
+        const float bottom = std::min(reference_.bottom() * reference_.resolution(), rect.bottom() * rect.resolution());
+//        std::cout<<"Inter:: top = "<<top<<" / bottom = "<<bottom<<std::endl;
 
         if (bottom < top)
             return false;
 
-        const int front = std::max(reference_.front(), rect.front());
-        const int back = std::min(reference_.back(), rect.back());
+        const float front = std::max(reference_.front() * reference_.resolution(), rect.front() * rect.resolution());
+        const float back = std::min(reference_.back() * reference_.resolution(), rect.back() * rect.resolution());
+//        std::cout<<"Inter:: front = "<<front<<" / back = "<<back<<std::endl;
 
         if (back < front)
             return false;
         
-        const int intersectionVolume = (right - left + 1) * (bottom - top + 1) * (back - front + 1);
-        const int cubeVolume = rect.volume();
+        const float intersectionVolume = (right - left/* + 1*/) * (bottom - top/* + 1*/) * (back - front/* + 1*/);
+        const float cubeVolume = rect.volume();
         
         if (felzenszwalb_) {
             if (intersectionVolume >= cubeVolume * threshold_) {
                 if (score)
-                    *score = static_cast<double>(intersectionVolume) / cubeVolume;
+                    *score = intersectionVolume / cubeVolume;
                 
                 return true;
             }
         }
         else {
-            const int referenceVolume = reference_.volume();
-            const int unionVolume = referenceVolume + cubeVolume - intersectionVolume;
-            
+            const float referenceVolume = reference_.volume();
+            const float unionVolume = referenceVolume + cubeVolume - intersectionVolume;
+//            std::cout<<"Inter:: intersectionVolume / unionVolume = "<<intersectionVolume / unionVolume<<std::endl;
             if (intersectionVolume >= unionVolume * threshold_) {
                 if (score)
-                    *score = static_cast<double>(intersectionVolume) / unionVolume;
+                    *score = intersectionVolume / unionVolume;
                 
                 return true;
             }

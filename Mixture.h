@@ -27,8 +27,6 @@
 #include "Scene.h"
 #include "viewer.h"
 
-#include <pcl/io/pcd_io.h>
-
 
 namespace FFLD
 {
@@ -115,7 +113,7 @@ public:
     // Extracts all the positives
 	void posLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
                          Eigen::Vector3i pad, int interval, double overlap,
-						 std::vector<std::pair<Model, int> > & positives) const;
+                         std::vector<std::pair<Model, int> > & positives) /*const*/;
 
 	// Bootstraps negatives with a non zero loss
 	void negLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
