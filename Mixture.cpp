@@ -562,14 +562,14 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
 
         }
-        if(zero_){
-            cout<<"PosLateSearch:: pyramid.levels()[1].size() = "<< pyramid.levels()[1].size() <<endl;
-            for(int mod = 0; mod<models_.size(); ++mod){
-                //TODO root2x ???
-                models_[mod].initializeParts( models_[mod].parts().size() - 1, models_[mod].partSize(), pyramid.levels()[0]);
-            }
-//            zero_ = false;
-        }
+//        if(zero_){
+//            cout<<"PosLateSearch:: pyramid.levels()[1].size() = "<< pyramid.levels()[1].size() <<endl;
+//            for(int mod = 0; mod<models_.size(); ++mod){
+//                //TODO root2x ???
+//                models_[mod].initializeParts( models_[mod].parts().size() - 1, models_[mod].partSize(), pyramid.levels()[0]);
+//            }
+////            zero_ = false;
+//        }
 
         // For each object, set as positive the best (highest score or else most intersecting)
         // position
@@ -655,7 +655,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     int d = models_[k].rootSize().first /** scale*/;
 
                                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
-                                    cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
+//                                    cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
 //                                    cout << "Mix::posLatentSearch search box left / right = "
 //                                         << bndbox.left()*bndbox.resolution() << " / " << bndbox.right()*bndbox.resolution()<< endl;
                                     //bndbox.setX( topology[ min(0, x - pad.x())].x)
@@ -689,7 +689,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 int d = models_[model].rootSize().first /** scale*/;
 
                                 Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
-                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
+//                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
 //                                cout << "Mix::posLatentSearch coord = "
 //                                     << z +offz << " " << y+offy << " " << x +offx << " " << pyramid.resolutions()[lvl] << endl;
 //                                cout << "Mix::posLatentSearch search box left / right = "

@@ -138,9 +138,12 @@ public:
 
         Mixture mixture( models);
 
+        GSHOTPyramid::Level root2x =
+                pyramid.levels()[0].block(chairBox.origin()(0)*2, chairBox.origin()(1)*2, chairBox.origin()(2)*2,
+                                          chairSize.first*2, chairSize.second*2, chairSize.third*2);
         for(int mod = 0; mod<mixture.models().size(); ++mod){
             mixture.models()[mod].initializeParts( mixture.models()[mod].parts().size() - 1,
-                                                           mixture.models()[mod].partSize(), pyramid.levels()[0]);
+                                                           mixture.models()[mod].partSize(), root2x);
         }
 
         Model sample;
@@ -278,7 +281,7 @@ public:
 
     }
 
-    Mixture testTrain(){
+    void testTrain(){
 
 
         Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
@@ -288,7 +291,7 @@ public:
 
         cout<<"test::chairPartSize : "<<chairPartSize.first<<" "<<chairPartSize.second<<" "<<chairPartSize.third<<endl;
 
-        Model model( chairSize, 1, chairPartSize);
+        Model model( chairSize, 0);
         std::vector<Model> models = { model};
 
         vector<Object> objects;
@@ -301,12 +304,67 @@ public:
 
         Mixture mixture( models);
 
-        int interval = 1, nbIterations = 3;
+        int interval = 1, nbIterations = 2;
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2);
+
+        cout << "test:: root filter initialized" << endl;
+
+        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3));
+        GSHOTPyramid::Level root2x =
+                pyramid.levels()[0].block(chairBox.origin()(0)*2, chairBox.origin()(1)*2, chairBox.origin()(2)*2,
+                                          chairSize.first*2, chairSize.second*2, chairSize.third*2);
+
+        mixture.initializeParts( 1, chairPartSize, root2x);
+
+
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations);
 
-        return mixture;
+        Eigen::Vector3i origin(-2, -1, 4);//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
+
+        Rectangle boxFound(origin, chairSize.first, chairSize.second, chairSize.third, sceneResolution*2);
+        viewer.displayCubeLine(boxFound, Eigen::Vector3i(255,0,255));
+
+        //Mix:PosLatentSearch found a positive sample with offsets : -2 -3 -3
+        Eigen::Vector3i partOrigin(origin(0) * 2 + mixture.models()[0].parts()[1].offset(0)/*-2*2*/,
+                                   origin(1) * 2 + mixture.models()[0].parts()[1].offset(1)/*-3*2*/,
+                                   origin(2) * 2 + mixture.models()[0].parts()[1].offset(2)/*-3*2*/);
+        Rectangle partsBoxFound(partOrigin, chairPartSize.first, chairPartSize.second, chairPartSize.third, sceneResolution);
+
+        viewer.displayCubeLine(partsBoxFound, Eigen::Vector3i(0,255,0));
+
+
 
     }
+
+//    Mixture testTest(){
+
+
+//        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+//        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
+//                                                    chairBox.height()/2,
+//                                                    chairBox.width()/2);
+
+//        cout<<"test::chairPartSize : "<<chairPartSize.first<<" "<<chairPartSize.second<<" "<<chairPartSize.third<<endl;
+
+//        Model model( chairSize, 1, chairPartSize);
+//        std::vector<Model> models = { model};
+
+//        vector<Object> objects;
+//        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+//        objects.push_back(obj);
+
+
+//        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)};
+
+
+//        Mixture mixture( models);
+
+//        int interval = 1, nbIterations = 3;
+//        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations);
+
+//        return mixture;
+
+//    }
 
 //    void testTrainSVM(){
 
@@ -400,10 +458,10 @@ int main(){
 
 //    test.testTrainSVM();//OK
     //TODO test trainSVM because train doesnt update filters. Maybe because it looks for null filters during posLatentSearch ???
-    test.testPosLatSearch();
+//    test.testPosLatSearch();
 //    test.testNegLatSearch();
 
-//    test.testTrain();
+    test.testTrain();
 
     test.viewer.show();
 

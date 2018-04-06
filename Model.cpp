@@ -127,6 +127,43 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
         return;
     }
 
+
+
+
+//    GSHOTPyramid::Cell nullCell;
+//    nullCell.setZero( GSHOTPyramid::DescriptorSize);
+//    GSHOTPyramid::Level root2x = GSHOTPyramid::Level(2 * parts_[0].filter.depths(),
+//            2 * parts_[0].filter.rows(), 2 * parts_[0].filter.cols());
+//    root2x().setConstant( nullCell);
+
+
+//    // Bicubic interpolation matrix for x = y = 0.25
+//    const double bicubic[4][4] =
+//    {
+//        { 0.004943847656,-0.060974121094,-0.015930175781, 0.001647949219},
+//        {-0.060974121094, 0.752014160156, 0.196472167969,-0.020324707031},
+//        {-0.015930175781, 0.196472167969, 0.051330566406,-0.005310058594},
+//        { 0.001647949219,-0.020324707031,-0.005310058594, 0.000549316406}
+//    };
+
+//    for (int y = 0; y < root.rows(); ++y) {
+//        for (int x = 0; x < root.cols(); ++x) {
+//            for (int i = 0; i < 4; ++i) {
+//                for (int j = 0; j < 4; ++j) {
+//                    const int y2 = min(max(y + i - 2, 0), static_cast<int>(parts_[0].filter.rows()) - 1);
+//                    const int y1 = min(max(y + i - 1, 0), static_cast<int>(parts_[0].filter.rows()) - 1);
+//                    const int x2 = min(max(x + j - 2, 0), static_cast<int>(parts_[0].filter.cols()) - 1);
+//                    const int x1 = min(max(x + j - 1, 0), static_cast<int>(parts_[0].filter.cols()) - 1);
+
+//                    root2x(y * 2    , x * 2    ) += bicubic[3 - i][3 - j] * parts_[0].filter(y2, x2);
+//                    root2x(y * 2    , x * 2 + 1) += bicubic[3 - i][    j] * parts_[0].filter(y2, x1);
+//                    root2x(y * 2 + 1, x * 2    ) += bicubic[    i][3 - j] * parts_[0].filter(y1, x2);
+//                    root2x(y * 2 + 1, x * 2 + 1) += bicubic[    i][    j] * parts_[0].filter(y1, x1);
+//                }
+//            }
+//        }
+//    }
+
     // Compute the energy of each cell
     Tensor3DF energy(root2x.depths(), root2x.rows(), root2x.cols());
 
@@ -364,7 +401,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
 //            for (int x = 0; x < root2x.cols(); ++x) {
 //                root2x()(z, y, x).cwiseMax(0);
 
-//                energy()(z, y, x) = 0;
+//                energy()(z, y, x) = 0;0000000000000000000000000000000000000000
 
 //                for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
 //                    energy()(z, y, x) += root2x()(z, y, x)(i) * root2x()(z, y, x)(i);
@@ -1048,6 +1085,9 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                  Positions * positions)
 {
     cout<<"Model::DT3D ..."<<endl;
+    cout<<"Model::DT3D part offset : "<<part.offset<<endl;
+    cout<<"Model::DT3D part deformation : "<<part.deformation<<endl;
+
     // Nothing to do if the matrix is empty
     if (!tensor.size())
         return;
@@ -1056,11 +1096,18 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
     const int rows = static_cast<int>(tensor.rows());
     const int cols = static_cast<int>(tensor.cols());
 
-    if (positions)
+    if (positions){
         (*positions)().resize(depths, rows, cols);
+        cout<<"Model::DT3D positions resized"<<endl;
+    }
 
     tmp1().resize(depths, rows, cols);
     tmp2().resize(depths, rows, cols);
+
+//    cout<<"Model::DT3D depths : "<<depths<<endl;
+//    cout<<"Model::DT3D rows : "<<rows<<endl;
+//    cout<<"Model::DT3D cols : "<<cols<<endl;
+
 
     // Temporary vectors
     int maxi = max(depths,max(rows, cols));
@@ -1093,17 +1140,30 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 //            }
 
 
+//    ofstream out("tmp.txt");
+
+//    out << (tmp1());
+//    ofstream out2("tmp2.txt");
+
+//    out2 << (tensor());
     for (int y = 1; y < rows; ++y)
         t[y] = 1 / (part.deformation(2) * y);
 
     // Filter the columns back to the original matrix
     for (int z = 0; z < depths; ++z)
-        for (int x = 0; x < cols; ++x)
+        for (int x = 0; x < cols; ++x){
+//            cout<<"Model::DT3D x : "<<x<<endl;
+//            cout<<"Model::DT3D z : "<<z<<endl;
+//            cout<<"Model::DT3D tmp1.size() : "<<tmp1.size()<<endl;
+//            cout<<"Model::DT3D tmp2.size() : "<<tmp2.size()<<endl;
+//            cout<<"Model::DT3D positions.size() : "<<positions->size()<<endl;
+//            cout<<"Model::DT3D pos max : "<<x + z*cols*rows + rows*cols<<endl;
             dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), part.deformation(3),
                                  &distance[0], &index[0],
                                  tmp2().data() + x + z*cols*rows,
                                  positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
                                  cols, cols, 4 * cols);
+        }
     cout<<"Model::DT3D 2..."<<endl;
 
     for (int z = 1; z < depths; ++z)
