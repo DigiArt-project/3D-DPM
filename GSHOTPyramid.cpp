@@ -115,6 +115,7 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
     }
 }
 
+//TODO urgent !!!!! remove the result of the convolution for x = [1 and 351]%352
 //Its a correlation not a convolution
 void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3DF & z)
 {

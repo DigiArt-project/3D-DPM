@@ -1,4 +1,7 @@
 #include "Mixture.h"
+#include "Intersector.h"
+#include "Object.h"
+
 
 #include <cstdlib>
 #include <sys/timeb.h>
@@ -20,6 +23,29 @@
 using namespace FFLD;
 using namespace std;
 using namespace Eigen;
+
+struct Detection : public Rectangle
+{
+    GSHOTPyramid::Scalar score;
+    int x;
+    int y;
+    int z;
+    int lvl;
+
+    Detection() : score(0), x(0), y(0), z(0), lvl(0)
+    {
+    }
+
+    Detection(GSHOTPyramid::Scalar score, int z, int y, int x, int lvl, Rectangle bndbox) : Rectangle(bndbox),
+    score(score), x(x), y(y), z(z), lvl(lvl)
+    {
+    }
+
+    bool operator<(const Detection & detection) const
+    {
+        return score > detection.score;
+    }
+};
 
 class Test{
 public:
@@ -309,7 +335,7 @@ public:
 
         cout << "test:: root filter initialized" << endl;
 
-        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3));
+        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
         GSHOTPyramid::Level root2x =
                 pyramid.levels()[0].block(chairBox.origin()(0)*2, chairBox.origin()(1)*2, chairBox.origin()(2)*2,
                                           chairSize.first*2, chairSize.second*2, chairSize.third*2);
@@ -336,35 +362,249 @@ public:
 
     }
 
-//    Mixture testTest(){
+    void detect(const Mixture & mixture, /*int depth, int height, int width, */int interval, const GSHOTPyramid & pyramid,
+                double threshold, double overlap,/* const string image, */ostream & out,
+                const string & images, vector<Detection> & detections, const Scene * scene = 0,
+                Object::Name name = Object::UNKNOWN)
+    {
+        // Compute the scores
+        vector<Tensor3DF> scores;
+        vector<Mixture::Indices> argmaxes;
+        vector<vector<vector<Model::Positions> > > positions;
+
+        mixture.computeEnergyScores( pyramid, scores, argmaxes, &positions);
+
+        // Cache the size of the models
+        vector<Model::triple<int, int, int> > sizes(mixture.models().size());
+
+        for (int i = 0; i < sizes.size(); ++i)
+            sizes[i] = mixture.models()[i].rootSize();
 
 
-//        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-//        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
-//                                                    chairBox.height()/2,
-//                                                    chairBox.width()/2);
+        // For each scale
+        for (int lvl = 0; lvl < scores.size(); ++lvl) {
+//            const double scale = pow(2.0, static_cast<double>(lvl) / pyramid.interval() + 2);
+            const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
+            int offz = scene->origin()(0)*scale;
+            int offy = scene->origin()(1)*scale;
+            int offx = scene->origin()(2)*scale;
 
-//        cout<<"test::chairPartSize : "<<chairPartSize.first<<" "<<chairPartSize.second<<" "<<chairPartSize.third<<endl;
+            const int depths = static_cast<int>(scores[lvl].depths());
+            const int rows = static_cast<int>(scores[lvl].rows());
+            const int cols = static_cast<int>(scores[lvl].cols()/352);
 
-//        Model model( chairSize, 1, chairPartSize);
-//        std::vector<Model> models = { model};
+            cout<<"test:: for lvl "<<lvl<<" :"<<endl;
 
-//        vector<Object> objects;
-//        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
-//        objects.push_back(obj);
-
-
-//        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)};
+            cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
+            cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
+            cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
 
 
-//        Mixture mixture( models);
 
-//        int interval = 1, nbIterations = 3;
-//        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations);
+            for (int z = 0; z < depths; ++z) {
+                for (int y = 0; y < rows; ++y) {
+                    for (int x = 0; x < cols; ++x) {
+                        const double score = scores[lvl]()(z, y, x*352);
 
-//        return mixture;
+                        cout<<"test:: scores = "<<score<<endl;
 
-//    }
+                        //TODO !!!!!
+                        if (score > threshold) {
+                            // Non-maxima suppresion in a 3x3 neighborhood
+//                            if (((y == 0) || (x == 0) || (score >= scores[lvl]()(z, y - 1, x - 1))) &&
+//                                ((y == 0) || (score >= scores[lvl]()(z, y - 1, x))) &&
+//                                ((y == 0) || (x == cols - 1) || (score >= scores[lvl]()(z, y - 1, x + 1))) &&
+//                                ((x == 0) || (score >= scores[lvl]()(z, y, x - 1))) &&
+//                                ((x == cols - 1) || (score >= scores[lvl]()(z, y, x + 1))) &&
+//                                ((y == rows - 1) || (x == 0) || (score >= scores[lvl]()(z, y + 1, x - 1))) &&
+//                                ((y == rows - 1) || (score >= scores[lvl]()(z, y + 1, x))) &&
+//                                ((y == rows - 1) || (x == cols - 1) ||
+//                                 (score >= scores[lvl]()(z + 1, y + 1, x + 1)))) {
+
+
+
+                                Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
+                                                       (y+offy)/*- pad.y()*/,
+                                                       (x+offx)/* - pad.x()*/);
+                                int w = sizes[argmaxes[lvl]()(z, y, x)].third /** scale*/;
+                                int h = sizes[argmaxes[lvl]()(z, y, x)].second /** scale*/;
+                                int d = sizes[argmaxes[lvl]()(z, y, x)].first /** scale*/;
+
+                                Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
+
+                                cout<<"test:: detection bndbox = "<<bndbox<<endl;
+
+
+//                                Rectangle bndbox((x - pyramid.padx()) * scale + 0.5,
+//                                                 (y - pyramid.pady()) * scale + 0.5,
+//                                                 sizes[argmaxes[lvl](y, x)].second * scale + 0.5,
+//                                                 sizes[argmaxes[lvl](y, x)].first * scale + 0.5);
+
+//                                // Truncate the object
+//                                bndbox.setX(max(bndbox.x(), 0));
+//                                bndbox.setY(max(bndbox.y(), 0));
+//                                bndbox.setWidth(min(bndbox.width(), width - bndbox.x()));
+//                                bndbox.setHeight(min(bndbox.height(), height - bndbox.y()));
+
+                                if (!bndbox.empty()){
+                                    detections.push_back(Detection(score, z/*+offz*/, y/*+offy*/, x/*+offx*/, lvl, bndbox));
+                                    cout<<"test:: bndbox added to detections"<<endl;
+                                }
+
+                        }
+                    }
+                }
+            }
+        }
+
+        cout<<"test:: detections.size = "<<detections.size()<<endl;
+        // Non maxima suppression
+        sort(detections.begin(), detections.end());
+
+        for (int i = 1; i < detections.size(); ++i)
+            detections.resize(remove_if(detections.begin() + i, detections.end(),
+                                        Intersector(detections[i - 1], overlap, true)) - detections.begin());
+
+
+        cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
+
+//        // Find the image id
+//        string id = image.substr(0, image.find_last_of('.'));
+
+//        if (id.find_last_of("/\\") != string::npos)
+//            id = id.substr(id.find_last_of("/\\") + 1);
+
+//        // Print the detections
+//        if (out) {
+//    #pragma omp critical
+//            for (int i = 0; i < detections.size(); ++i) {
+//                bool positive = false;
+
+//                if (scene) {
+//                    Intersector intersector(detections[i]);
+
+//                    for (int j = 0; j < scene->objects().size(); ++j)
+//                        if (scene->objects()[j].name() == name)
+//                            if (intersector(scene->objects()[j].bndbox()))
+//                                positive = true;
+//                }
+
+//                out << id << ' ' << detections[i].score << ' ' << (detections[i].left() + 1) << ' '
+//                    << (detections[i].top() + 1) << ' ' << (detections[i].right() + 1) << ' '
+//                    << (detections[i].bottom() + 1) << (positive ? " p" : " n") << endl;
+//            }
+//        }
+
+        // Draw the detections
+        if (!images.empty()) {
+//            JPEGImage im(image);
+
+            for (int i = 0; i < 1/*detections.size()*/; ++i) {
+                // Find out if the detection hits an object
+                bool positive = false;
+
+                if (scene) {
+                    Intersector intersector(detections[i]);
+
+                    for (int j = 0; j < scene->objects().size(); ++j)
+                        if (scene->objects()[j].name() == name)
+                            if (intersector(scene->objects()[j].bndbox()))
+                                positive = true;
+                }
+
+
+                const int x = detections[i].x;
+                const int y = detections[i].y;
+                const int z = detections[i].z;
+                const int lvl = detections[i].lvl;
+
+                const int argmax = argmaxes[lvl]()(z, y, x);
+
+                cout<<"test:: argmax = "<<argmax<<endl;
+
+                //draw each parts
+                for (int j = 0; j < positions[argmax].size(); ++j) {
+                    const int zp = positions[argmax][j][lvl]()(z, y, x*352)(0);
+                    const int yp = positions[argmax][j][lvl]()(z, y, x*352)(1);
+                    const int xp = positions[argmax][j][lvl]()(z, y, x*352)(2)/352;
+                    const int lvlp = positions[argmax][j][lvl]()(z, y, x*352)(3);
+
+                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x*352)<<endl;
+
+
+//                    const double scale = pow(2.0, static_cast<double>(zp) / pyramid.interval() + 2);
+//                    const double scale = 1 / pow(2.0, static_cast<double>(lvlp) / interval);
+
+
+                    Eigen::Vector3i origin((zp)/*- pad.z()*/,
+                                           (yp)/*- pad.y()*/,
+                                           (xp)/* - pad.x()*/);
+                    int w = mixture.models()[argmax].partSize().third *2/** scale*/;
+                    int h = mixture.models()[argmax].partSize().second *2/** scale*/;
+                    int d = mixture.models()[argmax].partSize().first *2/** scale*/;
+
+                    Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
+
+                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
+
+
+//                    const Rectangle bndbox((xp - pyramid.padx()) * scale + 0.5,
+//                                           (yp - pyramid.pady()) * scale + 0.5,
+//                                           mixture.models()[argmax].partSize().second * scale + 0.5,
+//                                           mixture.models()[argmax].partSize().first * scale + 0.5);
+
+
+//                    viewer.displayCubeLine(bndbox, Vector3i(255,0,255));
+//                    draw(im, bndbox, 0, 0, 255, 2);
+                }
+
+                // Draw the root last
+                cout<<"test:: root bndbox = "<<detections[0]<<endl;
+                Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
+                              mixture.models()[argmax].rootSize().first, mixture.models()[argmax].rootSize().second,
+                              mixture.models()[argmax].rootSize().third, pyramid.resolutions()[1]);
+                viewer.displayCubeLine(box, Vector3i(0,255,255));
+//                draw(im, detections[i], positive ? 0 : 255, positive ? 255 : 0, 0, 2);
+            }
+
+//            im.save(images + '/' + id + ".jpg");
+        }
+    }
+
+    void testTest(){
+
+
+        ifstream in("tmp.txt");
+
+        if (!in.is_open()) {
+            cerr << "Cannot open model file\n" << endl;
+            return;
+        }
+
+        Mixture mixture;
+        in >> mixture;
+
+        if (mixture.empty()) {
+            cerr << "Invalid model file\n" << endl;
+            return;
+        }
+
+        cout<<mixture.models()[0].parts()[1].offset<<endl;
+
+        int interval = 1;
+        float threshold=0.8, overlap=0.5;
+        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
+
+        ofstream out("tmpTest.txt");
+        string images = sceneName;
+        vector<Detection> detections;
+        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+        Scene scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, {obj});
+
+        detect(mixture, /*0, image.width(), image.height()*/interval, pyramid, threshold, overlap, /*file, */out,
+               images, detections, &scene, Object::CHAIR);
+
+    }
 
 //    void testTrainSVM(){
 
@@ -461,7 +701,9 @@ int main(){
 //    test.testPosLatSearch();
 //    test.testNegLatSearch();
 
-    test.testTrain();
+//    test.testTrain();
+
+    test.testTest();
 
     test.viewer.show();
 

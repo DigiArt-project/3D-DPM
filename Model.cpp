@@ -1278,23 +1278,21 @@ ostream & FFLD::operator<<(ostream & os, const Model & model)
            << model.parts()[i].deformation(4) << ' ' << model.parts()[i].deformation(5) << ' '
            << model.parts()[i].deformation(6) << ' ' << model.parts()[i].deformation(7)
 		   << endl;
-		
-        for (int z = 0; z < model.parts()[i].filter.depths(); ++z) {
-            os << model.parts()[i].filter()(z, 0, 0)(0);
-            for (int j = 1; j < GSHOTPyramid::DescriptorSize; ++j)
-                os << ' ' << model.parts()[i].filter()(z, 0, 0)(j);
 
+        for (int z = 0; z < model.parts()[i].filter.depths(); ++z) {
             for (int y = 0; y < model.parts()[i].filter.rows(); ++y) {
-                for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j)
+                os << model.parts()[i].filter()(z, y, 0)(0);
+                for (int j = 1; j < GSHOTPyramid::DescriptorSize; ++j)
                     os << ' ' << model.parts()[i].filter()(z, y, 0)(j);
 
-                for (int x = 0; x < model.parts()[i].filter.cols(); ++x)
+                for (int x = 1; x < model.parts()[i].filter.cols(); ++x)
                     for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j)
                         os << ' ' << model.parts()[i].filter()(z, y, x)(j);
 
                 os << endl;
             }
         }
+
 	}
 	
 	return os;
@@ -1302,30 +1300,41 @@ ostream & FFLD::operator<<(ostream & os, const Model & model)
 
 istream & FFLD::operator>>(istream & is, Model & model)
 {
+
 	int nbParts;
 	double bias;
 	
 	is >> nbParts >> bias;
 	
 	if (!is) {
+        cerr<<"Model::operator>> failed 1"<<endl;
 		model = Model();
 		return is;
 	}
 	
 	vector<Model::Part> parts(nbParts);
-	
-	for (int i = 0; i < nbParts; ++i) {
+
+    for (int i = 0; i < nbParts; ++i) {
         int depths, rows, cols, nbFeatures;
+        cerr<<"Model::operator>> part : "<<i<<endl;
 		
-        is >> depths >> rows >> cols >> nbFeatures >> parts[i].offset(0) >> parts[i].offset(1)
-           >> parts[i].offset(2) >> parts[i].offset(3) >> parts[i].deformation(0) >> parts[i].deformation(1)
-		   >> parts[i].deformation(2) >> parts[i].deformation(3) >> parts[i].deformation(4)
+        is >> depths >> rows >> cols >> nbFeatures;
+        if (!is) cerr<<"Model::operator>> test1"<<endl;
+        is >> parts[i].offset(0) >> parts[i].offset(1)
+           >> parts[i].offset(2) >> parts[i].offset(3);
+        if (!is) cerr<<"Model::operator>> test2"<<endl;
+        is >> parts[i].deformation(0) >> parts[i].deformation(1)
+           >> parts[i].deformation(2) >> parts[i].deformation(3) >> parts[i].deformation(4)
            >> parts[i].deformation(5) >> parts[i].deformation(6) >> parts[i].deformation(7);
+        if (!is) cerr<<"Model::operator>> test3"<<endl;
 		
         if (!is || (nbFeatures > GSHOTPyramid::DescriptorSize)) {
-			model = Model();
-			return is;
-		}
+            cerr<<"Model::operator>> failed 2"<<endl;
+            if(!is)cerr<<"Model::operator>> failed 2: stream is empty"<<endl;
+            else cerr<<"Model::operator>> failed 2: nbFeatures: "<<nbFeatures<<" > DescriptorSize:"<<GSHOTPyramid::DescriptorSize<<endl;
+            model = Model();
+            return is;
+        }
 		
 		// Always set the offset and deformation of the root to zero
 		if (!i) {
@@ -1354,6 +1363,7 @@ istream & FFLD::operator>>(istream & is, Model & model)
 		}
 		
 		if (!is) {
+            cerr<<"Model::operator>> failed 3"<<endl;
 			model = Model();
 			return is;
 		}

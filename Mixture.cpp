@@ -147,7 +147,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
 	double loss = numeric_limits<double>::infinity();
 
-	
+//    ofstream out("tmp.txt", std::ofstream::trunc);
 	for (int relabel = 0; relabel < nbRelabel; ++relabel) {
         cout<<"Mix::train relabel : "<< relabel <<endl;
 
@@ -294,6 +294,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 //            }
 //        }
 	}
+//    out.close();
 	
 	return loss;
 }
@@ -1334,6 +1335,7 @@ istream & FFLD::operator>>(istream & is, Mixture & mixture)
 	is >> nbModels;
 	
 	if (!is || (nbModels <= 0)) {
+        cerr<<"Mixture::operator>> failed 1"<<endl;
 		mixture = Mixture();
 		return is;
 	}
@@ -1344,12 +1346,13 @@ istream & FFLD::operator>>(istream & is, Mixture & mixture)
 		is >> models[i];
 		
 		if (!is || models[i].empty()) {
+            cerr<<"Mixture::operator>> failed 2"<<endl;
 			mixture = Mixture();
 			return is;
 		}
 	}
-    mixture.models() = models;
-	//mixture.models().swap(models);
+//    mixture.models() = models;
+    mixture.models().swap(models);
 	
 	return is;
 }
