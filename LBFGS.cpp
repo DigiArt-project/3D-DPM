@@ -130,7 +130,7 @@ double LBFGS::operator()(double * argx) const
 			i = 0;
 			descent = -z.dot(g);
 		}
-        std::cout << "LBFGS::() optimization backtracking ..." << std::endl;
+//        std::cout << "LBFGS::() optimization backtracking ..." << std::endl;
 
 		// Backtracking using Wolfe's first condition (Armijo condition)
 		double step = i ? 1.0 : (1.0 / g.norm());

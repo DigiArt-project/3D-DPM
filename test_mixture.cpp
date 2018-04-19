@@ -343,7 +343,7 @@ public:
         mixture.initializeParts( 1, chairPartSize, root2x);
 
 
-        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations);
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2);
 
         Eigen::Vector3i origin(-2, -1, 4);//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
@@ -389,9 +389,13 @@ public:
             int offy = scene->origin()(1)*scale;
             int offx = scene->origin()(2)*scale;
 
+            cout<<"test:: offz = "<<offz<<endl;
+            cout<<"test:: offy = "<<offy<<endl;
+            cout<<"test:: offx = "<<offx<<endl;
+
             const int depths = static_cast<int>(scores[lvl].depths());
             const int rows = static_cast<int>(scores[lvl].rows());
-            const int cols = static_cast<int>(scores[lvl].cols()/352);
+            const int cols = static_cast<int>(scores[lvl].cols());
 
             cout<<"test:: for lvl "<<lvl<<" :"<<endl;
 
@@ -399,12 +403,14 @@ public:
             cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
             cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
 
+            ofstream out("conv.txt");
 
+            out << scores[lvl]();
 
             for (int z = 0; z < depths; ++z) {
                 for (int y = 0; y < rows; ++y) {
                     for (int x = 0; x < cols; ++x) {
-                        const double score = scores[lvl]()(z, y, x*352);
+                        const double score = scores[lvl]()(z, y, x);
 
                         cout<<"test:: scores = "<<score<<endl;
 
@@ -468,16 +474,12 @@ public:
 
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
-//        // Find the image id
-//        string id = image.substr(0, image.find_last_of('.'));
+        // Draw the detections
+        if (!images.empty()) {
+//            JPEGImage im(image);
 
-//        if (id.find_last_of("/\\") != string::npos)
-//            id = id.substr(id.find_last_of("/\\") + 1);
-
-//        // Print the detections
-//        if (out) {
-//    #pragma omp critical
-//            for (int i = 0; i < detections.size(); ++i) {
+            for (int i = 0; i < 1/*detections.size()*/; ++i) {
+                // Find out if the detection hits an object
 //                bool positive = false;
 
 //                if (scene) {
@@ -489,29 +491,6 @@ public:
 //                                positive = true;
 //                }
 
-//                out << id << ' ' << detections[i].score << ' ' << (detections[i].left() + 1) << ' '
-//                    << (detections[i].top() + 1) << ' ' << (detections[i].right() + 1) << ' '
-//                    << (detections[i].bottom() + 1) << (positive ? " p" : " n") << endl;
-//            }
-//        }
-
-        // Draw the detections
-        if (!images.empty()) {
-//            JPEGImage im(image);
-
-            for (int i = 0; i < 1/*detections.size()*/; ++i) {
-                // Find out if the detection hits an object
-                bool positive = false;
-
-                if (scene) {
-                    Intersector intersector(detections[i]);
-
-                    for (int j = 0; j < scene->objects().size(); ++j)
-                        if (scene->objects()[j].name() == name)
-                            if (intersector(scene->objects()[j].bndbox()))
-                                positive = true;
-                }
-
 
                 const int x = detections[i].x;
                 const int y = detections[i].y;
@@ -520,25 +499,25 @@ public:
 
                 const int argmax = argmaxes[lvl]()(z, y, x);
 
-                cout<<"test:: argmax = "<<argmax<<endl;
+                cout<<"test:: detections[i].score = "<<detections[i].score<<endl;
 
                 //draw each parts
                 for (int j = 0; j < positions[argmax].size(); ++j) {
-                    const int zp = positions[argmax][j][lvl]()(z, y, x*352)(0);
-                    const int yp = positions[argmax][j][lvl]()(z, y, x*352)(1);
-                    const int xp = positions[argmax][j][lvl]()(z, y, x*352)(2)/352;
-                    const int lvlp = positions[argmax][j][lvl]()(z, y, x*352)(3);
+                    const int zp = positions[argmax][j][lvl]()(z, y, x)(0);
+                    const int yp = positions[argmax][j][lvl]()(z, y, x)(1);
+                    const int xp = positions[argmax][j][lvl]()(z, y, x)(2);
+                    const int lvlp = positions[argmax][j][lvl]()(z, y, x)(3);
 
-                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x*352)<<endl;
+                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x)<<endl;
 
 
 //                    const double scale = pow(2.0, static_cast<double>(zp) / pyramid.interval() + 2);
 //                    const double scale = 1 / pow(2.0, static_cast<double>(lvlp) / interval);
 
 
-                    Eigen::Vector3i origin((zp)/*- pad.z()*/,
-                                           (yp)/*- pad.y()*/,
-                                           (xp)/* - pad.x()*/);
+                    Eigen::Vector3i origin((zp + detections[i].origin()(0))/*- pad.z()*/,
+                                           (yp + detections[i].origin()(1))/*- pad.y()*/,
+                                           (xp + detections[i].origin()(2))/* - pad.x()*/);
                     int w = mixture.models()[argmax].partSize().third *2/** scale*/;
                     int h = mixture.models()[argmax].partSize().second *2/** scale*/;
                     int d = mixture.models()[argmax].partSize().first *2/** scale*/;
@@ -554,20 +533,19 @@ public:
 //                                           mixture.models()[argmax].partSize().first * scale + 0.5);
 
 
-//                    viewer.displayCubeLine(bndbox, Vector3i(255,0,255));
-//                    draw(im, bndbox, 0, 0, 255, 2);
+                    viewer.displayCubeLine(bndbox, Vector3i(255,0,255));
+//               352     draw(im, bndbox, 0, 0, 255, 2);
                 }
 
                 // Draw the root last
-                cout<<"test:: root bndbox = "<<detections[0]<<endl;
-                Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
+                cout<<"test:: root bndbox = "<<detections[i]<<endl;
+                Rectangle box(Vector3i(detections[i].origin()(0), detections[i].origin()(1), detections[i].origin()(2)),
                               mixture.models()[argmax].rootSize().first, mixture.models()[argmax].rootSize().second,
                               mixture.models()[argmax].rootSize().third, pyramid.resolutions()[1]);
                 viewer.displayCubeLine(box, Vector3i(0,255,255));
 //                draw(im, detections[i], positive ? 0 : 255, positive ? 255 : 0, 0, 2);
             }
 
-//            im.save(images + '/' + id + ".jpg");
         }
     }
 

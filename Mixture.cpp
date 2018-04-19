@@ -165,8 +165,8 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
         if(positives.size() > 0) cout << "Mix::train positives isZero = " << GSHOTPyramid::TensorMap(positives[0].first.parts()[0].filter).isZero() << endl;
 
         // Left-right clustering at the first iteration
-        if (zero_)
-            Cluster(static_cast<int>(models_.size()), positives);
+//        if (zero_)
+//            Cluster(static_cast<int>(models_.size()), positives);
 
         // Cache of hard negative samples of maximum size maxNegatives
         vector<pair<Model, int> > negatives;
@@ -277,7 +277,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
 			
             // Save the latest model so as to be able to look at it while training
-            ofstream out("tmp.txt");
+            ofstream out("tmp2.txt");
 			
             out << (*this);
 			
@@ -611,7 +611,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                     depths = scores[lvl].depths();
                     rows = scores[lvl].rows();
-                    cols = scores[lvl].cols()/GSHOTPyramid::DescriptorSize;
+                    cols = scores[lvl].cols();
                     cout << "Mix::posLatentSearch depths = scores["<<lvl<<"].depths() = " << depths << endl;
                     cout << "Mix::posLatentSearch rows = scores["<<lvl<<"].rows() = " << rows << endl;
                     cout << "Mix::posLatentSearch cols = scores["<<lvl<<"].cols() = " << cols << endl;
@@ -708,7 +708,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             }
 
 
-                            if ((intersection > maxInter) && (zero_ || (scores[lvl]()(z, y, x) > maxScore))) {
+                            if ((intersection > maxInter)/* && (zero_ || (scores[lvl]()(z, y, x) > maxScore))*/) {
                                 argModel = model;
                                 argX = x;
                                 argY = y;
@@ -831,7 +831,7 @@ cout<<"Mix::negLatentSearch test2"<<endl;
             if (!zero_) {
                 depths = scores[lvl].depths();
                 rows = scores[lvl].rows();
-                cols = scores[lvl].cols()/GSHOTPyramid::DescriptorSize;
+                cols = scores[lvl].cols();
                 cout<<"Mix::negLatentSearch depths1 = "<<depths<<endl;
                 cout<<"Mix::negLatentSearch rows1 = "<<rows<<endl;
                 cout<<"Mix::negLatentSearch cols1 = "<<cols<<endl;
@@ -999,7 +999,7 @@ public:
 				gradients[i] *= C_;
 
 			const double norm = models_[i].norm();
-            std::cout << "LOSS::() norm = "<<norm<<" / maxNorm = "<<maxNorm << std::endl;
+//            std::cout << "LOSS::() norm = "<<norm<<" / maxNorm = "<<maxNorm << std::endl;
 
 			if (norm > maxNorm) {
 				maxNorm = norm;

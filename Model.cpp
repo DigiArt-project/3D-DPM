@@ -551,6 +551,8 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     const int nbLevels = static_cast<int>(pyramid.levels().size());
     const float resolution = 1 / pow(2.0, static_cast<double>(lvl) / interval);
 	
+    cout << "initializeSample pyramid.levels()[lvl].cols() = " << pyramid.levels()[lvl].cols() << endl;
+
     // Invalid parameters
     if (empty() || (x < 0) || (y < 0) || (z < 0) || (lvl >= nbLevels) ||
         (x + int(rootSize().third*resolution) > pyramid.levels()[lvl].cols()) ||
@@ -575,10 +577,16 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     // Resize the sample to have the same number of filters as the model
     sample.parts_.resize(nbFilters);
 	
+    cout << "initializeSample coord = " << z<<" / "<<y<<" / "<<x << endl;
+
     // Extract the root filter
     sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().first, rootSize().second, rootSize().third);
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
+
+//        ofstream out2("blockScene.txt");
+
+//        out2 << (sample);
 	
     for (int i = 0; i < nbParts; ++i) {
         // Position of the part

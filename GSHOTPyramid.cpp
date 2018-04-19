@@ -117,78 +117,87 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
 
 //TODO urgent !!!!! remove the result of the convolution for x = [1 and 351]%352
 //Its a correlation not a convolution
-void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor3DF & z)
+void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF & convolution)
 {
     // Nothing to do if x is smaller than y
-    if ((x().dimension(0) < y().dimension(0)) || (x().dimension(1) < y().dimension(1) ) || (x().dimension(2) < y().dimension(2) )) {
+    if ((level().dimension(0) < filter().dimension(0)) || (level().dimension(1) < filter().dimension(1) )
+            || (level().dimension(2) < filter().dimension(2) )) {
         cout<<"GSHOTPyramid::convolve error : level size is smaller than filter" << endl;
-        cout<<"GSHOTPyramid::convolve error : " <<x().dimension(0)<<" < "<<y().dimension(0)
-           <<" / " << x().dimension(1)<<" < "<<y().dimension(1)
-          <<" / " << x().dimension(2)<<" < "<<y().dimension(2)<< endl;
+        cout<<"GSHOTPyramid::convolve error : " <<level().dimension(0)<<" < "<<filter().dimension(0)
+           <<" / " << level().dimension(1)<<" < "<<filter().dimension(1)
+          <<" / " << level().dimension(2)<<" < "<<filter().dimension(2)<< endl;
         return;
     }
 
-    Eigen::Tensor<float, 3, RowMajor> dx(x().dimension(0), x().dimension(1), x().dimension(2) * DescriptorSize),
-                                      dy(y().dimension(0), y().dimension(1), y().dimension(2) * DescriptorSize);
+//    Eigen::Tensor<float, 3, RowMajor> dx(x().dimension(0), x().dimension(1), x().dimension(2) * DescriptorSize),
+//                                      dy(y().dimension(0), y().dimension(1), y().dimension(2) * DescriptorSize);
 
-//TODO use TensorMap
-    bool xIsZero = true;
-    for (int i = 0; i < x().dimension(0); ++i) {
-        for (int j = 0; j < x().dimension(1); ++j) {
-            for (int k = 0; k < x().dimension(2); ++k) {
-                for (int l = 0; l < DescriptorSize; ++l) {
-                    dx(i,j, k * DescriptorSize + l) = x()(i,j,k).coeff(l);
-                    if( x()(i,j,k).coeff(l) != 0) xIsZero = false;
-                }
-            }
-        }
-    }
-    cout<<"GSHOTPyramid::convolve level.isZero() : "<< xIsZero << endl;
+    Tensor3DF lvl = TensorMap( level);
 
-    bool yIsZero = true;
-    for (int i = 0; i < y().dimension(0); ++i) {
-        for (int j = 0; j < y().dimension(1); ++j) {
-            for (int k = 0; k < y().dimension(2); ++k) {
-                for (int l = 0; l < DescriptorSize; ++l) {
-                    dy(i,j, k * DescriptorSize + l) = y()(i,j,k).coeff(l);
-                    if( y()(i,j,k).coeff(l) != 0) yIsZero = false;
-                }
-            }
-        }
-    }
-    cout<<"GSHOTPyramid::convolve filter.isZero() : "<< yIsZero << endl;
-
-    z().resize( dx.dimension(0) - dy.dimension(0) + 1,
-              dx.dimension(1) - dy.dimension(1) + 1,
-              dx.dimension(2) - dy.dimension(2) + 1);
-
-    cout<<"GSHOTPyramid::convolve results.size() : "<< z.size() << endl;
-    Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
-    z() = dx.convolve(dy, dims);
-}
-
-//void GSHOTPyramid::Convolve(const Level & x, const Level & y, Tensor & z)
-//{
-//    // Nothing to do if x is smaller than y
-//    if ((x.rows() < y.rows()) || (x.cols() < y.cols())) {
-//        z = Tensor();
-//        return;
-//    }
-
-//    z = Tensor::Zero( x.dimension(0) - y.dimension(0) + 1, x.dimension(1) - y.dimension(1) + 1, x.dimension(2) - y.dimension(2) + 1);
-
-//    for (int i = 0; i < z.rows(); ++i) {
-//        for (int j = 0; j < y.rows(); ++j) {
-//            const Eigen::Map<const Matrix, Aligned, OuterStride<DescriptorSize> >
-//                mapx(reinterpret_cast<const Scalar *>(x.row(i + j).data()), z.cols(), y.cols() * DescriptorSize);
-
-//            const Eigen::Map<const RowVectorXf, Aligned>
-//                mapy(reinterpret_cast<const Scalar *>(y.row(j).data()), y.cols() * DescriptorSize);
-
-//            z.row(i).noalias() += mapy * mapx.transpose();
+////TODO use TensorMap
+//    bool xIsZero = true;
+//    for (int i = 0; i < level().dimension(0); ++i) {
+//        for (int j = 0; j < level().dimension(1); ++j) {
+//            for (int k = 0; k < level().dimension(2); ++k) {
+//                for (int l = 0; l < DescriptorSize; ++l) {
+//                    dx(i,j, k * DescriptorSize + l) = level()(i,j,k).coeff(l);
+//                    if( level()(i,j,k).coeff(l) != 0) xIsZero = false;
+//                }
+//            }
 //        }
 //    }
-//}
+    cout<<"GSHOTPyramid::convolve level.isZero() : "<< lvl.isZero() << endl;
+
+    Tensor3DF filt = TensorMap( filter);
+
+//    bool yIsZero = true;
+//    for (int i = 0; i < filter().dimension(0); ++i) {
+//        for (int j = 0; j < filter().dimension(1); ++j) {
+//            for (int k = 0; k < filter().dimension(2); ++k) {
+//                for (int l = 0; l < DescriptorSize; ++l) {
+//                    dy(i,j, k * DescriptorSize + l) = filter()(i,j,k).coeff(l);
+//                    if( filter()(i,j,k).coeff(l) != 0) yIsZero = false;
+//                }
+//            }
+//        }
+//    }
+    cout<<"GSHOTPyramid::convolve filter.isZero() : "<< filt.isZero() << endl;
+
+    Tensor3DF aux;
+    aux().resize( lvl.depths() - filt.depths() + 1,
+              lvl.rows() - filt.rows() + 1,
+              lvl.cols() - filt.cols() + 1);
+
+    Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
+    aux() = lvl().convolve(filt(), dims);
+
+    cout<<"GSHOTPyramid::convolve aux.depths() : "<< aux.depths() << endl;
+    cout<<"GSHOTPyramid::convolve aux.rows() : "<< aux.rows() << endl;
+    cout<<"GSHOTPyramid::convolve aux.cols() : "<< aux.cols() << endl;
+
+//    Eigen::array<Eigen::DenseIndex, 3> strides({1, 1, DescriptorSize});
+//    convolution() = aux().stride(strides);
+
+    convolution().resize( aux.depths(), aux.rows(), aux.cols()/DescriptorSize);
+
+    int cpt = 0;
+    for (int i = 0; i < aux.depths(); ++i) {
+        for (int j = 0; j < aux.rows(); ++j) {
+            cpt=0;
+            for (int k = 0; k < aux.cols(); ++k) {
+                if( k % DescriptorSize == 0) {
+//                    cout<<"k = "<<k<<endl;
+                    convolution()(i,j,cpt) = aux()(i,j,k);
+                    ++cpt;
+                }
+            }
+        }
+    }
+
+    cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;
+    cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
+    cout<<"GSHOTPyramid::convolve results.cols() : "<< convolution.cols() << endl;
+}
 
 //TODO: do we need the flip function ?
 //GSHOTPyramid::Level GSHOTPyramid::Flip(const GSHOTPyramid::Level & level)
