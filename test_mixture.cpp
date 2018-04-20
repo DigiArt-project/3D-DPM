@@ -51,7 +51,8 @@ class Test{
 public:
 
     Test( char* sceneFilename, char* chairFilename, char* tableFilename) :
-        sceneName( sceneFilename), sceneCloud( new PointCloudT), chairCloud( new PointCloudT), tableCloud( new PointCloudT)
+        sceneName( sceneFilename), tableName( tableFilename),
+        sceneCloud( new PointCloudT), chairCloud( new PointCloudT), tableCloud( new PointCloudT)
     {
 
 
@@ -139,6 +140,26 @@ public:
         cout<<"test:: tableBox right = "<<tableBox.right()<<endl;
 
 
+    }
+
+    void createChairModel(){
+
+        int nbParts = 1;
+
+        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
+                                                    chairBox.height()/2,
+                                                    chairBox.width()/2);
+
+        Model model( chairSize, nbParts, chairPartSize);
+        GSHOTPyramid pyramid(chairCloud, Eigen::Vector3i( 3,3,3));
+        model.parts()[0].filter = pyramid.levels()[0].block( chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2),
+                                                             chairSize.first, chairSize.second, chairSize.third);
+        model.parts()[1].filter = pyramid.levels()[0].block( 2, 0, 6, chairPartSize.first, chairPartSize.second, chairPartSize.third);
+
+        ofstream out2("chairModel.txt");
+
+        out2 << (model);
     }
 
     void testNegLatSearch(){
@@ -320,18 +341,21 @@ public:
         Model model( chairSize, 0);
         std::vector<Model> models = { model};
 
-        vector<Object> objects;
+        vector<Object> objects, objects2;
         Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+        Object obj2(Object::TRAIN, Object::Pose::UNSPECIFIED, false, false, tableBox);
+
         objects.push_back(obj);
+        objects2.push_back(obj2);
 
-
-        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)};
+        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)/*,
+                                Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), tableName, objects2)*/};
 
 
         Mixture mixture( models);
 
-        int interval = 1, nbIterations = 2;
-        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2);
+        int interval = 1, nbIterations = 2, nbDatamine = 10, maxNegSample = 10;
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
 
         cout << "test:: root filter initialized" << endl;
 
@@ -343,7 +367,7 @@ public:
         mixture.initializeParts( 1, chairPartSize, root2x);
 
 
-        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2);
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
 
         Eigen::Vector3i origin(-2, -1, 4);//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
@@ -453,7 +477,7 @@ public:
 //                                bndbox.setHeight(min(bndbox.height(), height - bndbox.y()));
 
                                 if (!bndbox.empty()){
-                                    detections.push_back(Detection(score, z/*+offz*/, y/*+offy*/, x/*+offx*/, lvl, bndbox));
+                                    detections.push_back(Detection(score, z, y, x, lvl, bndbox));
                                     cout<<"test:: bndbox added to detections"<<endl;
                                 }
 
@@ -478,7 +502,7 @@ public:
         if (!images.empty()) {
 //            JPEGImage im(image);
 
-            for (int i = 0; i < 1/*detections.size()*/; ++i) {
+            for (int i = 0; i < detections.size(); ++i) {
                 // Find out if the detection hits an object
 //                bool positive = false;
 
@@ -549,6 +573,7 @@ public:
         }
     }
 
+
     void testTest(){
 
 
@@ -570,7 +595,7 @@ public:
         cout<<mixture.models()[0].parts()[1].offset<<endl;
 
         int interval = 1;
-        float threshold=0.8, overlap=0.5;
+        float threshold=0.1, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
 
         ofstream out("tmpTest.txt");
@@ -584,7 +609,7 @@ public:
 
     }
 
-//    void testTrainSVM(){
+    void testTrainSVM(){
 
 //        Model::triple<int, int, int> rootSize( sceneSize.first/4,
 //                                           sceneSize.second/4,
@@ -646,9 +671,10 @@ public:
 //        ofstream out2("tmp2.txt");
 
 //        out2 << (mixture);
-//    }
+    }
 
     char* sceneName;
+    char* tableName;
     PointCloudPtr sceneCloud;
     PointCloudPtr chairCloud;
     PointCloudPtr tableCloud;
@@ -666,11 +692,6 @@ int main(){
     //Turn pcl message to OFF !!!!!!!!!!!!!!!!!!!!
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
-/////////Construct scene
-
-
-///////////////////////////
-
 
     Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
@@ -679,41 +700,17 @@ int main(){
 //    test.testPosLatSearch();
 //    test.testNegLatSearch();
 
-//    test.testTrain();
+//    test.createChairModel();
 
-    test.testTest();
+//    test.initSample();
+
+    test.testTrain();
+
+//    test.testTest();
+
+    test.viewer.viewer->addLine(pcl::PointXYZ(0,-1,0), pcl::PointXYZ(2*0.0845292, -1, 0),"ijbij");
 
     test.viewer.show();
-
-//    Mixture mix = test.testTrain(originScene, chairSize, chairBox);
-
-//    Viewer viewer;
-//    viewer.addPC( sceneCloud);
-//    viewer.displayCubeLine(chairBox, sceneResolution, minScene);
-//    Rectangle expChairBox( Eigen::Vector3i(mix.models_[0].parts()[0].offset(0),
-//                                               mix.models_[0].parts()[0].offset(1),
-//                                               mix.models_[0].parts()[0].offset(2)),
-//                            chairSize.first, chairSize.second, chairSize.third, sceneResolution);
-
-//    cout<<"test:: exp positions = "<<mix.models_[0].parts()[0].offset<<endl;
-
-//    viewer.displayCubeLine(expChairBox, sceneResolution, minScene, Eigen::Vector3i(255,255,0));
-
-
-//    Model::triple<int, int, int> partSize( chairSize.first/3,
-//                                           chairSize.second/2,
-//                                           chairSize.third/3);
-//    Rectangle expChairPartBox( Eigen::Vector3i(mix.models_[0].parts()[1].offset(0),
-//                                               mix.models_[0].parts()[1].offset(1),
-//                                               mix.models_[0].parts()[1].offset(2)),
-//                            partSize.first, partSize.second, partSize.third, sceneResolution);
-
-//    cout<<"test:: exp part positions = "<<mix.models_[0].parts()[1].offset<<endl;
-
-//    viewer.displayCubeLine(expChairPartBox, sceneResolution, minScene, Eigen::Vector3i(255,0, 255));
-
-//    viewer.show();
-
 
 
 

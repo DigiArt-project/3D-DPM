@@ -71,7 +71,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             pcl::getMinMax3D(*subspace, min, max);
 
             keypoints_[index] = compute_keypoints(subspace, resolution, min, max, index);
-            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 10*resolution);
+            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
 
             bool isZero = true;
             Level level( topology[index](0), topology[index](1), topology[index](2));
@@ -129,38 +129,12 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
         return;
     }
 
-//    Eigen::Tensor<float, 3, RowMajor> dx(x().dimension(0), x().dimension(1), x().dimension(2) * DescriptorSize),
-//                                      dy(y().dimension(0), y().dimension(1), y().dimension(2) * DescriptorSize);
-
     Tensor3DF lvl = TensorMap( level);
 
-////TODO use TensorMap
-//    bool xIsZero = true;
-//    for (int i = 0; i < level().dimension(0); ++i) {
-//        for (int j = 0; j < level().dimension(1); ++j) {
-//            for (int k = 0; k < level().dimension(2); ++k) {
-//                for (int l = 0; l < DescriptorSize; ++l) {
-//                    dx(i,j, k * DescriptorSize + l) = level()(i,j,k).coeff(l);
-//                    if( level()(i,j,k).coeff(l) != 0) xIsZero = false;
-//                }
-//            }
-//        }
-//    }
     cout<<"GSHOTPyramid::convolve level.isZero() : "<< lvl.isZero() << endl;
 
     Tensor3DF filt = TensorMap( filter);
 
-//    bool yIsZero = true;
-//    for (int i = 0; i < filter().dimension(0); ++i) {
-//        for (int j = 0; j < filter().dimension(1); ++j) {
-//            for (int k = 0; k < filter().dimension(2); ++k) {
-//                for (int l = 0; l < DescriptorSize; ++l) {
-//                    dy(i,j, k * DescriptorSize + l) = filter()(i,j,k).coeff(l);
-//                    if( filter()(i,j,k).coeff(l) != 0) yIsZero = false;
-//                }
-//            }
-//        }
-//    }
     cout<<"GSHOTPyramid::convolve filter.isZero() : "<< filt.isZero() << endl;
 
     Tensor3DF aux;

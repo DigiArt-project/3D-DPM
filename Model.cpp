@@ -577,16 +577,14 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     // Resize the sample to have the same number of filters as the model
     sample.parts_.resize(nbFilters);
 	
-    cout << "initializeSample coord = " << z<<" / "<<y<<" / "<<x << endl;
+    cout << "initializeSample coord = " << z<<" / "<<y<<" / "<<x <<" / "<< lvl<< endl;
 
     // Extract the root filter
     sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().first, rootSize().second, rootSize().third);
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
 
-//        ofstream out2("blockScene.txt");
 
-//        out2 << (sample);
 	
     for (int i = 0; i < nbParts; ++i) {
         // Position of the part
@@ -636,8 +634,11 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 		
         // Set the part offset to the position
         sample.parts_[i + 1].offset = position;
+
+        cout<<"Model::InitiSample filter part position = "<<position<<endl;
+
 		
-        //TODO
+        //TODO!!!!
         // Compute the deformation gradient at the level of the part
 //        const double scale = 1;//pow(2.0, static_cast<double>(lvl - position(3)) / interval);
 //        const double xr = (x + (parts_[i + 1].offset(2) + partSize().third * 0.5) * 0.5 - pad.x()) *
@@ -646,16 +647,16 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 //                          scale + pad.y() - partSize().second * 0.5;
 //        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first * 0.5) * 0.5 - pad.z()) *
 //                          scale + pad.z() - partSize().first * 0.5;
-        const double scale = 1;//pow(2.0, static_cast<double>(lvl - position(3)) / interval);
-        const double xr = (x + (parts_[i + 1].offset(2) + partSize().third) - pad.x()) *
-                          scale + pad.x() - partSize().third;
-        const double yr = (y + (parts_[i + 1].offset(1) + partSize().second) - pad.y()) *
-                          scale + pad.y() - partSize().second;
-        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first) - pad.z()) *
-                          scale + pad.z() - partSize().first;
-        const double dx = xr - position(2);
-        const double dy = yr - position(1);
-        const double dz = zr - position(0);
+        const double scale = 2;//pow(2.0, static_cast<double>(lvl - position(3)) / interval);
+        const double xr = (x + (parts_[i + 1].offset(2) + partSize().third) /*- pad.x()*/) *
+                          scale + /*pad.x()*/ - partSize().third;
+        const double yr = (y + (parts_[i + 1].offset(1) + partSize().second) /*- pad.y()*/) *
+                          scale + /*pad.y()*/ - partSize().second;
+        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first) /*- pad.z()*/) *
+                          scale + /*pad.z()*/ - partSize().first;
+        const double dx = xr - position(2)/**pyramid.resolutions()[lvl]*/;
+        const double dy = yr - position(1)/**pyramid.resolutions()[lvl]*/;
+        const double dz = zr - position(0)/**pyramid.resolutions()[lvl]*/;
         const int dlvl = lvl - interval - position(3);
 		
         sample.parts_[i + 1].deformation(0) = dz * dz;
@@ -667,6 +668,10 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
         sample.parts_[i + 1].deformation(6) = dlvl * dlvl;
         sample.parts_[i + 1].deformation(7) = dlvl;
     }
+
+    ofstream out2("chairModelScene1.txt");
+
+    out2 << (sample);
 	
     sample.bias_ = 1.0;
 }
@@ -863,47 +868,41 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 
 double Model::dot(const Model & sample) const
 {
+//    cout<<"Model::dot ..."<< endl;
     double d = bias_ * sample.bias_;
 
 
 
-    if (parts_.size() != sample.parts_.size())
+    if (parts_.size() != sample.parts_.size()){
+        cout<<"Model::dot bug1"<< endl;
         return numeric_limits<double>::quiet_NaN();
+    }
 
     for (int i = 0; i < parts_.size(); ++i) {
         if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
             (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
-            (parts_[i].filter.cols() != sample.parts_[i].filter.cols()))
+            (parts_[i].filter.cols() != sample.parts_[i].filter.cols())){
+            cout<<"Model::dot bug2"<< endl;
             return numeric_limits<double>::quiet_NaN();
-
+        }
         for (int z = 0; z < parts_[i].filter.depths(); ++z){
             for (int y = 0; y < parts_[i].filter.rows(); ++y){
-                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
-                            GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
+                for (int x = 0; x < parts_[i].filter.cols(); ++x){
+                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
+//                        cout<<"Model::dot parts_[i].filter()(z, y, x)(j) = "<<parts_[i].filter()(z, y, x)(j)<<endl;
+//                        cout<<"Model::dot sample.parts_[i].filter()(z, y, x)(j) = "<<sample.parts_[i].filter()(z, y, x)(j)<<endl;
+
+                        d += parts_[i].filter()(z, y, x)(j) * sample.parts_[i].filter()(z, y, x)(j);
+//                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
+//                            GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
+                    }
+                }
             }
         }
         //TODO !!!! error seg with deformation
 //        if (i) d += parts_[i].deformation.dot(sample.parts_[i].deformation);
     }
 	
-    if (parts_.size() != sample.parts_.size())
-        return numeric_limits<double>::quiet_NaN();
-	
-    for (int i = 0; i < parts_.size(); ++i) {
-        if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
-            (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
-            (parts_[i].filter.cols() != sample.parts_[i].filter.cols()))
-            return numeric_limits<double>::quiet_NaN();
-
-        for (int z = 0; z < parts_[i].filter.depths(); ++z){
-            for (int y = 0; y < parts_[i].filter.rows(); ++y){
-                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
-                        GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
-            }
-        }
-        //TODO !!!!
-        //if (i) d += parts_[i].deformation.dot(sample.parts_[i].deformation);
-    }
 	
 	return d;
 }

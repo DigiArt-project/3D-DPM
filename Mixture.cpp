@@ -179,7 +179,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             int j = 0;
 			
             for (int i = 0; i < negatives.size(); ++i)
-                if ((negatives[i].first.parts()[0].deformation(3) =
+                if ((negatives[i].first.parts()[0].deformation(4) =
                      models_[negatives[i].second].dot(negatives[i].first)) > -1.01)
                     negatives[j++] = negatives[i];
 			
@@ -277,7 +277,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
 			
             // Save the latest model so as to be able to look at it while training
-            ofstream out("tmp2.txt");
+            ofstream out("tmp.txt");
 			
             out << (*this);
 			
@@ -853,7 +853,7 @@ cout<<"Mix::negLatentSearch test2"<<endl;
 
                         const int argmax = 0;//zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
 
-                        cout<<"Mix::negLatentSearch scores[lvl]()(z, y, x) = "<<scores[lvl]()(z, y, x)<<endl;
+//                        cout<<"Mix::negLatentSearch scores[lvl]()(z, y, x) = "<<scores[lvl]()(z, y, x)<<endl;
                         if (zero_ || (scores[lvl]()(z, y, x) > -1)) {
                             Model sample;
 
