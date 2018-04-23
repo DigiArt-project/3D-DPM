@@ -31,7 +31,7 @@ int main(){
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
     // Define a translation of 2.5 meters on the x axis.
-    transform.translation() << 1, 0.0, 0.0;
+    transform.translation() << 2, 0.0, 0.0;
 
     pcl::transformPointCloud (*cloud1, *finalCloud, transform);
 
@@ -47,7 +47,7 @@ int main(){
                                             (maxChair.y-minChair.y)/chairResolution+1,
                                             (maxChair.x-minChair.x)/chairResolution+1);
 
-    Rectangle chairBox(Eigen::Vector3i(0,0,0), chairSize.third, chairSize.second, chairSize.first);
+//    Rectangle chairBox(Eigen::Vector3i(0,0,0), chairSize.third, chairSize.second, chairSize.first);
 
 
     PointType minTable;
@@ -60,7 +60,7 @@ int main(){
                                             (maxTable.y-minTable.y)/tableTesolution+1,
                                             (maxTable.x-minTable.x)/tableTesolution+1);
 
-    Rectangle tableBox(Eigen::Vector3i(0,0,0), tableSize.third, tableSize.second, tableSize.first);
+//    Rectangle tableBox(Eigen::Vector3i(0,0,0), tableSize.third, tableSize.second, tableSize.first);
 
 
 
@@ -70,10 +70,10 @@ int main(){
     Viewer view;
 
     view.addPC( finalCloud);
-    view.displayCubeLine(chairBox, chairResolution, minChair);
-    view.displayCubeLine(tableBox, tableTesolution, minTable);
+//    view.displayCubeLine(chairBox, chairResolution, minChair);
+//    view.displayCubeLine(tableBox, tableTesolution, minTable);
 
-    pcl::io::savePCDFileASCII ("scene.pcd", *finalCloud);
+    pcl::io::savePCDFileASCII ("smallScene1.pcd", *finalCloud);
 
     view.show();
 

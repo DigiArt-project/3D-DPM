@@ -61,7 +61,7 @@ public:
 
     //Tester convolution
     void block(){
-        Tensor3DF y(3,3,3);
+        Tensor3DF y(5,5,3);
         float cpt = 0.0;
         for (int i = 0; i < y().dimension(0); ++i) {
             for (int j = 0; j < y().dimension(1); ++j) {
@@ -72,10 +72,10 @@ public:
             }
         }
 
-        auto b = y.block( 1, 2, 0, 1, 1, 3);
+        Tensor3DF b = y.block( 1, 2, 0, 1, 1, 3);
 
         std::cout << "y = \n" << y << std::endl;
-//        std::cout << "b = \n" << b() << std::endl;
+        std::cout << "b = \n" << b() << std::endl;
 
         b()(0,0,1) = 4.72;
 

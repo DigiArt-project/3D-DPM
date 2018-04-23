@@ -73,6 +73,15 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             keypoints_[index] = compute_keypoints(subspace, resolution, min, max, index);
             DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
 
+            ///TODO !!!!!!
+            /// \brief sort the point clouds (x, y, z)
+//            for (int kpt = 0; kpt < keypoints_[index]->size(); ++kpt){
+//                cout << "GSHOTPyr::constructor keypoint order["<<kpt<<"] = "<<keypoints_[index]->points[kpt] << endl;
+//            }
+            ///
+            ///
+
+
             bool isZero = true;
             Level level( topology[index](0), topology[index](1), topology[index](2));
             Cell* levelCell = &(level()(0));
@@ -159,7 +168,7 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
         for (int j = 0; j < aux.rows(); ++j) {
             cpt=0;
             for (int k = 0; k < aux.cols(); ++k) {
-                if( k % DescriptorSize == 0) {
+                if( k % DescriptorSize == 0 && cpt < convolution.cols()) {
 //                    cout<<"k = "<<k<<endl;
                     convolution()(i,j,cpt) = aux()(i,j,k);
                     ++cpt;
@@ -167,7 +176,7 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
             }
         }
     }
-
+    cout<<"GSHOTPyramid::convolve cpt : "<< cpt << endl;
     cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;
     cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
     cout<<"GSHOTPyramid::convolve results.cols() : "<< convolution.cols() << endl;

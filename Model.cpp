@@ -580,6 +580,14 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     cout << "initializeSample coord = " << z<<" / "<<y<<" / "<<x <<" / "<< lvl<< endl;
 
     // Extract the root filter
+
+//    Eigen::array<int, 3> offsets = {z, y, x};
+//    Eigen::array<int, 3> extents = {1,1,1};
+//    Eigen::array<int, 3> three_dims{{rootSize().first, rootSize().second, rootSize().third}};
+
+//    sample.parts_[0].filter() = pyramid.levels()[lvl]().slice(offsets, extents).reshape(three_dims);
+
+
     sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().first, rootSize().second, rootSize().third);
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
@@ -668,12 +676,12 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
         sample.parts_[i + 1].deformation(6) = dlvl * dlvl;
         sample.parts_[i + 1].deformation(7) = dlvl;
     }
-
-    ofstream out2("chairModelScene1.txt");
-
-    out2 << (sample);
 	
     sample.bias_ = 1.0;
+
+    ofstream out2("chairModelScene2.txt");
+
+    out2 << (sample);
 }
 
 void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,

@@ -68,9 +68,10 @@ public:
         }
 
 
-        sceneResolution = 25 * GSHOTPyramid::computeCloudResolution(sceneCloud);
+        sceneResolution = 25 * GSHOTPyramid::computeCloudResolution(sceneCloud);//0.0845292;//
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
+        viewer.viewer->addLine(pcl::PointXYZ(0,-1,0), pcl::PointXYZ(2*sceneResolution, -1, 0),"ijbij");
 
         PointType minScene;
         PointType maxScene;
@@ -85,7 +86,14 @@ public:
         cout<<"test:: minScene = "<<minScene<<endl;
         cout<<"test:: maxScene = "<<maxScene<<endl;
 
-        viewer.addPC( sceneCloud);
+
+        PointCloudPtr subspace(new PointCloudT());
+        pcl::UniformSampling<PointType> sampling;
+        sampling.setInputCloud(sceneCloud);
+        sampling.setRadiusSearch (sceneResolution);
+        sampling.filter(*subspace);
+
+        viewer.addPC( subspace, 7);
         viewer.displayCubeLine(sceneBox);
         viewer.viewer->addLine(minScene,
                 pcl::PointXYZ(sceneResolution*(originScene(2)+sceneSize.third),
@@ -98,7 +106,11 @@ public:
         Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
         // Define a translation of 2.5 meters on the x axis.
-        transform.translation() << 1, 0.0, 0.0;
+        if( sceneName == "/home/ubuntu/3DDataset/3DDPM/smallScene1.pcd"){
+            transform.translation() << 2, 0.0, 0.0;
+        } else if( sceneName == "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd"){
+            transform.translation() << 1, 2.0, 0.0;
+        }
         pcl::transformPointCloud (*tmpCloud, *chairCloud, transform);
 
 
@@ -369,7 +381,7 @@ public:
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
 
-        Eigen::Vector3i origin(-2, -1, 4);//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
+        Eigen::Vector3i origin(-2, -1, 10);//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
         Rectangle boxFound(origin, chairSize.first, chairSize.second, chairSize.third, sceneResolution*2);
         viewer.displayCubeLine(boxFound, Eigen::Vector3i(255,0,255));
@@ -385,6 +397,7 @@ public:
 
 
     }
+
 
     void detect(const Mixture & mixture, /*int depth, int height, int width, */int interval, const GSHOTPyramid & pyramid,
                 double threshold, double overlap,/* const string image, */ostream & out,
@@ -523,51 +536,65 @@ public:
 
                 const int argmax = argmaxes[lvl]()(z, y, x);
 
-                cout<<"test:: detections[i].score = "<<detections[i].score<<endl;
-
-                //draw each parts
-                for (int j = 0; j < positions[argmax].size(); ++j) {
-                    const int zp = positions[argmax][j][lvl]()(z, y, x)(0);
-                    const int yp = positions[argmax][j][lvl]()(z, y, x)(1);
-                    const int xp = positions[argmax][j][lvl]()(z, y, x)(2);
-                    const int lvlp = positions[argmax][j][lvl]()(z, y, x)(3);
-
-                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x)<<endl;
+                cout<<"test:: argmax = "<<argmax<<endl;
+                cout<<"test:: detection score = "<<detections[i].score<<endl;
 
 
-//                    const double scale = pow(2.0, static_cast<double>(zp) / pyramid.interval() + 2);
-//                    const double scale = 1 / pow(2.0, static_cast<double>(lvlp) / interval);
+//                //draw each parts
+//                for (int j = 0; j < positions[argmax].size(); ++j) {
+//                    cout<<"test:: zp = "<<positions[argmax][j][lvl]()(z, y, x)(0)<<endl;
+//                    cout<<"test:: yp = "<<positions[argmax][j][lvl]()(z, y, x)(1)<<endl;
+//                    cout<<"test:: xp = "<<positions[argmax][j][lvl]()(z, y, x)(2)<<endl;
+//                    cout<<"test:: lvlp = "<<positions[argmax][j][lvl]()(z, y, x)(3)<<endl;
+
+//                    const int zp = positions[argmax][j][lvl]()(z, y, x)(0);
+//                    const int yp = positions[argmax][j][lvl]()(z, y, x)(1);
+//                    const int xp = positions[argmax][j][lvl]()(z, y, x)(2);
+//                    const int lvlp = positions[argmax][j][lvl]()(z, y, x)(3);
+
+//                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x)<<endl;
 
 
-                    Eigen::Vector3i origin((zp + detections[i].origin()(0))/*- pad.z()*/,
-                                           (yp + detections[i].origin()(1))/*- pad.y()*/,
-                                           (xp + detections[i].origin()(2))/* - pad.x()*/);
-                    int w = mixture.models()[argmax].partSize().third *2/** scale*/;
-                    int h = mixture.models()[argmax].partSize().second *2/** scale*/;
-                    int d = mixture.models()[argmax].partSize().first *2/** scale*/;
-
-                    Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
-
-                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
+////                    const double scale = pow(2.0, static_cast<double>(zp) / pyramid.interval() + 2);
+////                    const double scale = 1 / pow(2.0, static_cast<double>(lvlp) / interval);
 
 
-//                    const Rectangle bndbox((xp - pyramid.padx()) * scale + 0.5,
-//                                           (yp - pyramid.pady()) * scale + 0.5,
-//                                           mixture.models()[argmax].partSize().second * scale + 0.5,
-//                                           mixture.models()[argmax].partSize().first * scale + 0.5);
+//                    Eigen::Vector3i origin((zp + detections[i].origin()(0)*2)/*- pad.z()*/,
+//                                           (yp + detections[i].origin()(1)*2)/*- pad.y()*/,
+//                                           (xp + detections[i].origin()(2)*2)/* - pad.x()*/);
+//                    int w = mixture.models()[argmax].partSize().third *2/** scale*/;
+//                    int h = mixture.models()[argmax].partSize().second *2/** scale*/;
+//                    int d = mixture.models()[argmax].partSize().first *2/** scale*/;
+
+//                    Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
+
+//                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
 
 
-                    viewer.displayCubeLine(bndbox, Vector3i(255,0,255));
-//               352     draw(im, bndbox, 0, 0, 255, 2);
-                }
+////                    const Rectangle bndbox((xp - pyramid.padx()) * scale + 0.5,
+////                                           (yp - pyramid.pady()) * scale + 0.5,
+////                                           mixture.models()[argmax].partSize().second * scale + 0.5,
+////                                           mixture.models()[argmax].partSize().first * scale + 0.5);
+
+
+////                    viewer.displayCubeLine(bndbox, Vector3i(255,0,255));
+////               352     draw(im, bndbox, 0, 0, 255, 2);
+//                }
 
                 // Draw the root last
                 cout<<"test:: root bndbox = "<<detections[i]<<endl;
                 Rectangle box(Vector3i(detections[i].origin()(0), detections[i].origin()(1), detections[i].origin()(2)),
                               mixture.models()[argmax].rootSize().first, mixture.models()[argmax].rootSize().second,
                               mixture.models()[argmax].rootSize().third, pyramid.resolutions()[1]);
-                viewer.displayCubeLine(box, Vector3i(0,255,255));
-//                draw(im, detections[i], positive ? 0 : 255, positive ? 255 : 0, 0, 2);
+//                viewer.displayCubeLine(box, Vector3i(0,255,255));
+            }
+
+            if( detections.size() > 0){
+                cout<<"test:: root bndbox = "<<detections[0]<<" with score : "<<detections[0].score<<endl;
+                Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
+                              mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
+                              mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
+                viewer.displayCubeLine(box, Vector3i(0,255,0));
             }
 
         }
@@ -595,7 +622,7 @@ public:
         cout<<mixture.models()[0].parts()[1].offset<<endl;
 
         int interval = 1;
-        float threshold=0.1, overlap=0.5;
+        float threshold=0.01, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
 
         ofstream out("tmpTest.txt");
@@ -693,7 +720,7 @@ int main(){
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
 
-    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
 //    test.testTrainSVM();//OK
     //TODO test trainSVM because train doesnt update filters. Maybe because it looks for null filters during posLatentSearch ???
@@ -704,11 +731,10 @@ int main(){
 
 //    test.initSample();
 
-    test.testTrain();
+//    test.testTrain();
 
-//    test.testTest();
+    test.testTest();
 
-    test.viewer.viewer->addLine(pcl::PointXYZ(0,-1,0), pcl::PointXYZ(2*0.0845292, -1, 0),"ijbij");
 
     test.viewer.show();
 
