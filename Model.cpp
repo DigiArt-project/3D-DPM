@@ -917,24 +917,25 @@ double Model::dot(const Model & sample) const
 
 double Model::norm() const
 {
-	double n = 0.0;
+    if( parts_.size() < 1){
+        return 0.0;
+    } else{
+        double n = GSHOTPyramid::TensorMap(parts_[0].filter).squaredNorm();
 
-    for (int i = 0; i < parts_.size(); ++i) {
-        n += GSHOTPyramid::TensorMap(parts_[i].filter).squaredNorm();
-		
+        for (int i = 1; i < parts_.size(); ++i) {
+            n += GSHOTPyramid::TensorMap(parts_[i].filter).squaredNorm();
 
-        if (i){
             //TODO
             //n += parts_[i].deformation.squaredNorm();
-            for(int j = 0; j < parts_[i].deformation.cols(); ++j){
+//            for(int j = 0; j < parts_[i].deformation.cols(); ++j){
 
-                n += 10 * parts_[i].deformation(j,0) * parts_[i].deformation(j,0);
-            }
+//                n += 10 * parts_[i].deformation(j,0) * parts_[i].deformation(j,0);
+//            }
         }
-    }
-//    std::cout << "Model::norm sqrt = "<<sqrt(n) << std::endl;
+    //    std::cout << "Model::norm sqrt = "<<sqrt(n) << std::endl;
 
-	return sqrt(n);
+        return sqrt(n);
+    }
 }
 
 Model & Model::operator+=(const Model & sample)

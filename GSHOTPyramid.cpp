@@ -82,7 +82,6 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             ///
 
 
-            bool isZero = true;
             Level level( topology[index](0), topology[index](1), topology[index](2));
             Cell* levelCell = &(level()(0));
             //Loop over the number of keypoints available
@@ -96,7 +95,6 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     //                     << descriptors->points[kpt].descriptor[k] << endl;
     //                cout << "GSHOTPyr::constructor cell.row("<<k<<") "
     //                     << cell.row(k) << endl;
-                    if( descriptors->points[kpt].descriptor[k] != 0) isZero = false;
                 }
                //Add the cell to the current level
                 //TODO check the order of the cells
@@ -105,7 +103,6 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             }
             //Once the first level is done, push it to the array of level
             levels_[index] = level;
-            cout << "GSHOTPyr::constructor pyramid octave "<<j<<" isZero : " << isZero << endl;
         }
     }
 }
