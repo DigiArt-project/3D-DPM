@@ -79,6 +79,32 @@ public:
         return true;
     }
 
+    Tensor3D< Type> agglomerate() const{
+        Tensor3D< Type> t(1,1,1);
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    t()(0,0,0) = t()(0,0,0) + tensor(z, y, x);
+                }
+            }
+        }
+//        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
+        return t;
+    }
+
+    Tensor3D< Type> agglomerate(){
+        Tensor3D< Type> t(1,1,1);
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    t()(0,0,0) = t()(0,0,0) + tensor(z, y, x);
+                }
+            }
+        }
+//        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
+        return t;
+    }
+
     //TODO replace by TensorMap
     //return a block of size (p, q, r) from point (z, y, x)
     Tensor3D< Type> block(int z, int y, int x, int p, int q, int r){
