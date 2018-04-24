@@ -125,6 +125,9 @@ namespace FFLD
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
         void convolve(const Level & filter, vector<Tensor3DF >& convolutions) const;
+
+        void sumConvolve(const Level & filter, vector<Tensor3DF >& convolutions) const;
+
         
         /// Returns the flipped version (horizontally) of a level.
 //        static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
@@ -142,6 +145,8 @@ namespace FFLD
         
         private:
         
+        std::vector<float> minMaxScaler(std::vector<float> data, float max, float min);
+
         // Method for computing feature spaces. Will have different implementations depending on the descriptor used.
         DescriptorsPtr
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
@@ -158,7 +163,7 @@ namespace FFLD
         
 
         // Computes the 2D convolution of a pyramid level with a filter
-        static void Convolve(const Level & x, const Level & y, Tensor3DF & z);
+        static void Convolve(const Tensor3DF & x, const Tensor3DF & y, Tensor3DF & z);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
         std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;//number of points at [lvl]

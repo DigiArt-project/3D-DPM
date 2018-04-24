@@ -40,6 +40,10 @@ public:
         : tensor( t)
     {}
 
+    Tensor3D( Eigen::Tensor< Type, 3, Eigen::RowMajor>& t)
+        : tensor( t)
+    {}
+
     Tensor3D( int s1, int s2, int s3)
     {
         tensor = Eigen::Tensor< Type, 3, Eigen::RowMajor>(s1, s2, s3);
@@ -79,12 +83,15 @@ public:
         return true;
     }
 
-    Tensor3D< Type> agglomerate() const{
-        Tensor3D< Type> t(1,1,1);
+    //Tensor3DF
+    Tensor3D< Type> agglomerate( int size) const{
+        Tensor3D< Type> t(1,1,size);
+        t().setConstant( 0);
         for (int z = 0; z < depths(); ++z) {
             for (int y = 0; y < rows(); ++y) {
+#pragma omp parallel for num_threads(omp_get_max_threads())
                 for (int x = 0; x < cols(); ++x) {
-                    t()(0,0,0) = t()(0,0,0) + tensor(z, y, x);
+                    t()(0,0,x%size) += tensor(z, y, x);
                 }
             }
         }
@@ -92,44 +99,48 @@ public:
         return t;
     }
 
-    Tensor3D< Type> agglomerate(){
-        Tensor3D< Type> t(1,1,1);
-        for (int z = 0; z < depths(); ++z) {
-            for (int y = 0; y < rows(); ++y) {
-                for (int x = 0; x < cols(); ++x) {
-                    t()(0,0,0) = t()(0,0,0) + tensor(z, y, x);
-                }
-            }
-        }
-//        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
-        return t;
-    }
 
     //TODO replace by TensorMap
     //return a block of size (p, q, r) from point (z, y, x)
     Tensor3D< Type> block(int z, int y, int x, int p, int q, int r){
         Tensor3D< Type> t(p, q, r);
+#pragma omp parallel for
         for (int i = 0; i < p; ++i) {
+#pragma omp parallel for
             for (int j = 0; j < q; ++j) {
+#pragma omp parallel for
                 for (int k = 0; k < r; ++k) {
                     t()(i,j,k) = tensor(z+i, y+j, x+k);
                 }
             }
         }
         return t;
+//        Eigen::array<int, 3> offsets = {z, y, x};
+//        Eigen::array<int, 3> extents = {p,q,r};
+////        Eigen::array<int, 3> three_dims{{rootSize().first, rootSize().second, rootSize().third}};
+
+//        return Tensor3D< Type>(tensor.slice(offsets, extents)/*.reshape(three_dims)*/);
     }
 
     //return a block of size (p, q, r) from point (z, y, x)
     const Tensor3D< Type> block(int z, int y, int x, int p, int q, int r) const{
         Tensor3D< Type> t(p, q, r);
+#pragma omp parallel for
         for (int i = 0; i < p; ++i) {
+#pragma omp parallel for
             for (int j = 0; j < q; ++j) {
+#pragma omp parallel for
                 for (int k = 0; k < r; ++k) {
                     t()(i,j,k) = tensor(z+i, y+j, x+k);
                 }
             }
         }
         return t;
+//        Eigen::array<int, 3> offsets = {z, y, x};
+//        Eigen::array<int, 3> extents = {p,q,r};
+////        Eigen::array<int, 3> three_dims{{rootSize().first, rootSize().second, rootSize().third}};
+
+//        return Tensor3D< Type>(tensor.slice(offsets, extents)/*.reshape(three_dims)*/);
     }
 
 

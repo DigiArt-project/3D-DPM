@@ -19,10 +19,19 @@
 #include <pcl/common/transforms.h>
 #include <pcl/common/common_headers.h>
 
+#include <sys/timeb.h>
+
 
 using namespace FFLD;
 using namespace std;
 using namespace Eigen;
+
+int getMilliCount(){
+    timeb tb;
+    ftime(&tb);
+    int nCount = tb.millitm + (tb.time & 0xfffff) * 1000;
+    return nCount;
+}
 
 struct Detection : public Rectangle
 {
@@ -68,7 +77,7 @@ public:
         }
 
 
-        sceneResolution = 25 * GSHOTPyramid::computeCloudResolution(sceneCloud);//0.0845292;//
+        sceneResolution = 0.09;//25 * GSHOTPyramid::computeCloudResolution(sceneCloud);//0.0845292;//
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
         viewer.viewer->addLine(pcl::PointXYZ(0,-1,0), pcl::PointXYZ(2*sceneResolution, -1, 0),"ijbij");
@@ -93,7 +102,7 @@ public:
         sampling.setRadiusSearch (sceneResolution);
         sampling.filter(*subspace);
 
-        viewer.addPC( subspace, 7);
+        viewer.addPC( subspace, 1);
         viewer.displayCubeLine(sceneBox);
         viewer.viewer->addLine(minScene,
                 pcl::PointXYZ(sceneResolution*(originScene(2)+sceneSize.third),
@@ -373,23 +382,36 @@ public:
 
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
         GSHOTPyramid::Level root2x =
-                pyramid.levels()[0].block(chairBox.origin()(0)*2, chairBox.origin()(1)*2, chairBox.origin()(2)*2,
+                pyramid.levels()[0].block(chairBox.origin()(0)*2-sceneBox.origin()(0),
+                                          chairBox.origin()(1)*2-sceneBox.origin()(1),
+                                          chairBox.origin()(2)*2-sceneBox.origin()(2),
                                           chairSize.first*2, chairSize.second*2, chairSize.third*2);
+
+//        cout<<"test::initializeParts pyramid.levels()[0].depths() = "<< pyramid.levels()[0].depths() <<endl;
+//        cout<<"test::initializeParts pyramid.levels()[0].rows() = "<< pyramid.levels()[0].rows() <<endl;
+//        cout<<"test::initializeParts pyramid.levels()[0].cols() = "<< pyramid.levels()[0].cols() <<endl;
+
+//        cout<<"test::initializeParts chairBox = "<< chairBox <<endl;
+//        cout<<"test::initializeParts chairBox.origin()(0)*2 = "<< chairBox.origin()(0)*2 <<endl;
+//        cout<<"test::initializeParts chairBox.origin()(1)*2 = "<< chairBox.origin()(1)*2 <<endl;
+//        cout<<"test::initializeParts chairBox.origin()(2)*2 = "<< chairBox.origin()(2)*2 <<endl;
+
+//        cout<<"test::initializeParts root2x = "<< GSHOTPyramid::TensorMap(root2x)() <<endl;
 
         mixture.initializeParts( 1, chairPartSize, root2x);
 
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
 
-        Eigen::Vector3i origin(-2, -1, 10);//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
+        Eigen::Vector3i origin(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2));//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
         Rectangle boxFound(origin, chairSize.first, chairSize.second, chairSize.third, sceneResolution*2);
         viewer.displayCubeLine(boxFound, Eigen::Vector3i(255,0,255));
 
         //Mix:PosLatentSearch found a positive sample with offsets : -2 -3 -3
-        Eigen::Vector3i partOrigin(origin(0) * 2 + mixture.models()[0].parts()[1].offset(0)/*-2*2*/,
-                                   origin(1) * 2 + mixture.models()[0].parts()[1].offset(1)/*-3*2*/,
-                                   origin(2) * 2 + mixture.models()[0].parts()[1].offset(2)/*-3*2*/);
+        Eigen::Vector3i partOrigin(origin(0) * 2 + mixture.models()[0].parts()[1].offset(0),
+                                   origin(1) * 2 + mixture.models()[0].parts()[1].offset(1),
+                                   origin(2) * 2 + mixture.models()[0].parts()[1].offset(2));
         Rectangle partsBoxFound(partOrigin, chairPartSize.first, chairPartSize.second, chairPartSize.third, sceneResolution);
 
         viewer.displayCubeLine(partsBoxFound, Eigen::Vector3i(0,255,0));
@@ -515,7 +537,7 @@ public:
         if (!images.empty()) {
 //            JPEGImage im(image);
 
-            for (int i = 0; i < detections.size(); ++i) {
+            for (int i = 0; i < 10/*detections.size()*/; ++i) {
                 // Find out if the detection hits an object
 //                bool positive = false;
 
@@ -586,7 +608,7 @@ public:
                 Rectangle box(Vector3i(detections[i].origin()(0), detections[i].origin()(1), detections[i].origin()(2)),
                               mixture.models()[argmax].rootSize().first, mixture.models()[argmax].rootSize().second,
                               mixture.models()[argmax].rootSize().third, pyramid.resolutions()[1]);
-//                viewer.displayCubeLine(box, Vector3i(0,255,255));
+                viewer.displayCubeLine(box, Vector3i(0,255,255));
             }
 
             if( detections.size() > 0){
@@ -613,6 +635,7 @@ public:
 
         Mixture mixture;
         in >> mixture;
+//        mixture.train_ = false;
 
         if (mixture.empty()) {
             cerr << "Invalid model file\n" << endl;
@@ -622,7 +645,7 @@ public:
         cout<<mixture.models()[0].parts()[1].offset<<endl;
 
         int interval = 1;
-        float threshold=0.01, overlap=0.5;
+        float threshold=0.2, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
 
         ofstream out("tmpTest.txt");
@@ -720,7 +743,9 @@ int main(){
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
 
-    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+    Test test( "/home/ubuntu/3DDataset/3DDPM/testSceneMiddle_compress.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+
+    int start = getMilliCount();
 
 //    test.testTrainSVM();//OK
     //TODO test trainSVM because train doesnt update filters. Maybe because it looks for null filters during posLatentSearch ???
@@ -734,6 +759,16 @@ int main(){
 //    test.testTrain();
 
     test.testTest();
+
+//#pragma omp parallel for num_threads(8)
+//    for (int lvl = 0; lvl < 100000000; ++lvl) {
+//        cout<<"toto"<<endl;
+//    }
+
+
+    int end = getMilliCount();
+
+    cout << "Time : " << end-start << endl;
 
 
     test.viewer.show();

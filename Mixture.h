@@ -144,6 +144,7 @@ public:
 	mutable std::vector<Patchwork::Filter> filterCache_; // Cache of transformed filters
 	mutable bool cached_; // Whether the current filters have been cached
 	mutable bool zero_; // Whether the current filters are zero
+    mutable bool train_;
 };
 
 /// Serializes a mixture to a stream.

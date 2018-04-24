@@ -684,7 +684,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     out2 << (sample);
 }
 
-void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
+void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, bool sumConvolve,
 					 vector<vector<Positions> > * positions,
                      vector<vector<Tensor3DF> > * convolutions) const
 {
@@ -740,15 +740,32 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 	else {
 		tmpConvolutions.resize(nbFilters);
 		
+        if( sumConvolve){
+            cout<<"Model::sumConvolve ..."<<endl;
+
 #pragma omp parallel for
-        for (int i = 0; i < nbFilters; ++i){
+            for (int i = 0; i < nbFilters; ++i){
 
-            pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
-            cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
-               << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
-            cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
-            cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
+                pyramid.sumConvolve(parts_[i].filter, tmpConvolutions[i]);
+                cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
+                   << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
+                cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
+                cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
 
+            }
+        } else{
+            cout<<"Model::convolve ..."<<endl;
+
+#pragma omp parallel for
+            for (int i = 0; i < nbFilters; ++i){
+
+                pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
+                cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
+                   << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
+                cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
+                cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
+
+            }
         }
 		
         convolutions = &tmpConvolutions;

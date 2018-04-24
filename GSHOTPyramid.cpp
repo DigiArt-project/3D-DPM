@@ -30,7 +30,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 //    float starting_kp_reso = 0.2;
 //    float starting_descr_rad = 0.4;
     float resolution;
-    starting_resolution = computeCloudResolution(input);//0.00338117;//
+    starting_resolution = 0.09;//25 * computeCloudResolution(input);//0.00338117;//
     cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 //    float kp_resolution;
 //    float descr_rad;
@@ -46,15 +46,15 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
         for (int j = 0; j < nbOctave; ++j) {
             int index = i + j * interval_;
 //            resolution = 10 * starting_resolution * pow(2.0, -static_cast<double>(i) / interval) / pow(2.0, j);
-            resolution = 25 * starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
+            resolution = starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
 
 
 
-            PointCloudPtr subspace(new PointCloudT());
-            pcl::UniformSampling<PointType> sampling;
-            sampling.setInputCloud(input);
-            sampling.setRadiusSearch (resolution);
-            sampling.filter(*subspace);
+//            PointCloudPtr subspace(new PointCloudT());
+//            pcl::UniformSampling<PointType> sampling;
+//            sampling.setInputCloud(input);
+//            sampling.setRadiusSearch (resolution);
+//            sampling.filter(*subspace);
 
             resolutions_[index] = resolution;
 //            pcl::VoxelGrid<PointCloudT> sor;
@@ -63,15 +63,15 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 //            sor.filter (*subspace);
 
             cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
-            cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
+            cout << "GSHOTPyr::constructor lvl size : "<<input->size()<<endl;
             cout << "GSHOTPyr::constructor index "<<index<<endl;
 
             PointType min;
             PointType max;
-            pcl::getMinMax3D(*subspace, min, max);
+            pcl::getMinMax3D(*input, min, max);
 
-            keypoints_[index] = compute_keypoints(subspace, resolution, min, max, index);
-            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
+            keypoints_[index] = compute_keypoints(input, resolution, min, max, index);
+            DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[index], 2*resolution);
 
             ///TODO !!!!!!
             /// \brief sort the point clouds (x, y, z)
@@ -108,6 +108,48 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 }
 
 
+void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolutions) const
+{
+
+    convolutions.resize(levels_.size());
+    Tensor3DF filt = TensorMap( filter).agglomerate(DescriptorSize);
+
+    cout<<"GSHOT::sumConvolve filter max Value = "<<TensorMap( filter)().maximum()<<endl;
+    cout<<"GSHOT::sumConvolve filt max Value = "<<filt().maximum()<<endl;
+
+//    cout<<"GSHOT::sumConvolve filter = "<<filt()<<endl;
+
+#pragma omp parallel for num_threads(2)
+    for (int i = 0; i < levels_.size(); ++i){
+        cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
+           << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
+//        cout<<"GSHOT::sumConvolve lvl = ";
+
+        Level lvl( levels_[i].depths() - filter.depths() + 1,
+                   levels_[i].rows() - filter.rows() + 1,
+                   levels_[i].cols() - filter.cols() + 1);
+        for (int z = 0; z < lvl.depths(); ++z) {
+            for (int y = 0; y < lvl.rows(); ++y) {
+                for (int x = 0; x < lvl.cols(); ++x) {
+                    for (int j = 0; j < DescriptorSize; ++j) {
+                        lvl()(z, y, x)(j) = TensorMap( levels_[i].block(z, y, x,
+                                                                        filter.depths(),
+                                                                        filter.rows(),
+                                                                        filter.cols())
+                                                      ).agglomerate(DescriptorSize)()(0,0,j);
+//                        cout<< lvl()(z, y, x)(j) << " ";
+
+                    }
+//                     cout << endl;
+                }
+            }
+        }
+
+        Convolve(TensorMap(lvl), filt, convolutions[i]);
+    }
+}
+
+
 void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutions) const
 {
 
@@ -117,13 +159,13 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
     for (int i = 0; i < levels_.size(); ++i){
         cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
            << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
-        Convolve(levels_[i], filter, convolutions[i]);
+        Convolve(TensorMap(levels_[i]), TensorMap(filter), convolutions[i]);
     }
 }
 
 //TODO urgent !!!!! remove the result of the convolution for x = [1 and 351]%352
 //Its a correlation not a convolution
-void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF & convolution)
+void GSHOTPyramid::Convolve(const Tensor3DF & level, const Tensor3DF & filter, Tensor3DF & convolution)
 {
     // Nothing to do if x is smaller than y
     if ((level().dimension(0) < filter().dimension(0)) || (level().dimension(1) < filter().dimension(1) )
@@ -135,21 +177,17 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
         return;
     }
 
-    Tensor3DF lvl = TensorMap( level);
+//    cout<<"GSHOTPyramid::convolve level : "<< level() << endl;
 
-    cout<<"GSHOTPyramid::convolve level.isZero() : "<< lvl.isZero() << endl;
-
-    Tensor3DF filt = TensorMap( filter);
-
-    cout<<"GSHOTPyramid::convolve filter.isZero() : "<< filt.isZero() << endl;
+//    cout<<"GSHOTPyramid::convolve filter : "<< filter() << endl;
 
     Tensor3DF aux;
-    aux().resize( lvl.depths() - filt.depths() + 1,
-              lvl.rows() - filt.rows() + 1,
-              lvl.cols() - filt.cols() + 1);
+    aux().resize( level.depths() - filter.depths() + 1,
+              level.rows() - filter.rows() + 1,
+              level.cols() - filter.cols() + 1);
 
     Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
-    aux() = lvl().convolve(filt(), dims);
+    aux() = level().convolve(filter(), dims);
 
     cout<<"GSHOTPyramid::convolve aux.depths() : "<< aux.depths() << endl;
     cout<<"GSHOTPyramid::convolve aux.rows() : "<< aux.rows() << endl;
@@ -311,6 +349,33 @@ GSHOTPyramid::~GSHOTPyramid()
 }
 
 
+
+std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data, float max, float min){
+    std::vector<float> result_min_max(data.size());
+
+//    cout<<"GSHOTPyramid::result max : "<< max << endl;
+
+//    cout<<"GSHOTPyramid::result min : "<< min << endl;
+
+    if(max == min) return result_min_max;
+
+    float sum = 0;
+    for (int i = 0; i < data.size(); i++){
+        sum+=(data.at(i) - min)/(max - min);
+    }
+
+
+//    cout<<"GSHOTPyramid::result_min_max sum : "<< sum << endl;
+
+    for (int i = 0; i < data.size(); i++){
+        result_min_max[i] = (data.at(i) - min)/(max - min)/sum;
+//        cout<<"GSHOTPyramid::result_min_max[i] : "<< result_min_max[i] << endl;
+    }
+
+    return result_min_max;
+}
+
+
 /*
  * WARNING : need to build a sub structure to partially specialize the pyramid
  */
@@ -320,9 +385,8 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     DescriptorsPtr descriptors (new Descriptors());
     SurfaceNormalsPtr normals (new SurfaceNormals());
 
-    //pcl::SHOTEstimation<PointType, NormalType, DescriptorType> norm_est;
     pcl::NormalEstimation<PointType,NormalType> norm_est;
-    norm_est.setKSearch (8);
+    norm_est.setKSearch (3);
     norm_est.setInputCloud (input);
     norm_est.compute (*normals);
 
@@ -334,15 +398,36 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     descr_est.compute (*descriptors);
 
     for (size_t i = 0; i < descriptors->size(); ++i){
-        for (size_t j = 0; j < DescriptorType::descriptorSize(); ++j){
+        std::vector<float> data_tmp(DescriptorSize);
+
+        if (pcl_isnan(descriptors->points[i].descriptor[0])){
+            descriptors->points[i].descriptor[0] = 0;
+        }
+        float min=descriptors->points[i].descriptor[0], max=descriptors->points[i].descriptor[0];
+        for (size_t j = 0; j < DescriptorSize; ++j){
 
             if (pcl_isnan(descriptors->points[i].descriptor[j])){
                 descriptors->points[i].descriptor[j] = 0;
             }
+            if(descriptors->points[i].descriptor[j]>max) max = descriptors->points[i].descriptor[j];
+            if(descriptors->points[i].descriptor[j]<min) min = descriptors->points[i].descriptor[j];
+
+
+            data_tmp[j] = descriptors->points[i].descriptor[j];
         }
+        //normalize descriptor
+        std::vector<float> value_descriptor_scaled = minMaxScaler(data_tmp, max, min);
+
+        float sum = 0;
+        for (size_t j = 0; j < DescriptorSize; ++j){
+            descriptors->points[i].descriptor[j] = value_descriptor_scaled.at(j);
+//            cout<<"GSHOTPyramid::descriptor normalized : "<< descriptors->points[i].descriptor[j] << endl;
+            sum += descriptors->points[i].descriptor[j];
+        }
+//        cout<<"GSHOTPyramid::sum of the descriptor normalized : "<< sum << endl;
 
     }
-    
+
     return descriptors;
 }
 

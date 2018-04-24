@@ -144,7 +144,7 @@ public:
 	/// @param[out] scores Scores for each pyramid level.
 	/// @param[out] positions Positions of each part and each pyramid level.
 	/// @param[in] Precomputed convolutions of each part and each pyramid level.
-    void convolve(const GSHOTPyramid & pyramid, std::vector<Tensor3DF> & scores,
+    void convolve(const GSHOTPyramid & pyramid, std::vector<Tensor3DF> & scores, bool sumConvolve,
                   std::vector<std::vector<Positions> > * positions = 0,
                   std::vector<std::vector<Tensor3DF> > * convolutions = 0) const;
 	

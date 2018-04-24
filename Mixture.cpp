@@ -32,11 +32,11 @@ using namespace Eigen;
 using namespace FFLD;
 using namespace std;
 
-Mixture::Mixture() : cached_(false), zero_(true)
+Mixture::Mixture() : cached_(false), zero_(true), train_(true)
 {
 }
 
-Mixture::Mixture(const vector<Model> & models) : models_(models), cached_(false), zero_(true)
+Mixture::Mixture(const vector<Model> & models) : models_(models), cached_(false), zero_(true), train_(true)
 {
     cout<<"Mix::contructor zero_ is true"<<endl;
     for(int i=0;i<models_.size(); ++i){
@@ -50,7 +50,7 @@ Mixture::Mixture(const vector<Model> & models) : models_(models), cached_(false)
 }
 
 Mixture::Mixture(int nbComponents, const vector<Scene> & scenes, Object::Name name) :
-cached_(false), zero_(true)
+cached_(false), zero_(true), train_(true)
 {
 	// Create an empty mixture if any of the given parameters is invalid
 	if ((nbComponents <= 0) || scenes.empty()) {
@@ -617,10 +617,11 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                     cout << "Mix::posLatentSearch cols = scores["<<lvl<<"].cols() = " << cols << endl;
                 }
                 else if (lvl >= interval) {
-                    depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().first*scale + 1;
-                    rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().second*scale + 1;
-                    cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().third*scale+ 1;
+                    depths = pyramid.levels()[lvl].depths() - static_cast<int>(maxSize().first*scale) + 1;
+                    rows = pyramid.levels()[lvl].rows() - static_cast<int>(maxSize().second*scale) + 1;
+                    cols = pyramid.levels()[lvl].cols() - static_cast<int>(maxSize().third*scale)+ 1;
                     cout << "Mix:: depths =  maxSize().first  = " << maxSize().first*scale << endl;
+                    cout << "Mix:: depths =  maxSize().first  = " << static_cast<int>(maxSize().third*scale) << endl;
                     cout << "Mix:: rows = maxSize().second  = " << maxSize().second*scale << endl;
                     cout << "Mix:: cols = maxSize().third  = " << int(maxSize().third*scale) << endl;
 //                    depths = pyramid.levels()[lvl].depths();
@@ -1167,18 +1168,34 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 	
 	// Transform the filters if needed
 
-
+    if( train_){
+        bool sumConvolve = false;
 #pragma omp parallel for
-    for (int i = 0; i < nbModels; ++i){
-//        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
+        for (int i = 0; i < nbModels; ++i){
+    //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
 
-        models_[i].convolve(pyramid, scores[i], positions ? &(*positions)[i] : 0/*, &convolutions*/);
-//        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
-        cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
-        cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
-        cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
-        cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
+            models_[i].convolve(pyramid, scores[i], sumConvolve, positions ? &(*positions)[i] : 0/*, &convolutions*/);
+    //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
 
+        }
+    } else{
+        bool sumConvolve = true;
+#pragma omp parallel for
+        for (int i = 0; i < nbModels; ++i){
+    //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
+
+            models_[i].convolve(pyramid, scores[i], sumConvolve, positions ? &(*positions)[i] : 0/*, &convolutions*/);
+    //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
+            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
+
+        }
     }
 }
 
