@@ -113,6 +113,22 @@ public:
         return res;
     }
 
+    //Level
+    Tensor3D< Type> agglomerate() const{
+        Tensor3D< Type> res(1,1,1);
+        res().setConstant( Type::Zero());
+#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    res()(0,0,0) += tensor(z, y, x);
+                }
+            }
+        }
+//        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
+        return res;
+    }
+
     //Tensor3DF
     Tensor3D< Type> agglomerate( int size) const{
         Tensor3D< Type> t(1,1,size);

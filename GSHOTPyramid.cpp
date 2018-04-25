@@ -115,10 +115,12 @@ void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolu
 {
 
     convolutions.resize(levels_.size());
-    Tensor3DF filt = TensorMap( filter).agglomerate(DescriptorSize);
+//    Tensor3DF filt = TensorMap( filter).agglomerate(DescriptorSize);
+    Level filt = filter.agglomerate();
 
-    cout<<"GSHOT::sumConvolve filter max Value = "<<TensorMap( filter)().maximum()<<endl;
-    cout<<"GSHOT::sumConvolve filt max Value = "<<filt().maximum()<<endl;
+
+//    cout<<"GSHOT::sumConvolve filter max Value = "<<TensorMap( filter)().maximum()<<endl;
+//    cout<<"GSHOT::sumConvolve filt max Value = "<<filt().maximum()<<endl;
 
 //    cout<<"GSHOT::sumConvolve filter = "<<filt()<<endl;
 
@@ -148,7 +150,9 @@ void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolu
             }
         }
 
-        Convolve(TensorMap(lvl), filt, convolutions[i]);
+
+
+        Convolve(/*TensorMap(*/lvl/*)*/, filt, convolutions[i]);
     }
 }
 
