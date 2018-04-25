@@ -166,12 +166,31 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
 //           << " with levels_[" <<i<< "].cols() : " << levels_[i].cols() << endl;
 //        cout<<"GSHOTPyramid::convolve filter.cols() : "<< TensorMap(filter).cols()
 //           << " with levels_[" <<i<< "].cols() : " << TensorMap(levels_[i]).cols() << endl;
-        Convolve(TensorMap(levels_[i]), TensorMap(filter), convolutions[i]);
+        Convolve(/*TensorMap(*/levels_[i]/*)*/, /*TensorMap(*/filter/*)*/, convolutions[i]);
     }
 }
 
-//TODO urgent !!!!! remove the result of the convolution for x = [1 and 351]%352
-//Its a correlation not a convolution
+void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF & convolution)
+{
+    // Nothing to do if x is smaller than y
+    if ((level().dimension(0) < filter().dimension(0)) || (level().dimension(1) < filter().dimension(1) )
+            || (level().dimension(2) < filter().dimension(2) )) {
+        cout<<"GSHOTPyramid::convolve error : level size is smaller than filter" << endl;
+        cout<<"GSHOTPyramid::convolve error : " <<level().dimension(0)<<" < "<<filter().dimension(0)
+           <<" / " << level().dimension(1)<<" < "<<filter().dimension(1)
+          <<" / " << level().dimension(2)<<" < "<<filter().dimension(2)<< endl;
+        return;
+    }
+
+
+    convolution = level.convolve(filter);
+
+    cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;
+    cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
+    cout<<"GSHOTPyramid::convolve results.cols() : "<< convolution.cols() << endl;
+}
+
+
 void GSHOTPyramid::Convolve(const Tensor3DF & level, const Tensor3DF & filter, Tensor3DF & convolution)
 {
     // Nothing to do if x is smaller than y

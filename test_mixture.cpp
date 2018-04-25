@@ -373,13 +373,14 @@ public:
         objects.push_back(obj);
         objects2.push_back(obj2);
 
-        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)/*,
-                                Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), tableName, objects2)*/};
+        vector<Scene> scenes = {
+            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)/*,
+            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), tableName, objects2)*/};
 
 
         Mixture mixture( models);
 
-        int interval = 1, nbIterations = 2, nbDatamine = 10, maxNegSample = 10;
+        int interval = 1, nbIterations = 2, nbDatamine = 10, maxNegSample = 20;
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
 
         cout << "test:: root filter initialized" << endl;
@@ -405,7 +406,7 @@ public:
         mixture.initializeParts( 1, chairPartSize, root2x);
 
 
-        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations, nbDatamine, maxNegSample);
 
         Eigen::Vector3i origin(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2));//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
@@ -543,9 +544,9 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        if (detections.size() > 15) {
+        if (detections.size() > 0) {
 
-            for (int i = 0; i < 15/*detections.size()*/; ++i) {
+            for (int i = 0; i < detections.size(); ++i) {
                 // Find out if the detection hits an object
 //                bool positive = false;
 
@@ -658,7 +659,7 @@ public:
         float threshold=0.5, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
 
-        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
+//        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
 
         ofstream out("tmpTest.txt");
         string images = sceneName;

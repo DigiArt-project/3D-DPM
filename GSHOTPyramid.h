@@ -155,13 +155,12 @@ namespace FFLD
         PointCloudPtr
         compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max, int index);
         
-        
 //        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)
 //        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;
         
 
         
-
+        static void Convolve(const Level & level, const Level & filter, Tensor3DF & convolution);
         // Computes the 2D convolution of a pyramid level with a filter
         static void Convolve(const Tensor3DF & x, const Tensor3DF & y, Tensor3DF & z);
         

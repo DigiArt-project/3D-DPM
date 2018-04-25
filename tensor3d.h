@@ -25,6 +25,7 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+#include <omp.h>
 
 
 typedef float Scalar;
@@ -81,6 +82,35 @@ public:
             }
         }
         return true;
+    }
+
+    //Level
+    Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
+        Tensor3D<Scalar> res( depths() - filter.depths() + 1,
+                  rows() - filter.rows() + 1,
+                  cols() - filter.cols() + 1);
+
+        res().setConstant( 0);
+
+#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < res.depths(); ++z) {
+            for (int y = 0; y < res.rows(); ++y) {
+                for (int x = 0; x < res.cols(); ++x) {
+
+                    for (int dz = 0; dz < filter.depths(); ++dz) {
+                        for (int dy = 0; dy < filter.rows(); ++dy) {
+                            for (int dx = 0; dx < filter.cols(); ++dx) {
+
+                                res()(z, y, x) += tensor(z+dz, y+dy, x+dx).matrix().dot(filter()(dz, dy, dx).matrix());
+
+                            }
+                        }
+                    }
+
+                }
+            }
+        }
+        return res;
     }
 
     //Tensor3DF
