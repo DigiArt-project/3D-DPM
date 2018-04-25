@@ -102,7 +102,7 @@ public:
         sampling.setRadiusSearch (sceneResolution);
         sampling.filter(*subspace);
 
-        viewer.addPC( subspace, 1);
+        viewer.addPC( subspace, 3);
         viewer.displayCubeLine(sceneBox);
         viewer.viewer->addLine(minScene,
                 pcl::PointXYZ(sceneResolution*(originScene(2)+sceneSize.third),
@@ -642,7 +642,9 @@ public:
             return;
         }
 
-        cout<<mixture.models()[0].parts()[1].offset<<endl;
+        cout<<"test model root norm : "<<sqrt(GSHOTPyramid::TensorMap(mixture.models()[0].parts()[0].filter).squaredNorm())<<endl;
+
+
 
         int interval = 1;
         float threshold=0.2, overlap=0.5;
@@ -743,7 +745,7 @@ int main(){
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
 
-    Test test( "/home/ubuntu/3DDataset/3DDPM/testSceneMiddle_compress.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
     int start = getMilliCount();
 

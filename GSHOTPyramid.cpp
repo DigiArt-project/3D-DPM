@@ -205,7 +205,7 @@ void GSHOTPyramid::Convolve(const Tensor3DF & level, const Tensor3DF & filter, T
             for (int k = 0; k < aux.cols(); ++k) {
                 if( k % DescriptorSize == 0 && cpt < convolution.cols()) {
 //                    cout<<"k = "<<k<<endl;
-                    convolution()(i,j,cpt) = aux()(i,j,k);
+                    convolution()(i,j,cpt) = aux()(i,j,k)/*/sqrt(filter.squaredNorm())*/;
                     ++cpt;
                 }
             }
