@@ -41,6 +41,10 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     keypoints_.resize( interval_ * nbOctave);
     topology.resize( interval_ * nbOctave);
     
+    PointType min;
+    PointType max;
+    pcl::getMinMax3D(*input, min, max);
+
     //TODO #pragma omp parallel for i
     for (int i = 0; i < interval_; ++i) {
         for (int j = 0; j < nbOctave; ++j) {
@@ -65,10 +69,6 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
             cout << "GSHOTPyr::constructor lvl size : "<<input->size()<<endl;
             cout << "GSHOTPyr::constructor index "<<index<<endl;
-
-            PointType min;
-            PointType max;
-            pcl::getMinMax3D(*input, min, max);
 
             keypoints_[index] = compute_keypoints(input, resolution, min, max, index);
             DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[index], 2*resolution);
@@ -103,6 +103,9 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             }
             //Once the first level is done, push it to the array of level
             levels_[index] = level;
+            cout<<"GSHOTPyramid::constr dims level "<<index<<" : " <<level().dimension(0)<<" / " << level().dimension(1)
+              <<" / " << level().dimension(2)<< endl;
+        //    cout<<"GSHOTPyramid::convolve level : "<< level() << endl;
         }
     }
 }
@@ -159,6 +162,10 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
     for (int i = 0; i < levels_.size(); ++i){
         cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
            << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
+//        cout<<"GSHOTPyramid::convolve filter.cols() : "<< filter.cols()
+//           << " with levels_[" <<i<< "].cols() : " << levels_[i].cols() << endl;
+//        cout<<"GSHOTPyramid::convolve filter.cols() : "<< TensorMap(filter).cols()
+//           << " with levels_[" <<i<< "].cols() : " << TensorMap(levels_[i]).cols() << endl;
         Convolve(TensorMap(levels_[i]), TensorMap(filter), convolutions[i]);
     }
 }
@@ -177,14 +184,18 @@ void GSHOTPyramid::Convolve(const Tensor3DF & level, const Tensor3DF & filter, T
         return;
     }
 
+//    cout<<"GSHOTPyramid::convolve dims : " <<level().dimension(0)<<" < "<<filter().dimension(0)
+//       <<" / " << level().dimension(1)<<" < "<<filter().dimension(1)
+//      <<" / " << level().dimension(2)<<" < "<<filter().dimension(2)<< endl;
+
 //    cout<<"GSHOTPyramid::convolve level : "<< level() << endl;
 
 //    cout<<"GSHOTPyramid::convolve filter : "<< filter() << endl;
 
     Tensor3DF aux;
-    aux().resize( level.depths() - filter.depths() + 1,
-              level.rows() - filter.rows() + 1,
-              level.cols() - filter.cols() + 1);
+//    aux().resize( level.depths() - filter.depths() + 1,
+//              level.rows() - filter.rows() + 1,
+//              (level.cols()/DescriptorSize - filter.cols()/DescriptorSize + 1)*DescriptorSize);//TODO prob here
 
     Eigen::array<ptrdiff_t, 3> dims({0, 1, 2});
     aux() = level().convolve(filter(), dims);
@@ -196,7 +207,7 @@ void GSHOTPyramid::Convolve(const Tensor3DF & level, const Tensor3DF & filter, T
 //    Eigen::array<Eigen::DenseIndex, 3> strides({1, 1, DescriptorSize});
 //    convolution() = aux().stride(strides);
 
-    convolution().resize( aux.depths(), aux.rows(), aux.cols()/DescriptorSize);
+    convolution().resize( aux.depths(), aux.rows(), aux.cols()/DescriptorSize + 1);
 
     int cpt = 0;
     for (int i = 0; i < aux.depths(); ++i) {
@@ -376,6 +387,48 @@ std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data, float max
 }
 
 
+
+
+PointCloudPtr
+GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max, int index){
+    
+    //TODO !!!!!
+    float start_x = floor(min.x/grid_reso)*grid_reso;
+    float start_y = floor(min.y/grid_reso)*grid_reso;
+    float start_z = floor(min.z/grid_reso)*grid_reso;
+
+
+    int pt_nb_x = ceil((max.x-start_x)/grid_reso)+1;
+    int pt_nb_y = ceil((max.y-start_y)/grid_reso)+1;
+    int pt_nb_z = ceil((max.z-start_z)/grid_reso)+1;
+//    int pt_nb_x = ceil((max.x-min.x)/grid_reso-(floor(min.x/grid_reso)*grid_reso-min.x)/grid_reso);
+//    int pt_nb_y = ceil((max.y-min.y)/grid_reso-(floor(min.y/grid_reso)*grid_reso-min.y)/grid_reso);
+//    int pt_nb_z = ceil((max.z-min.z)/grid_reso-(floor(min.z/grid_reso)*grid_reso-min.z)/grid_reso);
+    int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
+    
+    Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_z, pt_nb_y, pt_nb_x);
+    topology[index] = topo;
+    
+    PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
+    
+
+#pragma omp parallel for num_threads(omp_get_max_threads())
+    for(int z=0;z<pt_nb_z;++z){
+        for(int y=0;y<pt_nb_y;++y){
+            for(int x=0;x<pt_nb_x;++x){
+                PointType p = PointType();
+                p.x = start_x + x*grid_reso;
+                p.y = start_y + y*grid_reso;
+                p.z = start_z + z*grid_reso;
+                keypoints->at(x + y * pt_nb_x + z * pt_nb_y * pt_nb_x) = p;
+//                cout << k + j * pt_nb_x + i * pt_nb_y * pt_nb_x << " / " << pt_nb << endl;
+            }
+        }
+    }
+    
+    return keypoints;
+}
+
 /*
  * WARNING : need to build a sub structure to partially specialize the pyramid
  */
@@ -396,6 +449,10 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     descr_est.setInputNormals (normals);
     descr_est.setSearchSurface (input);
     descr_est.compute (*descriptors);
+
+    cout<<"GSHOT:: descriptors size = "<<descriptors->size()<<endl;
+    cout<<"GSHOT:: keypoints size = "<<keypoints->size()<<endl;
+
 
     for (size_t i = 0; i < descriptors->size(); ++i){
         std::vector<float> data_tmp(DescriptorSize);
@@ -430,40 +487,6 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
 
     return descriptors;
 }
-
-PointCloudPtr
-GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max, int index){
-    
-    int pt_nb_x = (int)((max.x-min.x)/grid_reso+1);
-    int pt_nb_y = (int)((max.y-min.y)/grid_reso+1);
-    int pt_nb_z = (int)((max.z-min.z)/grid_reso+1);
-    int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
-    
-    Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_z, pt_nb_y, pt_nb_x);
-    topology[index] = topo;
-    
-    PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
-    
-
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(omp_get_max_threads())
-#endif
-    for(int i=0;i<pt_nb_z;++i){
-        for(int j=0;j<pt_nb_y;++j){
-            for(int k=0;k<pt_nb_x;++k){
-                PointType p = PointType();
-                p.x = min.x + k*grid_reso;
-                p.y = min.y + j*grid_reso;
-                p.z = min.z + i*grid_reso;
-                keypoints->at(k + j * pt_nb_x + i * pt_nb_y * pt_nb_x) = p;
-//                cout << k + j * pt_nb_x + i * pt_nb_y * pt_nb_x << " / " << pt_nb << endl;
-            }
-        }
-    }
-    
-    return keypoints;
-}
-
 
 double GSHOTPyramid::computeCloudResolution (PointCloudConstPtr cloud)
 {

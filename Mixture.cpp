@@ -563,14 +563,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             computeEnergyScores(pyramid, scores, argmaxes, &positions);
 
         }
-//        if(zero_){
-//            cout<<"PosLateSearch:: pyramid.levels()[1].size() = "<< pyramid.levels()[1].size() <<endl;
-//            for(int mod = 0; mod<models_.size(); ++mod){
-//                //TODO root2x ???
-//                models_[mod].initializeParts( models_[mod].parts().size() - 1, models_[mod].partSize(), pyramid.levels()[0]);
-//            }
-////            zero_ = false;
-//        }
+
 
         // For each object, set as positive the best (highest score or else most intersecting)
         // position
@@ -596,10 +589,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			
             for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
                 const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
-                int offz = scenes[i].origin()(0)*scale;
-                int offy = scenes[i].origin()(1)*scale;
-                int offx = scenes[i].origin()(2)*scale;
-
+                int offz = floor(scenes[i].origin()(0)*scale);
+                int offy = floor(scenes[i].origin()(1)*scale);
+                int offx = floor(scenes[i].origin()(2)*scale);
 
                 cout << "Mix::posLatentSearch scale : " << scale << endl;
                 int rows = 0;
@@ -632,10 +624,11 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                     cout << "Mix::posLatentSearch cols scene = " << cols << endl;
                 }
 
+                cout << "Mix::posLatentSearch limit z : " << offz << " / " << offz+depths<< endl;
+                cout << "Mix::posLatentSearch limit y : " << offy << " / " << offy+rows<< endl;
+                cout << "Mix::posLatentSearch limit x : " << offx << " / " << offx+cols<< endl;
 
 
-                //TODO !!!!!!!!!!!!!
-                //for( scene.origin() to
                 for (int z = 0; z < depths; ++z) {
                     for (int y = 0; y < rows; ++y) {
                         for (int x = 0; x < cols; ++x) {
@@ -652,6 +645,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
                                                            (y+offy)/*- pad.y()*/,
                                                            (x+offx)/* - pad.x()*/);
+                                    /////TODO prob !!!!!!
                                     int w = models_[k].rootSize().third /** scale*/;
                                     int h = models_[k].rootSize().second /** scale*/;
                                     int d = models_[k].rootSize().first /** scale*/;

@@ -86,10 +86,12 @@ public:
         PointType maxScene;
         pcl::getMinMax3D(*sceneCloud , minScene, maxScene);
 
-        originScene = Vector3i(minScene.z/sceneResolution, minScene.y/sceneResolution, minScene.x/sceneResolution);
-        Model::triple<int, int, int> sceneSize( (maxScene.z-minScene.z)/sceneResolution+1,
-                                                (maxScene.y-minScene.y)/sceneResolution+1,
-                                                (maxScene.x-minScene.x)/sceneResolution+1);
+        originScene = Vector3i(floor(minScene.z/sceneResolution),
+                               floor(minScene.y/sceneResolution),
+                               floor(minScene.x/sceneResolution));
+        Model::triple<int, int, int> sceneSize( ceil((maxScene.z-minScene.z)/sceneResolution+0.5),
+                                                ceil((maxScene.y-minScene.y)/sceneResolution+0.5),
+                                                ceil((maxScene.x-minScene.x)/sceneResolution+0.5));
         sceneBox = Rectangle(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
         cout<<"test:: sceneBox = "<<sceneBox<<endl;
         cout<<"test:: minScene = "<<minScene<<endl;
@@ -128,12 +130,13 @@ public:
         pcl::getMinMax3D(*chairCloud , minChair, maxChair);
 
 
-        Model::triple<int, int, int> chairSize( (maxChair.z-minChair.z)/sceneResolution/2+1,
-                                                (maxChair.y-minChair.y)/sceneResolution/2+1,
-                                                (maxChair.x-minChair.x)/sceneResolution/2+1);
-        chairBox = Rectangle(Eigen::Vector3i((minChair.z/*-minScene.z*/)/sceneResolution/2,
-                           (minChair.y/*-minScene.y*/)/sceneResolution/2,
-                           (minChair.x/*-minScene.x*/)/sceneResolution/2), chairSize.first, chairSize.second, chairSize.third, sceneResolution*2);
+        Model::triple<int, int, int> chairSize( ceil((maxChair.z-minChair.z)/sceneResolution/2+0.5),
+                                                ceil((maxChair.y-minChair.y)/sceneResolution/2+0.5),
+                                                ceil((maxChair.x-minChair.x)/sceneResolution/2+0.5));
+        chairBox = Rectangle(Eigen::Vector3i(floor(minChair.z/sceneResolution/2),
+                           floor(minChair.y/sceneResolution/2),
+                           floor(minChair.x/sceneResolution/2)),
+                             chairSize.first, chairSize.second, chairSize.third, sceneResolution*2);
 
 
         cout<<"test:: chairBox = "<<chairBox<<endl;
@@ -146,15 +149,16 @@ public:
         PointType maxTable;
         pcl::getMinMax3D(*tableCloud , minTable, maxTable);
 
-        Model::triple<int, int, int> tableSize( (maxTable.z-minTable.z)/sceneResolution/2+1,
-                                                (maxTable.y-minTable.y)/sceneResolution/2+1,
-                                                (maxTable.x-minTable.x)/sceneResolution/2+1);
+        Model::triple<int, int, int> tableSize( ceil((maxTable.z-minTable.z)/sceneResolution/2+0.5),
+                                                ceil((maxTable.y-minTable.y)/sceneResolution/2+0.5),
+                                                ceil((maxTable.x-minTable.x)/sceneResolution/2+0.5));
 
 
 
-        tableBox = Rectangle(Eigen::Vector3i(minTable.z/sceneResolution/2,
-                                 minTable.y/sceneResolution/2,
-                                 minTable.x/sceneResolution/2), tableSize.first, tableSize.second, tableSize.third, sceneResolution*2);
+        tableBox = Rectangle(Eigen::Vector3i(floor(minTable.z/sceneResolution/2),
+                                 floor(minTable.y/sceneResolution/2),
+                                 floor(minTable.x/sceneResolution/2)),
+                             tableSize.first, tableSize.second, tableSize.third, sceneResolution*2);
 
         cout<<"test:: tableBox = "<<tableBox<<endl;
         cout<<"test:: tableBox left = "<<tableBox.left()<<endl;
@@ -444,9 +448,9 @@ public:
         for (int lvl = 0; lvl < scores.size(); ++lvl) {
 //            const double scale = pow(2.0, static_cast<double>(lvl) / pyramid.interval() + 2);
             const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
-            int offz = scene->origin()(0)*scale;
-            int offy = scene->origin()(1)*scale;
-            int offx = scene->origin()(2)*scale;
+            int offz = floor(scene->origin()(0)*scale);
+            int offy = floor(scene->origin()(1)*scale);
+            int offx = floor(scene->origin()(2)*scale);
 
             cout<<"test:: offz = "<<offz<<endl;
             cout<<"test:: offy = "<<offy<<endl;
@@ -462,9 +466,14 @@ public:
             cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
             cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
 
-            ofstream out("conv.txt");
+            if(scores[lvl].size() > 0){
+                ofstream out("conv.txt");
+                out << scores[lvl]();
+            }
 
-            out << scores[lvl]();
+            cout << "test::detect limit z : " << offz << " / " << offz+depths<< endl;
+            cout << "test::detect limit y : " << offy << " / " << offy+rows<< endl;
+            cout << "test::detect limit x : " << offx << " / " << offx+cols<< endl;
 
             for (int z = 0; z < depths; ++z) {
                 for (int y = 0; y < rows; ++y) {
@@ -534,10 +543,9 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        if (!images.empty()) {
-//            JPEGImage im(image);
+        if (detections.size() > 15) {
 
-            for (int i = 0; i < 10/*detections.size()*/; ++i) {
+            for (int i = 0; i < 15/*detections.size()*/; ++i) {
                 // Find out if the detection hits an object
 //                bool positive = false;
 
@@ -647,8 +655,10 @@ public:
 
 
         int interval = 1;
-        float threshold=0.2, overlap=0.5;
+        float threshold=0.5, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
+
+        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
 
         ofstream out("tmpTest.txt");
         string images = sceneName;
@@ -745,7 +755,7 @@ int main(){
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
 
-    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+    Test test( "/home/ubuntu/3DDataset/3DDPM/testSceneMiddle_compress.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
     int start = getMilliCount();
 

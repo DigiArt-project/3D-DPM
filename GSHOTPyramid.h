@@ -143,7 +143,7 @@ namespace FFLD
         
         static double computeCloudResolution (PointCloudConstPtr cloud);
         
-        private:
+//        private:
         
         std::vector<float> minMaxScaler(std::vector<float> data, float max, float min);
 
