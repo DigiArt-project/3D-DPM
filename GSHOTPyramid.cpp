@@ -424,9 +424,7 @@ GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType 
     int pt_nb_x = ceil((max.x-start_x)/grid_reso)+1;
     int pt_nb_y = ceil((max.y-start_y)/grid_reso)+1;
     int pt_nb_z = ceil((max.z-start_z)/grid_reso)+1;
-//    int pt_nb_x = ceil((max.x-min.x)/grid_reso-(floor(min.x/grid_reso)*grid_reso-min.x)/grid_reso);
-//    int pt_nb_y = ceil((max.y-min.y)/grid_reso-(floor(min.y/grid_reso)*grid_reso-min.y)/grid_reso);
-//    int pt_nb_z = ceil((max.z-min.z)/grid_reso-(floor(min.z/grid_reso)*grid_reso-min.z)/grid_reso);
+
     int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
     
     Eigen::Vector3i topo = Eigen::Vector3i(pt_nb_z, pt_nb_y, pt_nb_x);

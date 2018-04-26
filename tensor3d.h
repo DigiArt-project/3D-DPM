@@ -84,6 +84,17 @@ public:
         return true;
     }
 
+    void setZero(){
+#pragma omp parallel for
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    *(tensor(z, y, x))=0;
+                }
+            }
+        }
+    }
+
     //Level
     Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
         Tensor3D<Scalar> res( depths() - filter.depths() + 1,
@@ -103,6 +114,12 @@ public:
 
                                 res()(z, y, x) += tensor(z+dz, y+dy, x+dx).matrix().dot(filter()(dz, dy, dx).matrix());
 
+//                                cout<<"tensor3D::conv tensor(z+dz, y+dy, x+dx).matrix() : "<<endl
+//                                   <<tensor(z+dz, y+dy, x+dx).matrix().transpose()<<endl;
+//                                cout<<"tensor3D::conv filter()(dz, dy, dx).matrix() : "<<endl
+//                                   <<filter()(dz, dy, dx).matrix().transpose()<<endl;
+//                                cout<<"tensor3D::conv dot product : "<<endl
+//                                   <<tensor(z+dz, y+dy, x+dx).matrix().dot(filter()(dz, dy, dx).matrix())<<endl;
                             }
                         }
                     }
@@ -145,49 +162,49 @@ public:
         return t;
     }
 
+    //return a block of size (p, q, r) from point (z, y, x)
+    Tensor3D< Scalar*> blockLink(int z, int y, int x, int p, int q, int r){
+        Tensor3D< Scalar*> res(p, q, r);
+#pragma omp parallel for
+        for (int i = 0; i < p; ++i) {
+            for (int j = 0; j < q; ++j) {
+                for (int k = 0; k < r; ++k) {
+                    res()(i,j,k) = &tensor(z+i, y+j, x+k);
+                }
+            }
+        }
+        return res;
+    }
+
 
     //TODO replace by TensorMap
     //return a block of size (p, q, r) from point (z, y, x)
-    Tensor3D< Type> block(int z, int y, int x, int p, int q, int r){
+    Tensor3D< Type> block(int z, int y, int x, int p, int q, int r) const{
         Tensor3D< Type> t(p, q, r);
 #pragma omp parallel for
         for (int i = 0; i < p; ++i) {
-#pragma omp parallel for
             for (int j = 0; j < q; ++j) {
-#pragma omp parallel for
                 for (int k = 0; k < r; ++k) {
                     t()(i,j,k) = tensor(z+i, y+j, x+k);
                 }
             }
         }
         return t;
-//        Eigen::array<int, 3> offsets = {z, y, x};
-//        Eigen::array<int, 3> extents = {p,q,r};
-////        Eigen::array<int, 3> three_dims{{rootSize().first, rootSize().second, rootSize().third}};
-
-//        return Tensor3D< Type>(tensor.slice(offsets, extents)/*.reshape(three_dims)*/);
     }
 
-    //return a block of size (p, q, r) from point (z, y, x)
-    const Tensor3D< Type> block(int z, int y, int x, int p, int q, int r) const{
-        Tensor3D< Type> t(p, q, r);
-#pragma omp parallel for
-        for (int i = 0; i < p; ++i) {
-#pragma omp parallel for
-            for (int j = 0; j < q; ++j) {
-#pragma omp parallel for
-                for (int k = 0; k < r; ++k) {
-                    t()(i,j,k) = tensor(z+i, y+j, x+k);
-                }
-            }
-        }
-        return t;
-//        Eigen::array<int, 3> offsets = {z, y, x};
-//        Eigen::array<int, 3> extents = {p,q,r};
-////        Eigen::array<int, 3> three_dims{{rootSize().first, rootSize().second, rootSize().third}};
-
-//        return Tensor3D< Type>(tensor.slice(offsets, extents)/*.reshape(three_dims)*/);
-    }
+//    //return a block of size (p, q, r) from point (z, y, x)
+//    const Tensor3D< Type> block(int z, int y, int x, int p, int q, int r) const{
+//        Tensor3D< Type> t(p, q, r);
+//#pragma omp parallel for
+//        for (int i = 0; i < p; ++i) {
+//            for (int j = 0; j < q; ++j) {
+//                for (int k = 0; k < r; ++k) {
+//                    t()(i,j,k) = tensor(z+i, y+j, x+k);
+//                }
+//            }
+//        }
+//        return t;
+//    }
 
 
 

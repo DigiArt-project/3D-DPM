@@ -128,15 +128,6 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
     }
 
 
-
-
-//    GSHOTPyramid::Cell nullCell;
-//    nullCell.setZero( GSHOTPyramid::DescriptorSize);
-//    GSHOTPyramid::Level root2x = GSHOTPyramid::Level(2 * parts_[0].filter.depths(),
-//            2 * parts_[0].filter.rows(), 2 * parts_[0].filter.cols());
-//    root2x().setConstant( nullCell);
-
-
 //    // Bicubic interpolation matrix for x = y = 0.25
 //    const double bicubic[4][4] =
 //    {
@@ -170,10 +161,8 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
     for (int z = 0; z < root2x.depths(); ++z) {
         for (int y = 0; y < root2x.rows(); ++y) {
             for (int x = 0; x < root2x.cols(); ++x) {
-//                root2x()(z, y, x).cwiseMax(0);
-
                 energy()(z, y, x) = 0;
-//            cout<<root2x()(z, y, x).coeff(0)<<endl;
+
                 for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
                     energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
             }
@@ -210,8 +199,10 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
         parts_[i + 1].offset(1) = argY;
         parts_[i + 1].offset(2) = argX;
 
+        cout<<"Model::initializeParts init part 1 : offset["<<i+1<<"] = "<< parts_[i+1].offset <<endl;
+
         // Set the energy of the part to zero
-        energy.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third)().setZero();
+        energy.blockLink(argZ, argY, argX, partSize.first, partSize.second, partSize.third).setZero();
     }
 
     // Retry 10 times from randomized starting points
@@ -239,10 +230,19 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
             const int part = rand() % nbParts;
 
             // Zero out the energy covered by the other parts
-            for (int k = 0; k < nbParts; ++k)
-                if (k != part)
-                    energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize.first,
-                                 partSize.second, partSize.third)().setZero();
+            for (int k = 0; k < nbParts; ++k){
+                if (k != part){
+//                    cout<<"Model::initializeParts set energyy Zero at = "<< tmp[k+1].offset <<endl;
+                    energy.blockLink(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize.first,
+                                 partSize.second, partSize.third).setZero();
+
+//                    const double e = energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2),
+//                            partSize.first,partSize.second,partSize.third).sum();
+//                    cout<<"Model::initializeParts energy at "<<tmp[k + 1].offset(0)<<" / "<<
+//                       tmp[k + 1].offset(1)<<" / "<<tmp[k + 1].offset(2)<<" = "<< e <<endl;
+
+                }
+            }
 
             // Find the region of maximum energy
             double maxEnergy = 0.0;
@@ -254,6 +254,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
                 for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
                     for (int x = 0; x <= energy.cols() - partSize.third; ++x) {
                         const double e = energy.block(z, y, x,partSize.first,partSize.second,partSize.third).sum();
+//                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<endl;
 
                         if (e > maxEnergy) {
                             maxEnergy = e;
@@ -261,6 +262,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
                             argY = y;
                             argZ = z;
                         }
+//                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<" / "<<maxEnergy<<endl;
                     }
                 }
             }
@@ -270,6 +272,9 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
             tmp[part + 1].offset(0) = argZ;
             tmp[part + 1].offset(1) = argY;
             tmp[part + 1].offset(2) = argX;
+
+            cout<<"Model::initializeParts init part 2 : offset["<<part+1<<"] = "<< tmp[part+1].offset <<endl;
+
         }
 
         // Compute the energy covered by this part arrangement
@@ -290,14 +295,12 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
         for (int j = 0; j < nbParts; ++j) {
 //            cout << energy.size() <<endl;
             // Add the energy of the part
-//            cout<<energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
-//                    partSize.first, partSize.second, partSize.third)()<<endl;
             cover += energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
                                   partSize.first, partSize.second, partSize.third).sum();
 
             // Set the energy of the part to zero
-            energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
-                         partSize.second, partSize.third)().setZero();
+            energy.blockLink(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
+                         partSize.second, partSize.third).setZero();
         }
 
         if (cover > bestCover) {
@@ -811,13 +814,31 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
                                                  (*convolutions)[0][lvl].cols());
                 (*positions)[i][lvl]().setConstant( Position::Zero());
             }
+
+            float start0z = pyramid.keypoints_[lvl - interval]->points[0].z;//lvl - interval 0
+            float start1z = pyramid.keypoints_[lvl]->points[0].z;//lvl 1
+            float start0y = pyramid.keypoints_[lvl - interval]->points[0].y;//lvl - interval 0
+            float start1y = pyramid.keypoints_[lvl]->points[0].y;//lvl 1
+            float start0x = pyramid.keypoints_[lvl - interval]->points[0].x;//lvl - interval 0
+            float start1x = pyramid.keypoints_[lvl]->points[0].x;//lvl 1
+
+            cout<<"Model::convolve start0z = "<<start0z<<endl;
+            cout<<"Model::convolve start1z = "<<start1z<<endl;
+            cout<<"Model::convolve start0y = "<<start0y<<endl;
+            cout<<"Model::convolve start1y = "<<start1y<<endl;
+            cout<<"Model::convolve start0x = "<<start0x<<endl;
+            cout<<"Model::convolve start1x = "<<start1x<<endl;
+            float offz = 0;
+            float offy = 0;
+            float offx = 0;
             // Add the distance transforms of the part one octave below
-            for (int z = 0; z < (*convolutions)[0][lvl].depths(); ++z) {
+            for (int z = 0; z < (*convolutions)[0][lvl].depths(); ++z) {//lvl=1
                 for (int y = 0; y < (*convolutions)[0][lvl].rows(); ++y) {
                     for (int x = 0; x < (*convolutions)[0][lvl].cols(); ++x) {
-                        const int zr = 2 * z /*- pad.z()*/ + parts_[i + 1].offset(0);
-                        const int yr = 2 * y /*- pad.y()*/ + parts_[i + 1].offset(1);
-                        const int xr = 2 * x /*- pad.x()*/ + parts_[i + 1].offset(2);
+
+                        const int zr = round(2 * z - offz)/*- pad.z()*/ + parts_[i + 1].offset(0);//coord lvl 0
+                        const int yr = round(2 * y - offy) /*- pad.y()*/ + parts_[i + 1].offset(1);
+                        const int xr = round(2 * x - offx) /*- pad.x()*/ + parts_[i + 1].offset(2);
 
 //                        cout<<"Model::convolve zr : "<<zr<<" / (*convolutions)[i + 1][lvl - interval].depths() : "
 //                           <<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
@@ -827,7 +848,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 //                           <<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
 
                         if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
-                            (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&
+                            (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&//lvl 0
                             (yr < (*convolutions)[i + 1][lvl - interval].rows()) &&
                             (zr < (*convolutions)[i + 1][lvl - interval].depths())) {
 //                            cout<<"Model::convolve adding the scores of the parts to the score of the root"<<endl;
@@ -844,6 +865,11 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
                             }
                         }
                         else {
+                            cout<<"Model::conv set score to -inf ..."<<endl;
+                            cout<<"Model::conv "<<zr<<" < "<<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
+                            cout<<"Model::conv "<<yr<<" < "<<(*convolutions)[i + 1][lvl - interval].rows()<<endl;
+                            cout<<"Model::conv "<<xr<<" < "<<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
+
                             (*convolutions)[0][lvl]()(z, y, x) =
                                 -numeric_limits<GSHOTPyramid::Scalar>::infinity();
                         }
