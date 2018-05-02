@@ -815,30 +815,17 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
                 (*positions)[i][lvl]().setConstant( Position::Zero());
             }
 
-            float start0z = pyramid.keypoints_[lvl - interval]->points[0].z;//lvl - interval 0
-            float start1z = pyramid.keypoints_[lvl]->points[0].z;//lvl 1
-            float start0y = pyramid.keypoints_[lvl - interval]->points[0].y;//lvl - interval 0
-            float start1y = pyramid.keypoints_[lvl]->points[0].y;//lvl 1
-            float start0x = pyramid.keypoints_[lvl - interval]->points[0].x;//lvl - interval 0
-            float start1x = pyramid.keypoints_[lvl]->points[0].x;//lvl 1
+            cout<<"Model::convolve score part "<<i+1<<" : "<<(*convolutions)[i + 1][lvl].
+                  block(-3+ parts_[i + 1].offset(0),9+ parts_[i + 1].offset(1),4+ parts_[i + 1].offset(2),1,2,2)()<<endl;
 
-            cout<<"Model::convolve start0z = "<<start0z<<endl;
-            cout<<"Model::convolve start1z = "<<start1z<<endl;
-            cout<<"Model::convolve start0y = "<<start0y<<endl;
-            cout<<"Model::convolve start1y = "<<start1y<<endl;
-            cout<<"Model::convolve start0x = "<<start0x<<endl;
-            cout<<"Model::convolve start1x = "<<start1x<<endl;
-            float offz = 0;
-            float offy = 0;
-            float offx = 0;
             // Add the distance transforms of the part one octave below
             for (int z = 0; z < (*convolutions)[0][lvl].depths(); ++z) {//lvl=1
                 for (int y = 0; y < (*convolutions)[0][lvl].rows(); ++y) {
                     for (int x = 0; x < (*convolutions)[0][lvl].cols(); ++x) {
 
-                        const int zr = round(2 * z - offz)/*- pad.z()*/ + parts_[i + 1].offset(0);//coord lvl 0
-                        const int yr = round(2 * y - offy) /*- pad.y()*/ + parts_[i + 1].offset(1);
-                        const int xr = round(2 * x - offx) /*- pad.x()*/ + parts_[i + 1].offset(2);
+                        const int zr = 2 * z/*- pad.z()*/ + parts_[i + 1].offset(0)/2;//coord lvl - interval 0
+                        const int yr = 2 * y /*- pad.y()*/ + parts_[i + 1].offset(1)/2;
+                        const int xr = 2 * x /*- pad.x()*/ + parts_[i + 1].offset(2)/2;
 
 //                        cout<<"Model::convolve zr : "<<zr<<" / (*convolutions)[i + 1][lvl - interval].depths() : "
 //                           <<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
@@ -848,9 +835,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 //                           <<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
 
                         if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
-                            (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&//lvl 0
-                            (yr < (*convolutions)[i + 1][lvl - interval].rows()) &&
-                            (zr < (*convolutions)[i + 1][lvl - interval].depths())) {
+                            (xr <= (*convolutions)[i + 1][lvl - interval].cols()) &&//lvl - interval 0
+                            (yr <= (*convolutions)[i + 1][lvl - interval].rows()) &&
+                            (zr <= (*convolutions)[i + 1][lvl - interval].depths())) {
 //                            cout<<"Model::convolve adding the scores of the parts to the score of the root"<<endl;
                             (*convolutions)[0][lvl]()(z, y, x) += (*convolutions)[i + 1][lvl - interval]()(zr, yr, xr);
 

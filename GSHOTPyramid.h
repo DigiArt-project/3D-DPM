@@ -153,7 +153,7 @@ namespace FFLD
         
         // Method creating the keypoint grid using the min/max values of the input
         PointCloudPtr
-        compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max, int index);
+        compute_keypoints(float grid_reso, PointType min, PointType max, int index);
         
 //        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)
 //        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;

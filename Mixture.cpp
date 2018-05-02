@@ -685,7 +685,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 int d = models_[model].rootSize().first /** scale*/;
 
                                 Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
-//                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
+                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
 //                                cout << "Mix::posLatentSearch coord = "
 //                                     << z +offz << " " << y+offy << " " << x +offx << " " << pyramid.resolutions()[lvl] << endl;
 //                                cout << "Mix::posLatentSearch search box left / right = "
@@ -703,7 +703,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             }
 
 
-                            if ((intersection > maxInter)/* && (zero_ || (scores[lvl]()(z, y, x) > maxScore))*/) {
+                            if ((intersection >= maxInter) && (zero_ || (scores[lvl]()(z, y, x) > maxScore))) {
                                 argModel = model;
                                 argX = x;
                                 argY = y;

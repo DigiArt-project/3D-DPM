@@ -222,7 +222,7 @@ float Rectangle::volume() const
 
 Rectangle Rectangle::changeToPclCoordinateSystem() const{
     Eigen::Vector3i pclOrigin( diagonal()(0), diagonal()(1), origin()(2));
-    Rectangle rec( pclOrigin, width(), height(), depth(), resolution());
+    Rectangle rec( pclOrigin, depth(), height(), width(), resolution());
     rec.setDiagonal(Eigen::Vector3i( origin()(0), origin()(1), diagonal()(2)));
     return rec;
 //    this->topFrontLeft_ = substractValue(this->topFrontLeft(),Eigen::Vector3f(0,-this->height(),0));

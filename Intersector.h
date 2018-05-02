@@ -93,7 +93,10 @@ public:
         else {
             const float referenceVolume = reference_.volume();
             const float unionVolume = referenceVolume + cubeVolume - intersectionVolume;
-//            std::cout<<"Inter:: intersectionVolume / unionVolume = "<<intersectionVolume / unionVolume<<std::endl;
+            std::cout<<"Inter:: referenceVolume = "<<referenceVolume<<std::endl;
+            std::cout<<"Inter:: cubeVolume = "<<cubeVolume<<std::endl;
+            std::cout<<"Inter:: intersectionVolume = "<<intersectionVolume<<std::endl;
+            std::cout<<"Inter:: intersectionVolume / unionVolume = "<<intersectionVolume / unionVolume<<std::endl;
             if (intersectionVolume >= unionVolume * threshold_) {
                 if (score)
                     *score = intersectionVolume / unionVolume;

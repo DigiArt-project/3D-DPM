@@ -89,9 +89,9 @@ public:
         originScene = Vector3i(floor(minScene.z/sceneResolution),
                                floor(minScene.y/sceneResolution),
                                floor(minScene.x/sceneResolution));
-        Model::triple<int, int, int> sceneSize( ceil((maxScene.z-minScene.z)/sceneResolution+0.5),
-                                                ceil((maxScene.y-minScene.y)/sceneResolution+0.5),
-                                                ceil((maxScene.x-minScene.x)/sceneResolution+0.5));
+        Model::triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution),
+                                                ceil((maxScene.y-originScene(1)*sceneResolution)/sceneResolution),
+                                                ceil((maxScene.x-originScene(2)*sceneResolution)/sceneResolution));
         sceneBox = Rectangle(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
         cout<<"test:: sceneBox = "<<sceneBox<<endl;
         cout<<"test:: minScene = "<<minScene<<endl;
@@ -106,10 +106,10 @@ public:
 
         viewer.addPC( subspace, 3);
         viewer.displayCubeLine(sceneBox);
-        viewer.viewer->addLine(minScene,
-                pcl::PointXYZ(sceneResolution*(originScene(2)+sceneSize.third),
-                              sceneResolution*(originScene(1)+sceneSize.second),
-                              sceneResolution*(originScene(0)+sceneSize.first)), "kjbij");
+//        viewer.viewer->addLine(minScene,
+//                pcl::PointXYZ(sceneResolution*(originScene(2)+sceneSize.third),
+//                              sceneResolution*(originScene(1)+sceneSize.second),
+//                              sceneResolution*(originScene(0)+sceneSize.first)), "kjbij");
 
 
 
@@ -130,28 +130,29 @@ public:
         pcl::getMinMax3D(*chairCloud , minChair, maxChair);
 
 
-        Model::triple<int, int, int> chairSize( ceil((maxChair.z-minChair.z)/sceneResolution/2+0.5),
-                                                ceil((maxChair.y-minChair.y)/sceneResolution/2+0.5),
-                                                ceil((maxChair.x-minChair.x)/sceneResolution/2+0.5));
-        chairBox = Rectangle(Eigen::Vector3i(floor(minChair.z/sceneResolution/2),
-                           floor(minChair.y/sceneResolution/2),
-                           floor(minChair.x/sceneResolution/2)),
+        Model::triple<int, int, int> chairSize( ceil((maxChair.z-minChair.z)/sceneResolution/2),
+                                                ceil((maxChair.y-minChair.y)/sceneResolution/2),
+                                                ceil((maxChair.x-minChair.x)/sceneResolution/2));
+        chairBox = Rectangle(Eigen::Vector3i(round((minChair.z-minScene.z)/sceneResolution/2.0)-3,
+                           round((minChair.y-minScene.y)/sceneResolution/2.0)-4,
+                           round((minChair.x-minScene.x)/sceneResolution/2.0)-4),
                              chairSize.first, chairSize.second, chairSize.third, sceneResolution*2);
 
 
         cout<<"test:: chairBox = "<<chairBox<<endl;
         cout<<"test:: minChair = "<<minChair<<endl;
         cout<<"test:: maxChair = "<<maxChair<<endl;
-        viewer.displayCubeLine(chairBox, Eigen::Vector3i(255,255,0));
+        viewer.displayCubeLine(chairBox, Eigen::Vector3f(sceneResolution,sceneResolution,sceneResolution),
+                               Eigen::Vector3i(255,255,0));
 
 
         PointType minTable;
         PointType maxTable;
         pcl::getMinMax3D(*tableCloud , minTable, maxTable);
 
-        Model::triple<int, int, int> tableSize( ceil((maxTable.z-minTable.z)/sceneResolution/2+0.5),
-                                                ceil((maxTable.y-minTable.y)/sceneResolution/2+0.5),
-                                                ceil((maxTable.x-minTable.x)/sceneResolution/2+0.5));
+        Model::triple<int, int, int> tableSize( ceil((maxTable.z-minTable.z)/sceneResolution/2),
+                                                ceil((maxTable.y-minTable.y)/sceneResolution/2),
+                                                ceil((maxTable.x-minTable.x)/sceneResolution/2));
 
 
 
@@ -337,7 +338,7 @@ public:
             Eigen::Vector3i origin(-2, -1, 4);//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
             Rectangle boxFound(origin, chairSize.first, chairSize.second, chairSize.third, sceneResolution*2);
-            viewer.displayCubeLine(boxFound, Eigen::Vector3i(255,0,255));
+            viewer.displayCubeLine(boxFound, Eigen::Vector3f(0,0,0), Eigen::Vector3i(255,0,255));
 
             //Mix:PosLatentSearch found a positive sample with offsets : -2 -3 -3
             Eigen::Vector3i partOrigin(origin(0) * 2 + positives[0].first.parts()[1].offset(0)/*-2*2*/,
@@ -345,7 +346,7 @@ public:
                                        origin(2) * 2 + positives[0].first.parts()[1].offset(2)/*-3*2*/);
             Rectangle partsBoxFound(partOrigin, chairPartSize.first, chairPartSize.second, chairPartSize.third, sceneResolution);
 
-            viewer.displayCubeLine(partsBoxFound, Eigen::Vector3i(0,255,0));
+            viewer.displayCubeLine(partsBoxFound, Eigen::Vector3f(0,0,0), Eigen::Vector3i(0,255,0));
 
         }
 
@@ -356,7 +357,7 @@ public:
     void testTrain(){
 
 
-        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        Model::triple<int, int, int> chairSize(chairBox.depth()+1, chairBox.height()+1, chairBox.width()+1);
         Model::triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
                                                     chairBox.height()/2*2,
                                                     chairBox.width()/2*2);//in lvl 0
@@ -374,7 +375,7 @@ public:
         objects2.push_back(obj2);
 
         vector<Scene> scenes = {
-            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)/*,
+            Scene( originScene, sceneBox.depth()+1, sceneBox.height()+1, sceneBox.width()+1, sceneName, objects)/*,
             Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), tableName, objects2)*/};
 
 
@@ -390,7 +391,7 @@ public:
                 pyramid.levels()[0].block(chairBox.origin()(0)*2-sceneBox.origin()(0),
                                           chairBox.origin()(1)*2-sceneBox.origin()(1),
                                           chairBox.origin()(2)*2-sceneBox.origin()(2),
-                                          chairSize.first*2, chairSize.second*2, chairSize.third*2);
+                                          chairBox.depth()*2+1, chairBox.height()*2+1, chairBox.width()*2+1);
 
 //        cout<<"test::initializeParts pyramid.levels()[0].depths() = "<< pyramid.levels()[0].depths() <<endl;
 //        cout<<"test::initializeParts pyramid.levels()[0].rows() = "<< pyramid.levels()[0].rows() <<endl;
@@ -410,7 +411,8 @@ public:
             cout<<"test::initializeParts offset["<<i+1<<"] = "<< mixture.models()[0].parts()[i+1].offset <<endl;
         }
 
-        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
+                      nbIterations/2, nbDatamine, maxNegSample);
 
 //        Eigen::Vector3i origin(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2));//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
@@ -537,9 +539,10 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        if (detections.size() > 10) {
+        int nb = 3;
+        if (detections.size() > nb) {
 
-            for (int i = 0; i < 1/*detections.size()*/; ++i) {
+            for (int i = 0; i < nb/*detections.size()*/; ++i) {
                 // Find out if the detection hits an object
 //                bool positive = false;
 
@@ -586,31 +589,36 @@ public:
                     Eigen::Vector3i origin((zp+sceneBox.origin()(0)/* + detections[i].origin()(0)*2*/)/*- pad.z()*/,
                                            (yp+sceneBox.origin()(1) /*+ detections[i].origin()(1)*2*/)/*- pad.y()*/,
                                            (xp+sceneBox.origin()(2) /*+ detections[i].origin()(2)*2*/)/* - pad.x()*/);
-                    int w = mixture.models()[argmax].partSize().third /** scale*/;
-                    int h = mixture.models()[argmax].partSize().second /** scale*/;
-                    int d = mixture.models()[argmax].partSize().first /** scale*/;
+                    int w = mixture.models()[argmax].partSize().third -1 /** scale*/;
+                    int h = mixture.models()[argmax].partSize().second -1 /** scale*/;
+                    int d = mixture.models()[argmax].partSize().first -1 /** scale*/;
 
                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
 
                     cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
 
-                    viewer.displayCubeLine(bndbox, Vector3i(0,0,255));
+                    viewer.displayCubeLine(bndbox, Eigen::Vector3f(0,0,0), Vector3i(0,0,255));
                 }
 
                 // Draw the root last
                 cout<<"test:: root bndbox = "<<detections[i]<<endl;
                 Rectangle box(Vector3i(detections[i].origin()(0), detections[i].origin()(1), detections[i].origin()(2)),
-                              mixture.models()[argmax].rootSize().first, mixture.models()[argmax].rootSize().second,
-                              mixture.models()[argmax].rootSize().third, pyramid.resolutions()[1]);
-                viewer.displayCubeLine(box, Vector3i(0,255,255));
+                              mixture.models()[argmax].rootSize().first -1,
+                              mixture.models()[argmax].rootSize().second -1,
+                              mixture.models()[argmax].rootSize().third -1, pyramid.resolutions()[1]);
+                viewer.displayCubeLine(box, Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+                        Vector3i(0,255,255));
             }
 
             if( detections.size() > 0){
                 cout<<"test:: root bndbox = "<<detections[0]<<" with score : "<<detections[0].score<<endl;
                 Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
-                              mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
-                              mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
-                viewer.displayCubeLine(box, Vector3i(0,255,0));
+                              mixture.models()[0].rootSize().first -1,
+                              mixture.models()[0].rootSize().second -1,
+                              mixture.models()[0].rootSize().third -1, pyramid.resolutions()[1]);
+                viewer.displayCubeLine(box,
+                                       Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+                        Vector3i(0,255,0));
             }
 
         }
@@ -651,22 +659,27 @@ public:
         string images = sceneName;
         vector<Detection> detections;
         Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
-        Scene scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, {obj});
+        Scene scene( originScene, sceneBox.depth()+1, sceneBox.height()+1, sceneBox.width()+1, sceneName, {obj});
 
         detect(mixture, /*0, image.width(), image.height()*/interval, pyramid, threshold, overlap, /*file, */out,
                images, detections, &scene, Object::CHAIR);
 
-        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0), mixture.models()[0].parts()[0].offset(1),
+        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
+                mixture.models()[0].parts()[0].offset(1),
                 mixture.models()[0].parts()[0].offset(2)),
                       mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
                       mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
-        viewer.displayCubeLine(rootBox, Vector3i(0,255,0));
+        viewer.displayCubeLine(rootBox,
+                               Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+                Vector3i(0,255,0));
         for(int i=1;i<mixture.models()[0].parts().size();++i){
             Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
                     mixture.models()[0].parts()[i].offset(2)),
                           mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
                           mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
-            viewer.displayCubeLine(partBox, Vector3i(255,0,0));
+            viewer.displayCubeLine(partBox,
+                                   Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+                    Vector3i(255,0,0));
         }
 
     }
@@ -767,7 +780,7 @@ int main(){
 
 //    test.initSample();
 
-//    test.testTrain();
+    test.testTrain();
 
     test.testTest();
 

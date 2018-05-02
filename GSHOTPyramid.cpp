@@ -41,9 +41,16 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     keypoints_.resize( interval_ * nbOctave);
     topology.resize( interval_ * nbOctave);
     
+    PointType minTmp;
     PointType min;
     PointType max;
-    pcl::getMinMax3D(*input, min, max);
+    pcl::getMinMax3D(*input, minTmp, max);
+
+    min.x = floor(minTmp.x/starting_resolution)*starting_resolution;
+    min.y = floor(minTmp.y/starting_resolution)*starting_resolution;
+    min.z = floor(minTmp.z/starting_resolution)*starting_resolution;
+
+
 
     //TODO #pragma omp parallel for i
     for (int i = 0; i < interval_; ++i) {
@@ -70,16 +77,8 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             cout << "GSHOTPyr::constructor lvl size : "<<input->size()<<endl;
             cout << "GSHOTPyr::constructor index "<<index<<endl;
 
-            keypoints_[index] = compute_keypoints(input, resolution, min, max, index);
+            keypoints_[index] = compute_keypoints(resolution, min, max, index);
             DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[index], 2*resolution);
-
-            ///TODO !!!!!!
-            /// \brief sort the point clouds (x, y, z)
-//            for (int kpt = 0; kpt < keypoints_[index]->size(); ++kpt){
-//                cout << "GSHOTPyr::constructor keypoint order["<<kpt<<"] = "<<keypoints_[index]->points[kpt] << endl;
-//            }
-            ///
-            ///
 
 
             Level level( topology[index](0), topology[index](1), topology[index](2));
@@ -188,6 +187,12 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
 
 
     convolution = level.convolve(filter);
+    cout<<"GSHOTPyramid::convolve level.depths() : "<< level.depths() << endl;
+    cout<<"GSHOTPyramid::convolve level.rows() : "<< level.rows() << endl;
+    cout<<"GSHOTPyramid::convolve level.cols() : "<< level.cols() << endl;
+    cout<<"GSHOTPyramid::convolve filter.depths() : "<< filter.depths() << endl;
+    cout<<"GSHOTPyramid::convolve filter.rows() : "<< filter.rows() << endl;
+    cout<<"GSHOTPyramid::convolve filter.cols() : "<< filter.cols() << endl;
 
     cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;
     cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
@@ -413,17 +418,11 @@ std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data, float max
 
 
 PointCloudPtr
-GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType min, PointType max, int index){
-    
-    //TODO !!!!!
-    float start_x = floor(min.x/grid_reso)*grid_reso;
-    float start_y = floor(min.y/grid_reso)*grid_reso;
-    float start_z = floor(min.z/grid_reso)*grid_reso;
+GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, int index){
 
-
-    int pt_nb_x = ceil((max.x-start_x)/grid_reso)+1;
-    int pt_nb_y = ceil((max.y-start_y)/grid_reso)+1;
-    int pt_nb_z = ceil((max.z-start_z)/grid_reso)+1;
+    int pt_nb_x = ceil((max.x-min.x)/grid_reso+1);//+1 +0.5 because scene is located between 2 keypoints
+    int pt_nb_y = ceil((max.y-min.y)/grid_reso+1);
+    int pt_nb_z = ceil((max.z-min.z)/grid_reso+1);
 
     int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
     
@@ -438,9 +437,9 @@ GSHOTPyramid::compute_keypoints(PointCloudPtr input, float grid_reso, PointType 
         for(int y=0;y<pt_nb_y;++y){
             for(int x=0;x<pt_nb_x;++x){
                 PointType p = PointType();
-                p.x = start_x + x*grid_reso;
-                p.y = start_y + y*grid_reso;
-                p.z = start_z + z*grid_reso;
+                p.x = min.x + x*grid_reso;
+                p.y = min.y + y*grid_reso;
+                p.z = min.z + z*grid_reso;
                 keypoints->at(x + y * pt_nb_x + z * pt_nb_y * pt_nb_x) = p;
 //                cout << k + j * pt_nb_x + i * pt_nb_y * pt_nb_x << " / " << pt_nb << endl;
             }
