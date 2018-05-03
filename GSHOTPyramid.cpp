@@ -81,30 +81,66 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[index], 2*resolution);
 
 
+//            Level level( topology[index](0), topology[index](1), topology[index](2));
+//            Cell* levelCell = &(level()(0));
+//            //Loop over the number of keypoints available
+//            for (int kpt = 0; kpt < keypoints_[index]->size(); ++kpt){
+//                //For each keypoint, create a cell which will contain the corresponding shot descriptor
+//                Cell cell(GSHOTPyramid::DescriptorSize);
+//                //Then for each value of the associated descriptor, fill in the cell
+//                for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+//                    cell(k) = descriptors->points[kpt].descriptor[k];
+//                    if(descriptors->points[kpt].descriptor[k]<0){
+//                        cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] = "
+//                             << descriptors->points[kpt].descriptor[k] << endl;
+//                    }
+//                    if(cell(k)<0){
+//                        cout << "GSHOTPyr::constructor cell["<<k<<"] = "
+//                             << cell(k) << endl;
+//                    }
+//    //                cout << "GSHOTPyr::constructor cell.row("<<k<<") "
+//    //                     << cell.row(k) << endl;
+//                }
+//               //Add the cell to the current level
+//                //TODO check the order of the cells
+//                *levelCell = cell;
+//                for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+
+//                    if((*levelCell)(k)<0){
+//                        cout << "GSHOTPyr::constructor *levelCell["<<k<<"] = "
+//                             << (*levelCell)(k) << endl;
+//                    }
+//                }
+//                ++levelCell;
+//            }
+
+
             Level level( topology[index](0), topology[index](1), topology[index](2));
-            Cell* levelCell = &(level()(0));
-            //Loop over the number of keypoints available
-            for (int kpt = 0; kpt < keypoints_[index]->size(); ++kpt){
-                //For each keypoint, create a cell which will contain the corresponding shot descriptor
-                Cell cell(GSHOTPyramid::DescriptorSize);
-                //Then for each value of the associated descriptor, fill in the cell
-                for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
-                    cell.row(k) = descriptors->points[kpt].descriptor[k];
-    //                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] "
-    //                     << descriptors->points[kpt].descriptor[k] << endl;
-    //                cout << "GSHOTPyr::constructor cell.row("<<k<<") "
-    //                     << cell.row(k) << endl;
+            int kpt = 0;
+            for (int z = 0; z < level.depths(); ++z){
+                for (int y = 0; y < level.rows(); ++y){
+                    for (int x = 0; x < level.cols(); ++x){
+                        for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+                            level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
+                            if(descriptors->points[kpt].descriptor[k]<0){
+                                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] = "
+                                     << descriptors->points[kpt].descriptor[k] << endl;
+                            }
+                        }
+                        ++kpt;
+                    }
                 }
-               //Add the cell to the current level
-                //TODO check the order of the cells
-                *levelCell = cell;
-                ++levelCell;
             }
+
+
+            cout << "GSHOTPyr::constructor kpt = "<<kpt<< endl;
+
+
             //Once the first level is done, push it to the array of level
             levels_[index] = level;
             cout<<"GSHOTPyramid::constr dims level "<<index<<" : " <<level().dimension(0)<<" / " << level().dimension(1)
               <<" / " << level().dimension(2)<< endl;
-        //    cout<<"GSHOTPyramid::convolve level : "<< level() << endl;
+            cout<<"GSHOTPyramid::constr level hasNegValue : "<< levels_[index].hasNegValue() << endl;
         }
     }
 }
@@ -135,15 +171,12 @@ void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolu
         for (int z = 0; z < lvl.depths(); ++z) {
             for (int y = 0; y < lvl.rows(); ++y) {
                 for (int x = 0; x < lvl.cols(); ++x) {
-                    for (int j = 0; j < DescriptorSize; ++j) {
-                        lvl()(z, y, x)(j) = TensorMap( levels_[i].block(z, y, x,
-                                                                        filter.depths(),
-                                                                        filter.rows(),
-                                                                        filter.cols())
-                                                      ).agglomerate(DescriptorSize)()(0,0,j);
+                    lvl()(z, y, x) = levels_[i].agglomerateBlock(z, y, x,
+                                                            filter.depths(),
+                                                            filter.rows(),
+                                                            filter.cols())()(0,0,0);
 //                        cout<< lvl()(z, y, x)(j) << " ";
 
-                    }
 //                     cout << endl;
                 }
             }
@@ -186,7 +219,19 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
     }
 
 
+    cout<<"GSHOTPyramid::convolve level hasNegValue : "<< level.hasNegValue() << endl;
+    cout<<"GSHOTPyramid::convolve filter hasNegValue : "<< filter.hasNegValue() << endl;
+
+
     convolution = level.convolve(filter);
+
+    for (int z = 0; z < convolution.depths(); ++z) {
+        for (int y = 0; y < convolution.rows(); ++y) {
+            for (int x = 0; x < convolution.cols(); ++x) {
+                if( convolution()(z, y, x) < 0) cout<<"GSHOTPyramid::convolve convolution hasNegValue" << endl;
+            }
+        }
+    }
     cout<<"GSHOTPyramid::convolve level.depths() : "<< level.depths() << endl;
     cout<<"GSHOTPyramid::convolve level.rows() : "<< level.rows() << endl;
     cout<<"GSHOTPyramid::convolve level.cols() : "<< level.cols() << endl;

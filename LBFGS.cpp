@@ -70,6 +70,8 @@ double LBFGS::operator()(double * argx) const
 	function_->progress(argx, g.data(), static_cast<int>(x.rows()), fx, x.norm(), g.norm(), 0.0, 0,
 						1);
 
+//    return fx;//TO remove
+
 	// Histories of the previous solution (required by L-BFGS)
 	VectorXd px; // Previous solution x_{t-1}
 	VectorXd pg; // Previous gradient g_{t-1}

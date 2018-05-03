@@ -127,36 +127,9 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
         return;
     }
 
-
-//    // Bicubic interpolation matrix for x = y = 0.25
-//    const double bicubic[4][4] =
-//    {
-//        { 0.004943847656,-0.060974121094,-0.015930175781, 0.001647949219},
-//        {-0.060974121094, 0.752014160156, 0.196472167969,-0.020324707031},
-//        {-0.015930175781, 0.196472167969, 0.051330566406,-0.005310058594},
-//        { 0.001647949219,-0.020324707031,-0.005310058594, 0.000549316406}
-//    };
-
-//    for (int y = 0; y < root.rows(); ++y) {
-//        for (int x = 0; x < root.cols(); ++x) {
-//            for (int i = 0; i < 4; ++i) {
-//                for (int j = 0; j < 4; ++j) {
-//                    const int y2 = min(max(y + i - 2, 0), static_cast<int>(parts_[0].filter.rows()) - 1);
-//                    const int y1 = min(max(y + i - 1, 0), static_cast<int>(parts_[0].filter.rows()) - 1);
-//                    const int x2 = min(max(x + j - 2, 0), static_cast<int>(parts_[0].filter.cols()) - 1);
-//                    const int x1 = min(max(x + j - 1, 0), static_cast<int>(parts_[0].filter.cols()) - 1);
-
-//                    root2x(y * 2    , x * 2    ) += bicubic[3 - i][3 - j] * parts_[0].filter(y2, x2);
-//                    root2x(y * 2    , x * 2 + 1) += bicubic[3 - i][    j] * parts_[0].filter(y2, x1);
-//                    root2x(y * 2 + 1, x * 2    ) += bicubic[    i][3 - j] * parts_[0].filter(y1, x2);
-//                    root2x(y * 2 + 1, x * 2 + 1) += bicubic[    i][    j] * parts_[0].filter(y1, x1);
-//                }
-//            }
-//        }
-//    }
-
     // Compute the energy of each cell
     Tensor3DF energy(root2x.depths(), root2x.rows(), root2x.cols());
+    cout<<"Model::initializeParts root2x.depths() "<<root2x.depths() <<endl;
 
     for (int z = 0; z < root2x.depths(); ++z) {
         for (int y = 0; y < root2x.rows(); ++y) {
@@ -177,6 +150,9 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
         int argX = 0;
         int argY = 0;
         int argZ = 0;
+
+        cout<<"Model::initializeParts energy.depths() "<<energy.depths() <<endl;
+        cout<<"Model::initializeParts partSize.first "<<partSize.first <<endl;
 
         for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
             for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
@@ -205,112 +181,112 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
         energy.blockLink(argZ, argY, argX, partSize.first, partSize.second, partSize.third).setZero();
     }
 
-    // Retry 10 times from randomized starting points
-    double bestCover = 0.0;
-    vector<Part> best(parts_); // The best so far is the current one
+//    // Retry 10 times from randomized starting points
+//    double bestCover = 0.0;
+//    vector<Part> best(parts_); // The best so far is the current one
 
-    for (int i = 0; i < 10; ++i) {
-        vector<Part> tmp(parts_); // Try from the current one
-//        cout << "size tmp "<<tmp.size()<<endl;
-        // Remove a part at random and look for the best place to put it
-        for (int j = 0; j < 100 * nbParts; ++j) {
-            // Recompute the energy
-            for (int z = 0; z < root2x.depths(); ++z) {
-                for (int y = 0; y < root2x.rows(); ++y) {
-                    for (int x = 0; x < root2x.cols(); ++x) {
-                        energy()(z, y, x) = 0;
+//    for (int i = 0; i < 10; ++i) {
+//        vector<Part> tmp(parts_); // Try from the current one
+////        cout << "size tmp "<<tmp.size()<<endl;
+//        // Remove a part at random and look for the best place to put it
+//        for (int j = 0; j < 100 * nbParts; ++j) {
+//            // Recompute the energy
+//            for (int z = 0; z < root2x.depths(); ++z) {
+//                for (int y = 0; y < root2x.rows(); ++y) {
+//                    for (int x = 0; x < root2x.cols(); ++x) {
+//                        energy()(z, y, x) = 0;
 
-                        for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                            energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
-                    }
-                }
-            }
+//                        for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+//                            energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
+//                    }
+//                }
+//            }
 
-            // Select a part at random
-            const int part = rand() % nbParts;
+//            // Select a part at random
+//            const int part = rand() % nbParts;
 
-            // Zero out the energy covered by the other parts
-            for (int k = 0; k < nbParts; ++k){
-                if (k != part){
-//                    cout<<"Model::initializeParts set energyy Zero at = "<< tmp[k+1].offset <<endl;
-                    energy.blockLink(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize.first,
-                                 partSize.second, partSize.third).setZero();
+//            // Zero out the energy covered by the other parts
+//            for (int k = 0; k < nbParts; ++k){
+//                if (k != part){
+////                    cout<<"Model::initializeParts set energyy Zero at = "<< tmp[k+1].offset <<endl;
+//                    energy.blockLink(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize.first,
+//                                 partSize.second, partSize.third).setZero();
 
-//                    const double e = energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2),
-//                            partSize.first,partSize.second,partSize.third).sum();
-//                    cout<<"Model::initializeParts energy at "<<tmp[k + 1].offset(0)<<" / "<<
-//                       tmp[k + 1].offset(1)<<" / "<<tmp[k + 1].offset(2)<<" = "<< e <<endl;
+////                    const double e = energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2),
+////                            partSize.first,partSize.second,partSize.third).sum();
+////                    cout<<"Model::initializeParts energy at "<<tmp[k + 1].offset(0)<<" / "<<
+////                       tmp[k + 1].offset(1)<<" / "<<tmp[k + 1].offset(2)<<" = "<< e <<endl;
 
-                }
-            }
+//                }
+//            }
 
-            // Find the region of maximum energy
-            double maxEnergy = 0.0;
-            int argX = 0;
-            int argY = 0;
-            int argZ = 0;
+//            // Find the region of maximum energy
+//            double maxEnergy = 0.0;
+//            int argX = 0;
+//            int argY = 0;
+//            int argZ = 0;
 
-            for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
-                for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
-                    for (int x = 0; x <= energy.cols() - partSize.third; ++x) {
-                        const double e = energy.block(z, y, x,partSize.first,partSize.second,partSize.third).sum();
-//                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<endl;
+//            for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
+//                for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
+//                    for (int x = 0; x <= energy.cols() - partSize.third; ++x) {
+//                        const double e = energy.block(z, y, x,partSize.first,partSize.second,partSize.third).sum();
+////                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<endl;
 
-                        if (e > maxEnergy) {
-                            maxEnergy = e;
-                            argX = x;
-                            argY = y;
-                            argZ = z;
-                        }
-//                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<" / "<<maxEnergy<<endl;
-                    }
-                }
-            }
+//                        if (e > maxEnergy) {
+//                            maxEnergy = e;
+//                            argX = x;
+//                            argY = y;
+//                            argZ = z;
+//                        }
+////                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<" / "<<maxEnergy<<endl;
+//                    }
+//                }
+//            }
 
-            // Initialize the part
-            tmp[part + 1].filter = root2x.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third);
-            tmp[part + 1].offset(0) = argZ;
-            tmp[part + 1].offset(1) = argY;
-            tmp[part + 1].offset(2) = argX;
+//            // Initialize the part
+//            tmp[part + 1].filter = root2x.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third);
+//            tmp[part + 1].offset(0) = argZ;
+//            tmp[part + 1].offset(1) = argY;
+//            tmp[part + 1].offset(2) = argX;
 
-            cout<<"Model::initializeParts init part 2 : offset["<<part+1<<"] = "<< tmp[part+1].offset <<endl;
+//            cout<<"Model::initializeParts init part 2 : offset["<<part+1<<"] = "<< tmp[part+1].offset <<endl;
 
-        }
+//        }
 
-        // Compute the energy covered by this part arrangement
-        double cover = 0.0;
+//        // Compute the energy covered by this part arrangement
+//        double cover = 0.0;
 
-        // Recompute the energy
-        for (int z = 0; z < root2x.depths(); ++z) {
-            for (int y = 0; y < root2x.rows(); ++y) {
-                for (int x = 0; x < root2x.cols(); ++x) {
-                    energy()(z, y, x) = 0;
+//        // Recompute the energy
+//        for (int z = 0; z < root2x.depths(); ++z) {
+//            for (int y = 0; y < root2x.rows(); ++y) {
+//                for (int x = 0; x < root2x.cols(); ++x) {
+//                    energy()(z, y, x) = 0;
 
-                    for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                        energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
-                }
-            }
-        }
+//                    for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+//                        energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
+//                }
+//            }
+//        }
 
-        for (int j = 0; j < nbParts; ++j) {
-//            cout << energy.size() <<endl;
-            // Add the energy of the part
-            cover += energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
-                                  partSize.first, partSize.second, partSize.third).sum();
+//        for (int j = 0; j < nbParts; ++j) {
+////            cout << energy.size() <<endl;
+//            // Add the energy of the part
+//            cover += energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
+//                                  partSize.first, partSize.second, partSize.third).sum();
 
-            // Set the energy of the part to zero
-            energy.blockLink(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
-                         partSize.second, partSize.third).setZero();
-        }
+//            // Set the energy of the part to zero
+//            energy.blockLink(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
+//                         partSize.second, partSize.third).setZero();
+//        }
 
-        if (cover > bestCover) {
-            bestCover = cover;
-            best.swap(tmp);
-        }
-    }
+//        if (cover > bestCover) {
+//            bestCover = cover;
+//            best.swap(tmp);
+//        }
+//    }
 
-    //error seg
-    parts_.swap(best);
+//    //error seg
+//    parts_.swap(best);
 
     // Initialize the deformations
     for (int i = 0; i < nbParts; ++i)
@@ -554,21 +530,21 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     const int nbLevels = static_cast<int>(pyramid.levels().size());
     const float resolution = 1 / pow(2.0, static_cast<double>(lvl) / interval);
 	
-    cout << "initializeSample pyramid.levels()[lvl].cols() = " << pyramid.levels()[lvl].cols() << endl;
+    cout << "initializeSample pyramid.levels()["<<lvl<<"].cols() = " << pyramid.levels()[lvl].cols() << endl;
 
     // Invalid parameters
     if (empty() || (x < 0) || (y < 0) || (z < 0) || (lvl >= nbLevels) ||
-        (x + int(rootSize().third*resolution) > pyramid.levels()[lvl].cols()) ||
-        (y + int(rootSize().second*resolution) > pyramid.levels()[lvl].rows()) ||
-        (z + int(rootSize().first*resolution) > pyramid.levels()[lvl].depths()) ||
+        (x + rootSize().third > pyramid.levels()[lvl].cols()) ||//////TODO (rootSize-1)*....
+        (y + rootSize().second > pyramid.levels()[lvl].rows()) ||
+        (z + rootSize().first > pyramid.levels()[lvl].depths()) ||
         (nbParts && (!positions || (positions->size() != nbParts)))) {
         sample = Model();
         cerr << "Attempting to initialize an empty sample 1" << endl;
         cerr << "lvl : "<<lvl<<" >= "<<nbLevels<< endl;
-        cerr << "x : "<<x + int(rootSize().third*resolution)<<" > "<<pyramid.levels()[lvl].cols()<< endl;
-        cerr << "y : "<<y + int(rootSize().second*resolution)<<" > "<<pyramid.levels()[lvl].rows()<< endl;
-        cerr << "z : "<<z + int(rootSize().first*resolution)<<" > "<<pyramid.levels()[lvl].depths()<< endl;
-        cerr << "rootSize : "<<rootSize().first*resolution<<" / "<<rootSize().second*resolution<<" / "<<rootSize().third*resolution<< endl;
+        cerr << "x : "<<x + rootSize().third<<" > "<<pyramid.levels()[lvl].cols()<< endl;
+        cerr << "y : "<<y + rootSize().second<<" > "<<pyramid.levels()[lvl].rows()<< endl;
+        cerr << "z : "<<z + rootSize().first<<" > "<<pyramid.levels()[lvl].depths()<< endl;
+        cerr << "rootSize : "<<rootSize().first<<" / "<<rootSize().second<<" / "<<rootSize().third<< endl;
         cerr << "empty() : "<<empty()<< endl;
         if(nbParts && (!positions || (positions->size() != nbParts))) {
             cerr << "positions : "<<positions<< endl;
@@ -591,7 +567,8 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 //    sample.parts_[0].filter() = pyramid.levels()[lvl]().slice(offsets, extents).reshape(three_dims);
 
 
-    sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().first, rootSize().second, rootSize().third);
+    sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().first,
+                                                          rootSize().second, rootSize().third);
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
 
@@ -632,12 +609,13 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
         }
 		
         cout<<"Model::InitiSample filter part isZero = "<<GSHOTPyramid::TensorMap(level).isZero()<<endl;
-        cout<<"Model::InitiSample filter part block isZero = "<<GSHOTPyramid::TensorMap(level.block(position(0),
-                                                                                                    position(1),
-                                                                                                    position(2),
-                                                                                                    partSize().first,
-                                                                                                    partSize().second,
-                                                                                                    partSize().third)).isZero()<<endl;
+        cout<<"Model::InitiSample filter part block isZero = "<<GSHOTPyramid::TensorMap(
+                  level.block(position(0),
+                                position(1),
+                                position(2),
+                                partSize().first,
+                                partSize().second,
+                                partSize().third)).isZero()<<endl;
 
         // Extract the part filter
         sample.parts_[i + 1].filter() = level.block(position(0), position(1), position(2), partSize().first,
@@ -774,8 +752,6 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
         convolutions = &tmpConvolutions;
 
 	}
-//    convolutions = new vector<vector<Tensor3DF> >();
-//    convolutions = &tmpConvolutions;
 	
     // Resize the positions
     if (positions) {
@@ -790,6 +766,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
     // Temporary data needed by the distance transforms
     Tensor3DF tmp1;
     Tensor3DF tmp2;
+
+
+
 	
     // For each root level in reverse order
     for (int lvl = nbLevels - 1; lvl >= interval; --lvl) {
@@ -797,6 +776,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
         cout<<"Model::convolve0 (*convolutions)[0][1].isZero() : "<<(*convolutions)[0][1].isZero()<<endl;
         // For each part
         for (int i = 0; i < nbParts; ++i) {
+            cout<<"Model::conv 1 depth = "<<(*convolutions)[i + 1][1].depths()<<endl;
+            cout<<"Model::conv 1 rows "<<(*convolutions)[i + 1][1].rows()<<endl;
+            cout<<"Model::conv 1 cols "<<(*convolutions)[i + 1][1].cols()<<endl;
             // Transform the part one octave below
             //TODO !!!!!!!!!!!!
             cout<<"Model::DT3D (*convolutions)[i + 1][0].isZero() : "<<(*convolutions)[i + 1][0].isZero()<<endl;
@@ -815,17 +797,17 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
                 (*positions)[i][lvl]().setConstant( Position::Zero());
             }
 
-            cout<<"Model::convolve score part "<<i+1<<" : "<<(*convolutions)[i + 1][lvl].
-                  block(-3+ parts_[i + 1].offset(0),9+ parts_[i + 1].offset(1),4+ parts_[i + 1].offset(2),1,2,2)()<<endl;
+//            cout<<"Model::convolve score part "<<i+1<<" : "<<(*convolutions)[i + 1][lvl].
+//                  block(-3+ parts_[i + 1].offset(0),9+ parts_[i + 1].offset(1),4+ parts_[i + 1].offset(2),1,2,2)()<<endl;
 
             // Add the distance transforms of the part one octave below
             for (int z = 0; z < (*convolutions)[0][lvl].depths(); ++z) {//lvl=1
                 for (int y = 0; y < (*convolutions)[0][lvl].rows(); ++y) {
                     for (int x = 0; x < (*convolutions)[0][lvl].cols(); ++x) {
 
-                        const int zr = 2 * z/*- pad.z()*/ + parts_[i + 1].offset(0)/2;//coord lvl - interval 0
-                        const int yr = 2 * y /*- pad.y()*/ + parts_[i + 1].offset(1)/2;
-                        const int xr = 2 * x /*- pad.x()*/ + parts_[i + 1].offset(2)/2;
+                        const int zr = 2 * z/*- pad.z()*/ + parts_[i + 1].offset(0);//coord lvl - interval 0
+                        const int yr = 2 * y /*- pad.y()*/ + parts_[i + 1].offset(1);
+                        const int xr = 2 * x /*- pad.x()*/ + parts_[i + 1].offset(2);
 
 //                        cout<<"Model::convolve zr : "<<zr<<" / (*convolutions)[i + 1][lvl - interval].depths() : "
 //                           <<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
@@ -835,9 +817,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 //                           <<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
 
                         if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
-                            (xr <= (*convolutions)[i + 1][lvl - interval].cols()) &&//lvl - interval 0
-                            (yr <= (*convolutions)[i + 1][lvl - interval].rows()) &&
-                            (zr <= (*convolutions)[i + 1][lvl - interval].depths())) {
+                            (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&//lvl - interval 0
+                            (yr < (*convolutions)[i + 1][lvl - interval].rows()) &&
+                            (zr < (*convolutions)[i + 1][lvl - interval].depths())) {
 //                            cout<<"Model::convolve adding the scores of the parts to the score of the root"<<endl;
                             (*convolutions)[0][lvl]()(z, y, x) += (*convolutions)[i + 1][lvl - interval]()(zr, yr, xr);
 
@@ -880,12 +862,12 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 
     scores.swap((*convolutions)[0]);
 	
-    //    for (int i = 0; i < interval; ++i) {
-    //        scores[i] = Tensor3DF();
+        for (int i = 0; i < interval; ++i) {
+            scores[i] = Tensor3DF();
 
-    //        for (int j = 0; j < nbParts; ++j)
-    //            (*positions)[j][i] = Positions();
-    //    }
+            for (int j = 0; j < nbParts; ++j)
+                (*positions)[j][i] = Positions();
+        }
     cout<<"Model::convolve score[0].isZero() : "<<scores[0].isZero()<<endl;
     cout<<"Model::convolve score[1].isZero() : "<<scores[1].isZero()<<endl;
 

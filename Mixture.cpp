@@ -177,17 +177,19 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
         for (int datamine = 0; datamine < nbDatamine; ++datamine) {
             // Remove easy samples (keep hard ones)
             int j = 0;
-			
+            cout<<"Mix::train test 000000001"<<endl;
             for (int i = 0; i < negatives.size(); ++i)
                 if ((negatives[i].first.parts()[0].deformation(4) =
                      models_[negatives[i].second].dot(negatives[i].first)) > -1.01)
                     negatives[j++] = negatives[i];
-			
+            cout<<"Mix::train test 000000002"<<endl;
+
             negatives.resize(j);
 
             //TODO
             // Sample new hard negatives
             negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
+            cout<<"Mix::train test 000000003"<<endl;
 
             // Stop if there are no new hard negatives
             if (datamine && (negatives.size() == j))
@@ -238,6 +240,21 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             const int maxIterations =
                 min(max(10.0 * sqrt(static_cast<double>(positives.size())), 100.0), 1000.0);
 
+
+//            for(int i=0; i<positives[0].first.parts().size(); ++i){
+//                bool hasNegValue=false;
+//                for (int z = 0; z < positives[0].first.parts()[i].filter.depths(); ++z) {
+//                    for (int y = 0; y < positives[0].first.parts()[i].filter.rows(); ++y) {
+//                        for (int x = 0; x < positives[0].first.parts()[i].filter.cols(); ++x) {
+//                            for (int j = 0; j < 352; ++j) {
+//                                if( positives[0].first.parts()[i].filter()(z, y, x)(j) < 0) hasNegValue = true;
+//                            }
+//                        }
+//                    }
+//                }
+//                if(hasNegValue) cout<<"Mix::train positive part "<<i<<" hasNegValue" << endl;
+//            }
+
             loss = trainSVM(positives, negatives, C, J, maxIterations);
 
             cout << "Relabel: " << relabel << ", datamine: " << datamine
@@ -275,6 +292,19 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             cout << "Mix:: set cached_ to false" << endl;
             cout << "Mix:: set zero_ to false" << endl;
 
+//            for(int i=0; i<models_[0].parts().size(); ++i){
+//                bool hasNegValue=false;
+//                for (int z = 0; z < models_[0].parts()[i].filter.depths(); ++z) {
+//                    for (int y = 0; y < models_[0].parts()[i].filter.rows(); ++y) {
+//                        for (int x = 0; x < models_[0].parts()[i].filter.cols(); ++x) {
+//                            for (int j = 0; j < 352; ++j) {
+//                                if( models_[0].parts()[i].filter()(z, y, x)(j) < 0) hasNegValue = true;
+//                            }
+//                        }
+//                    }
+//                }
+//                if(hasNegValue) cout<<"Mix::train model part "<<i<<" hasNegValue" << endl;
+//            }
 			
             // Save the latest model so as to be able to look at it while training
             ofstream out("tmp.txt");
@@ -685,7 +715,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 int d = models_[model].rootSize().first /** scale*/;
 
                                 Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
-                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
+//                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
 //                                cout << "Mix::posLatentSearch coord = "
 //                                     << z +offz << " " << y+offy << " " << x +offx << " " << pyramid.resolutions()[lvl] << endl;
 //                                cout << "Mix::posLatentSearch search box left / right = "
@@ -694,7 +724,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 //No use in 3D
                                 //clipBndBox(bndbox, scenes[i]);
                                 if(intersector(bndbox, &intersection)){
-                                    cout << "Mix::posLatentSearch intersector True, scores = " << scores[lvl]()(z, y, x) << endl;
+//                                    cout << "Mix::posLatentSearch intersector True, scores = " << scores[lvl]()(z, y, x) << endl;
                                 }
 
 //                                cout << "Mix::posLatentSearch intersector bndbox : " << scenes[i].objects()[j].bndbox() << endl;
@@ -771,7 +801,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
     if (scenes.empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1) || (maxNegatives <= 0) ||
             (negatives.size() >= maxNegatives)) {
         negatives.clear();
-        cerr << "Invalid training paramters" << endl;
+        cerr << "NegLatentSearch::Invalid training paramters" << endl;
         return;
     }
 
@@ -862,6 +892,8 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                                 // deformation of its root
                                 sample.parts()[0].offset(0) = i;
                                 sample.parts()[0].offset(1) = lvl;
+                                sample.parts()[0].offset(2) = i;
+                                sample.parts()[0].offset(3) = lvl;
                                 sample.parts()[0].deformation(0) = z;
                                 sample.parts()[0].deformation(1) = y;
                                 sample.parts()[0].deformation(2) = x;
@@ -869,6 +901,8 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                                 sample.parts()[0].deformation(4) = zero_ ? 0.0 : scores[lvl]()(z, y, x);
                                 sample.parts()[0].deformation(5) = 11;
                                 sample.parts()[0].deformation(6) = 12;
+                                sample.parts()[0].deformation(7) = 12;
+
 
                                 // Look if the same sample was already sampled
                                 while ((j < nbCached) && (negatives[j].first < sample))

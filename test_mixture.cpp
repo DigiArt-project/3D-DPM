@@ -89,9 +89,9 @@ public:
         originScene = Vector3i(floor(minScene.z/sceneResolution),
                                floor(minScene.y/sceneResolution),
                                floor(minScene.x/sceneResolution));
-        Model::triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution),
-                                                ceil((maxScene.y-originScene(1)*sceneResolution)/sceneResolution),
-                                                ceil((maxScene.x-originScene(2)*sceneResolution)/sceneResolution));
+        Model::triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution)+1,
+                                                ceil((maxScene.y-originScene(1)*sceneResolution)/sceneResolution)+1,
+                                                ceil((maxScene.x-originScene(2)*sceneResolution)/sceneResolution)+1);
         sceneBox = Rectangle(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
         cout<<"test:: sceneBox = "<<sceneBox<<endl;
         cout<<"test:: minScene = "<<minScene<<endl;
@@ -130,9 +130,9 @@ public:
         pcl::getMinMax3D(*chairCloud , minChair, maxChair);
 
 
-        Model::triple<int, int, int> chairSize( ceil((maxChair.z-minChair.z)/sceneResolution/2),
-                                                ceil((maxChair.y-minChair.y)/sceneResolution/2),
-                                                ceil((maxChair.x-minChair.x)/sceneResolution/2));
+        Model::triple<int, int, int> chairSize( ceil((maxChair.z-minChair.z)/sceneResolution/2)+1,
+                                                ceil((maxChair.y-minChair.y)/sceneResolution/2)+1,
+                                                ceil((maxChair.x-minChair.x)/sceneResolution/2)+1);
         chairBox = Rectangle(Eigen::Vector3i(round((minChair.z-minScene.z)/sceneResolution/2.0)-3,
                            round((minChair.y-minScene.y)/sceneResolution/2.0)-4,
                            round((minChair.x-minScene.x)/sceneResolution/2.0)-4),
@@ -150,9 +150,9 @@ public:
         PointType maxTable;
         pcl::getMinMax3D(*tableCloud , minTable, maxTable);
 
-        Model::triple<int, int, int> tableSize( ceil((maxTable.z-minTable.z)/sceneResolution/2),
-                                                ceil((maxTable.y-minTable.y)/sceneResolution/2),
-                                                ceil((maxTable.x-minTable.x)/sceneResolution/2));
+        Model::triple<int, int, int> tableSize( ceil((maxTable.z-minTable.z)/sceneResolution/2)+1,
+                                                ceil((maxTable.y-minTable.y)/sceneResolution/2)+1,
+                                                ceil((maxTable.x-minTable.x)/sceneResolution/2)+1);
 
 
 
@@ -191,42 +191,60 @@ public:
     void testNegLatSearch(){
         cout << "testNegLatSearch ..." << endl;
         Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
-                                                    chairBox.height()/2,
-                                                    chairBox.width()/2);
+        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
+                                                    chairBox.height()/2*2,
+                                                    chairBox.width()/2*2);
 
         cout<<"test::chairPartSize : "<<chairPartSize.first<<" "<<chairPartSize.second<<" "<<chairPartSize.third<<endl;
 
         Model model( chairSize, 1, chairPartSize);
-        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3));
+//        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3));
         std::vector<Model> models = { model};
 
         vector<Object> objects;
-        Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+        Object obj(Object::AEROPLANE, Object::Pose::UNSPECIFIED, false, false, chairBox);
 //        Object obj2(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
         objects.push_back(obj);
 //        objects.push_back(obj2);
 
-        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)};
+        vector<Scene> scenes = {Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(),
+                                tableName, objects)};
 
-        Mixture mixture( models);
+//        Mixture mixture( models);
 
-        GSHOTPyramid::Level root2x =
-                pyramid.levels()[0].block(chairBox.origin()(0)*2, chairBox.origin()(1)*2, chairBox.origin()(2)*2,
-                                          chairSize.first*2, chairSize.second*2, chairSize.third*2);
-        for(int mod = 0; mod<mixture.models().size(); ++mod){
-            mixture.models()[mod].initializeParts( mixture.models()[mod].parts().size() - 1,
-                                                           mixture.models()[mod].partSize(), root2x);
+//        GSHOTPyramid::Level root2x =
+//                pyramid.levels()[0].block(chairBox.origin()(0)*2, chairBox.origin()(1)*2, chairBox.origin()(2)*2,
+//                                          chairSize.first*2, chairSize.second*2, chairSize.third*2);
+//        for(int mod = 0; mod<mixture.models().size(); ++mod){
+//            mixture.models()[mod].initializeParts( mixture.models()[mod].parts().size() - 1,
+//                                                           mixture.models()[mod].partSize(), root2x);
+//        }
+
+//        Model sample;
+//        sample.parts().resize(1);
+//        sample.parts()[0].filter = pyramid.levels()[0].block(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2),
+//                                                              chairSize.first, chairSize.second, chairSize.third);
+//        sample.parts()[0].offset.setZero();
+//        sample.parts()[0].deformation.setZero();
+//        mixture.models()[0].parts()[0].filter = sample.parts()[0].filter;
+
+
+
+        ifstream in("tmp.txt");
+
+        if (!in.is_open()) {
+            cerr << "Cannot open model file\n" << endl;
+            return;
         }
 
-        Model sample;
-        sample.parts().resize(1);
-        sample.parts()[0].filter = pyramid.levels()[0].block(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2),
-                                                              chairSize.first, chairSize.second, chairSize.third);
-        sample.parts()[0].offset.setZero();
-        sample.parts()[0].deformation.setZero();
-        mixture.models()[0].parts()[0].filter = sample.parts()[0].filter;
+        Mixture mixture;
+        in >> mixture;
+//        mixture.train_ = false;
 
+        if (mixture.empty()) {
+            cerr << "Invalid model file\n" << endl;
+            return;
+        }
 
         mixture.zero_ = false;
 
@@ -242,7 +260,7 @@ public:
                 negatives[j++] = negatives[i];
 
         negatives.resize(j);
-        mixture.negLatentSearch(scenes, Object::BICYCLE, Eigen::Vector3i( 3,3,3), interval, maxNegatives, negatives);
+        mixture.negLatentSearch(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, maxNegatives, negatives);
         cout<<"test::negatives.size = "<<negatives.size()<<endl;
         if(negatives.size()>0){
             cout<<"test::negatives[0].first.parts()[0].filter.isZero() : "<< GSHOTPyramid::TensorMap( negatives[0].first.parts()[0].filter).isZero() << endl;
@@ -252,7 +270,7 @@ public:
 
 
 
-            ofstream out("tmp.txt");
+            ofstream out("tmp2.txt");
 
             out << (negatives[0].first);
         }
@@ -356,8 +374,10 @@ public:
 
     void testTrain(){
 
+        int nbParts = 5;
 
-        Model::triple<int, int, int> chairSize(chairBox.depth()+1, chairBox.height()+1, chairBox.width()+1);
+
+        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
         Model::triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
                                                     chairBox.height()/2*2,
                                                     chairBox.width()/2*2);//in lvl 0
@@ -375,27 +395,52 @@ public:
         objects2.push_back(obj2);
 
         vector<Scene> scenes = {
-            Scene( originScene, sceneBox.depth()+1, sceneBox.height()+1, sceneBox.width()+1, sceneName, objects)/*,
-            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), tableName, objects2)*/};
+            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)/*,*/
+//            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects),
+//            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects),
+//            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects),
+//            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), tableName, objects2),
+//            Scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, objects)
+        };
 
 
         Mixture mixture( models);
 
-        int interval = 1, nbIterations = 2, nbDatamine = 10, maxNegSample = 20;
-        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2, nbDatamine, maxNegSample);
+        int interval = 1, nbIterations = 5, nbDatamine = 2, maxNegSample = 20;
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
+                      nbDatamine, maxNegSample);
 
         cout << "test:: root filter initialized" << endl;
 
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
-        GSHOTPyramid::Level root2x =
-                pyramid.levels()[0].block(chairBox.origin()(0)*2-sceneBox.origin()(0),
-                                          chairBox.origin()(1)*2-sceneBox.origin()(1),
-                                          chairBox.origin()(2)*2-sceneBox.origin()(2),
-                                          chairBox.depth()*2+1, chairBox.height()*2+1, chairBox.width()*2+1);
+        GSHOTPyramid::Level root2x;
 
-//        cout<<"test::initializeParts pyramid.levels()[0].depths() = "<< pyramid.levels()[0].depths() <<endl;
-//        cout<<"test::initializeParts pyramid.levels()[0].rows() = "<< pyramid.levels()[0].rows() <<endl;
-//        cout<<"test::initializeParts pyramid.levels()[0].cols() = "<< pyramid.levels()[0].cols() <<endl;
+        if( sceneName == "/home/ubuntu/3DDataset/3DDPM/smallScene1.pcd"){
+            root2x = pyramid.levels()[0].block(chairBox.origin()(0)*2-sceneBox.origin()(0),
+                                              chairBox.origin()(1)*2-sceneBox.origin()(1),
+                                              chairBox.origin()(2)*2-sceneBox.origin()(2),
+                                              chairSize.first*2, chairSize.second*2, chairSize.third*2);
+        } else if( sceneName == "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd"){
+
+//            Rectangle chairBox0(Eigen::Vector3i(round((minChair.z-minScene.z)/sceneResolution)-5,
+//                               round((minChair.y-minScene.y)/sceneResolution)-7,
+//                               round((minChair.x-minScene.x)/sceneResolution)-7),
+//                                 chairSize.first*2-1, chairSize.second*2-1, chairSize.third*2-1, sceneResolution);
+            root2x = pyramid.levels()[0].block(0,
+                                              13*2,
+                                              7*2,
+                                              chairSize.first*2-1, chairSize.second*2-1, chairSize.third*2-1);
+        }
+
+
+
+        cout<<"test::initializeParts root2x.z = "<< chairBox.origin()(0)*2-sceneBox.origin()(0) <<endl;
+        cout<<"test::initializeParts root2x.y = "<< chairBox.origin()(1)*2-sceneBox.origin()(1) <<endl;
+        cout<<"test::initializeParts root2x.x = "<< chairBox.origin()(2)*2-sceneBox.origin()(2) <<endl;
+
+        cout<<"test::initializeParts root2x.depths() = "<< root2x.depths() <<endl;
+        cout<<"test::initializeParts root2x.rows() = "<< root2x.rows() <<endl;
+        cout<<"test::initializeParts root2x.cols() = "<< root2x.cols() <<endl;
 
 //        cout<<"test::initializeParts chairBox = "<< chairBox <<endl;
 //        cout<<"test::initializeParts chairBox.origin()(0)*2 = "<< chairBox.origin()(0)*2 <<endl;
@@ -404,7 +449,6 @@ public:
 
 //        cout<<"test::initializeParts root2x = "<< GSHOTPyramid::TensorMap(root2x)() <<endl;
 
-        int nbParts = 2;
         mixture.initializeParts( nbParts, chairPartSize, root2x);
 
         for(int i=0; i < nbParts; ++i){
@@ -412,7 +456,7 @@ public:
         }
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
-                      nbIterations/2, nbDatamine, maxNegSample);
+                      nbIterations, nbDatamine, maxNegSample);
 
 //        Eigen::Vector3i origin(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2));//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
@@ -531,30 +575,18 @@ public:
         // Non maxima suppression
         sort(detections.begin(), detections.end());
 
-        for (int i = 1; i < detections.size(); ++i)
+        for (int i = 1; i < detections.size(); ++i){
             detections.resize(remove_if(detections.begin() + i, detections.end(),
                                         Intersector(detections[i - 1], overlap, true)) - detections.begin());
-
+        }
 
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 3;
+        int nb = 4;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
-                // Find out if the detection hits an object
-//                bool positive = false;
-
-//                if (scene) {
-//                    Intersector intersector(detections[i]);
-
-//                    for (int j = 0; j < scene->objects().size(); ++j)
-//                        if (scene->objects()[j].name() == name)
-//                            if (intersector(scene->objects()[j].bndbox()))
-//                                positive = true;
-//                }
-
 
                 const int x = detections[i].x;
                 const int y = detections[i].y;
@@ -579,7 +611,7 @@ public:
                     const int xp = positions[argmax][j][lvl]()(z, y, x)(2);
                     const int lvlp = positions[argmax][j][lvl]()(z, y, x)(3);
 
-                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x)<<endl;
+//                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x)<<endl;
 
 
 //                    const double scale = pow(2.0, static_cast<double>(zp) / pyramid.interval() + 2);
@@ -589,9 +621,9 @@ public:
                     Eigen::Vector3i origin((zp+sceneBox.origin()(0)/* + detections[i].origin()(0)*2*/)/*- pad.z()*/,
                                            (yp+sceneBox.origin()(1) /*+ detections[i].origin()(1)*2*/)/*- pad.y()*/,
                                            (xp+sceneBox.origin()(2) /*+ detections[i].origin()(2)*2*/)/* - pad.x()*/);
-                    int w = mixture.models()[argmax].partSize().third -1 /** scale*/;
-                    int h = mixture.models()[argmax].partSize().second -1 /** scale*/;
-                    int d = mixture.models()[argmax].partSize().first -1 /** scale*/;
+                    int w = mixture.models()[argmax].partSize().third /** scale*/;
+                    int h = mixture.models()[argmax].partSize().second /** scale*/;
+                    int d = mixture.models()[argmax].partSize().first /** scale*/;
 
                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
 
@@ -603,24 +635,23 @@ public:
                 // Draw the root last
                 cout<<"test:: root bndbox = "<<detections[i]<<endl;
                 Rectangle box(Vector3i(detections[i].origin()(0), detections[i].origin()(1), detections[i].origin()(2)),
-                              mixture.models()[argmax].rootSize().first -1,
-                              mixture.models()[argmax].rootSize().second -1,
-                              mixture.models()[argmax].rootSize().third -1, pyramid.resolutions()[1]);
+                              mixture.models()[argmax].rootSize().first,
+                              mixture.models()[argmax].rootSize().second,
+                              mixture.models()[argmax].rootSize().third, pyramid.resolutions()[1]);
                 viewer.displayCubeLine(box, Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
                         Vector3i(0,255,255));
             }
 
-            if( detections.size() > 0){
-                cout<<"test:: root bndbox = "<<detections[0]<<" with score : "<<detections[0].score<<endl;
-                Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
-                              mixture.models()[0].rootSize().first -1,
-                              mixture.models()[0].rootSize().second -1,
-                              mixture.models()[0].rootSize().third -1, pyramid.resolutions()[1]);
-                viewer.displayCubeLine(box,
-                                       Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-                        Vector3i(0,255,0));
-            }
-
+        }
+        if( detections.size() > 0){
+            cout<<"test:: root bndbox = "<<detections[0]<<" with score : "<<detections[0].score<<endl;
+            Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
+                          mixture.models()[0].rootSize().first,
+                          mixture.models()[0].rootSize().second,
+                          mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
+            viewer.displayCubeLine(box,
+                                   Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+                    Vector3i(0,255,0));
         }
     }
 
@@ -637,7 +668,7 @@ public:
 
         Mixture mixture;
         in >> mixture;
-//        mixture.train_ = false;
+//        mixture.train_ = false;//allow quentin's code
 
         if (mixture.empty()) {
             cerr << "Invalid model file\n" << endl;
@@ -652,14 +683,14 @@ public:
         float threshold=0.005, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
 
-        viewer.addPC(pyramid.keypoints_[0], 1, Eigen::Vector3i(100, 100, 100));
-        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
+//        viewer.addPC(pyramid.keypoints_[0], 1, Eigen::Vector3i(100, 100, 100));
+//        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
 
         ofstream out("tmpTest.txt");
         string images = sceneName;
         vector<Detection> detections;
         Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
-        Scene scene( originScene, sceneBox.depth()+1, sceneBox.height()+1, sceneBox.width()+1, sceneName, {obj});
+        Scene scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, {obj});
 
         detect(mixture, /*0, image.width(), image.height()*/interval, pyramid, threshold, overlap, /*file, */out,
                images, detections, &scene, Object::CHAIR);
@@ -671,14 +702,14 @@ public:
                       mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
         viewer.displayCubeLine(rootBox,
                                Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-                Vector3i(0,255,0));
+                Vector3i(255,255,0));
         for(int i=1;i<mixture.models()[0].parts().size();++i){
             Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
                     mixture.models()[0].parts()[i].offset(2)),
                           mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
                           mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
             viewer.displayCubeLine(partBox,
-                                   Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+                                   Eigen::Vector3f(0,0,0),
                     Vector3i(255,0,0));
         }
 
@@ -770,6 +801,8 @@ int main(){
 
     Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
+    // testSceneMiddle_compress
+    // smallScene2
     int start = getMilliCount();
 
 //    test.testTrainSVM();//OK

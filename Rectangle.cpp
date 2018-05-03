@@ -36,7 +36,7 @@ Rectangle::Rectangle(const Rectangle& rect)
 
 Rectangle::Rectangle(int depth, int height, int width, float resolution) :
     origin_( 0, 0, 0), width_(width), height_(height), depth_(depth),
-    diagonal_( depth_, height_, width_), resolution_(resolution)
+    diagonal_( depth_-1, height_-1, width_-1), resolution_(resolution)
 {
     volume_ = volume();
 }
@@ -44,7 +44,7 @@ Rectangle::Rectangle(int depth, int height, int width, float resolution) :
 Rectangle::Rectangle(Eigen::Vector3i origin, int depth, int height, int width, float resolution) :
     origin_( origin), width_(width), height_(height), depth_(depth), resolution_(resolution)
 {
-    diagonal_ = Eigen::Vector3i( origin_(0) + depth_, origin_(1) + height_, origin_(2) + width_);
+    diagonal_ = Eigen::Vector3i( origin_(0) + depth_-1, origin_(1) + height_-1, origin_(2) + width_-1);
     volume_ = volume();
 }
 
@@ -212,7 +212,7 @@ void Rectangle::setVolume(float volume)
 float Rectangle::volume() const
 {
     //max() requires that the first and second arguments are of the same type
-    return width() * height() * depth() * resolution() * resolution() * resolution();
+    return (width()-1) * (height()-1) * (depth()-1) * resolution() * resolution() * resolution();
 }
 
 //Eigen::Vector3f substractValue(Eigen::Vector3f refPoint, Eigen::Vector3f valueToSubstract){

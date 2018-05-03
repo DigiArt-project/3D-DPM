@@ -96,10 +96,25 @@ public:
     }
 
     //Level
+    bool hasNegValue() const{
+//#pragma omp parallel for
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    for (int j = 0; j < 352; ++j) {
+                        if( tensor(z, y, x)(j) < 0) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    //Level
     Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
         Tensor3D<Scalar> res( depths() - filter.depths() + 1,
-                  rows() - filter.rows() + 1,
-                  cols() - filter.cols() + 1);
+                              rows() - filter.rows() + 1,
+                              cols() - filter.cols() + 1);
 
         res().setConstant( 0);
 
@@ -127,6 +142,28 @@ public:
                 }
             }
         }
+        return res;
+    }
+
+
+    //Level
+    Tensor3D< Type> agglomerateBlock(int z, int y, int x, int p, int q, int r) const{
+        if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
+            cerr<<"agglomerateBlock:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
+               <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
+            exit(0);
+        }
+        Tensor3D< Type> res(1,1,1);
+        res().setConstant( Type::Zero());
+    #pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    res()(0,0,0) += tensor(z, y, x);
+                }
+            }
+        }
+    //        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
         return res;
     }
 
@@ -164,6 +201,11 @@ public:
 
     //return a block of size (p, q, r) from point (z, y, x)
     Tensor3D< Scalar*> blockLink(int z, int y, int x, int p, int q, int r){
+        if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
+            cerr<<"blockLink:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
+               <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
+            exit(0);
+        }
         Tensor3D< Scalar*> res(p, q, r);
 #pragma omp parallel for
         for (int i = 0; i < p; ++i) {
@@ -177,9 +219,15 @@ public:
     }
 
 
+
     //TODO replace by TensorMap
     //return a block of size (p, q, r) from point (z, y, x)
     Tensor3D< Type> block(int z, int y, int x, int p, int q, int r) const{
+        if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
+            cerr<<"block:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
+               <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
+            exit(0);
+        }
         Tensor3D< Type> t(p, q, r);
 #pragma omp parallel for
         for (int i = 0; i < p; ++i) {
