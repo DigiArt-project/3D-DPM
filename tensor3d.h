@@ -111,42 +111,6 @@ public:
     }
 
     //Level
-    Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
-        Tensor3D<Scalar> res( depths() - filter.depths() + 1,
-                              rows() - filter.rows() + 1,
-                              cols() - filter.cols() + 1);
-
-        res().setConstant( 0);
-
-#pragma omp parallel for num_threads(omp_get_max_threads())
-        for (int z = 0; z < res.depths(); ++z) {
-            for (int y = 0; y < res.rows(); ++y) {
-                for (int x = 0; x < res.cols(); ++x) {
-
-                    for (int dz = 0; dz < filter.depths(); ++dz) {
-                        for (int dy = 0; dy < filter.rows(); ++dy) {
-                            for (int dx = 0; dx < filter.cols(); ++dx) {
-
-                                res()(z, y, x) += tensor(z+dz, y+dy, x+dx).matrix().dot(filter()(dz, dy, dx).matrix());
-
-//                                cout<<"tensor3D::conv tensor(z+dz, y+dy, x+dx).matrix() : "<<endl
-//                                   <<tensor(z+dz, y+dy, x+dx).matrix().transpose()<<endl;
-//                                cout<<"tensor3D::conv filter()(dz, dy, dx).matrix() : "<<endl
-//                                   <<filter()(dz, dy, dx).matrix().transpose()<<endl;
-//                                cout<<"tensor3D::conv dot product : "<<endl
-//                                   <<tensor(z+dz, y+dy, x+dx).matrix().dot(filter()(dz, dy, dx).matrix())<<endl;
-                            }
-                        }
-                    }
-
-                }
-            }
-        }
-        return res;
-    }
-
-
-    //Level
     Tensor3D< Type> agglomerateBlock(int z, int y, int x, int p, int q, int r) const{
         if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
             cerr<<"agglomerateBlock:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
@@ -166,6 +130,85 @@ public:
     //        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
         return res;
     }
+
+
+    //Level
+    Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
+        cout<<"tensor3D::convolve ..."<<endl;
+
+        Tensor3D<Scalar> res( depths() - filter.depths() + 1,
+                              rows() - filter.rows() + 1,
+                              cols() - filter.cols() + 1);
+
+        res().setConstant( 0);
+
+
+        Type filterMean = filter.sum() / Scalar(filter.size());
+
+//        for(int i=0; i<352; ++i){
+//            cout<<"tensor3D::convolve filterMean("<<i<<") = "<<filterMean(i)<<endl;
+//        }
+
+#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < res.depths(); ++z) {
+            for (int y = 0; y < res.rows(); ++y) {
+                for (int x = 0; x < res.cols(); ++x) {
+
+                    Type tensorMean = agglomerateBlock(z, y, x, filter.depths(), filter.rows(), filter.cols())()(0,0,0) /
+                            Scalar(filter.size());
+
+
+                    Type squaredNormTensor;
+                    Type squaredNormFilter;
+                    squaredNormTensor.setConstant( 0);
+                    squaredNormFilter.setConstant( 0);
+//                    Scalar aux( 0);
+
+                    for (int dz = 0; dz < filter.depths(); ++dz) {
+                        for (int dy = 0; dy < filter.rows(); ++dy) {
+                            for (int dx = 0; dx < filter.cols(); ++dx) {
+
+                                Type normTensor = tensor(z+dz, y+dy, x+dx) - tensorMean;
+                                Type normFilter = filter()(dz, dy, dx) - filterMean;
+
+//                                Type sum = filter.sum();
+//                                for(int i=0; i<352; ++i){
+//                                    if (sum(i) !=0) normFilter(i) /= sum(i);
+//                                    else normFilter(i) = 0;
+//                                }
+                                squaredNormTensor += normTensor * normTensor;
+                                squaredNormFilter += normFilter * normFilter;
+//                                aux += normTensor.matrix().dot(normFilter.matrix()) * normTensor.matrix().dot(normFilter.matrix());
+                                res()(z, y, x) += normTensor.matrix().dot(normFilter.matrix());
+
+//                                    cout<<"tensor3D::convolve res()(z, y, x) = "<<res()(z, y, x)<<endl;
+//                                    cout<<"tensor3D::convolve normTensor = "<<normTensor<<endl;
+
+//                                cout<<"tensor3D::conv tensor(z+dz, y+dy, x+dx).matrix() : "<<endl
+//                                   <<tensor(z+dz, y+dy, x+dx).matrix().transpose()<<endl;
+//                                cout<<"tensor3D::conv filter()(dz, dy, dx).matrix() : "<<endl
+//                                   <<filter()(dz, dy, dx).matrix().transpose()<<endl;
+//                                cout<<"tensor3D::conv dot product : "<<endl
+//                                   <<tensor(z+dz, y+dy, x+dx).matrix().dot(filter()(dz, dy, dx).matrix())<<endl;
+                            }
+                        }
+                    }
+
+                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
+//                    cout<<"tensor3D::convolve squaredNormTensor = "<<squaredNormTensor<<endl;
+//                    cout<<"tensor3D::convolve squaredNormFilter = "<<squaredNormFilter<<endl;
+
+//                    cout<<"tensor3D::convolve res()(z, y, x) = "<<squaredNormTensor.matrix().dot(squaredNormFilter.matrix())<<endl;
+
+
+                }
+            }
+        }
+        return res;
+    }
+
+
+
 
     //Level
     Tensor3D< Type> agglomerate() const{
@@ -290,7 +333,7 @@ public:
 
     //TODO
     Type sum() const{
-                    Type res = 0;
+                    Type res(0);
                     for (int i = 0; i < depths(); ++i) {
                         for (int j = 0; j < rows(); ++j) {
                             for (int k = 0; k < cols(); ++k) {
@@ -298,7 +341,7 @@ public:
                             }
                         }
                     }
-        return res;//((Eigen::Tensor< Type, 3, Eigen::RowMajor>)tensor.sum())(0);
+        return res;
     }
 
     Type squaredNorm() const{
@@ -310,7 +353,7 @@ public:
                             }
                         }
                     }
-        return res;//((Eigen::Tensor< Type, 3, Eigen::RowMajor>)tensor.sum())(0);
+        return res;
     }
 
 

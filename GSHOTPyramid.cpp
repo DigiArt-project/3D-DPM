@@ -117,15 +117,16 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
             Level level( topology[index](0), topology[index](1), topology[index](2));
             int kpt = 0;
+#pragma omp parallel for
             for (int z = 0; z < level.depths(); ++z){
                 for (int y = 0; y < level.rows(); ++y){
                     for (int x = 0; x < level.cols(); ++x){
                         for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
                             level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
-                            if(descriptors->points[kpt].descriptor[k]<0){
-                                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] = "
-                                     << descriptors->points[kpt].descriptor[k] << endl;
-                            }
+//                            if(descriptors->points[kpt].descriptor[k]<0){
+//                                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] = "
+//                                     << descriptors->points[kpt].descriptor[k] << endl;
+//                            }
                         }
                         ++kpt;
                     }
@@ -225,13 +226,13 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
 
     convolution = level.convolve(filter);
 
-    for (int z = 0; z < convolution.depths(); ++z) {
-        for (int y = 0; y < convolution.rows(); ++y) {
-            for (int x = 0; x < convolution.cols(); ++x) {
-                if( convolution()(z, y, x) < 0) cout<<"GSHOTPyramid::convolve convolution hasNegValue" << endl;
-            }
-        }
-    }
+//    for (int z = 0; z < convolution.depths(); ++z) {
+//        for (int y = 0; y < convolution.rows(); ++y) {
+//            for (int x = 0; x < convolution.cols(); ++x) {
+//                if( convolution()(z, y, x) < 0) cout<<"GSHOTPyramid::convolve convolution hasNegValue" << endl;
+//            }
+//        }
+//    }
     cout<<"GSHOTPyramid::convolve level.depths() : "<< level.depths() << endl;
     cout<<"GSHOTPyramid::convolve level.rows() : "<< level.rows() << endl;
     cout<<"GSHOTPyramid::convolve level.cols() : "<< level.cols() << endl;
@@ -465,7 +466,7 @@ std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data, float max
 PointCloudPtr
 GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, int index){
 
-    int pt_nb_x = ceil((max.x-min.x)/grid_reso+1);//+1 +0.5 because scene is located between 2 keypoints
+    int pt_nb_x = ceil((max.x-min.x)/grid_reso+1);
     int pt_nb_y = ceil((max.y-min.y)/grid_reso+1);
     int pt_nb_z = ceil((max.z-min.z)/grid_reso+1);
 
@@ -540,11 +541,11 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
         //normalize descriptor
         std::vector<float> value_descriptor_scaled = minMaxScaler(data_tmp, max, min);
 
-        float sum = 0;
+//        float sum = 0;
         for (size_t j = 0; j < DescriptorSize; ++j){
             descriptors->points[i].descriptor[j] = value_descriptor_scaled.at(j);
 //            cout<<"GSHOTPyramid::descriptor normalized : "<< descriptors->points[i].descriptor[j] << endl;
-            sum += descriptors->points[i].descriptor[j];
+//            sum += descriptors->points[i].descriptor[j];
         }
 //        cout<<"GSHOTPyramid::sum of the descriptor normalized : "<< sum << endl;
 

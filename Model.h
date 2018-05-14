@@ -25,6 +25,8 @@
 //#include "HOGPyramid.h"
 #include "GSHOTPyramid.h"
 #include <pcl/io/pcd_io.h>
+#include<pcl/io/ply_io.h>
+
 
 
 namespace FFLD

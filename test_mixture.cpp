@@ -65,14 +65,14 @@ public:
     {
 
 
-        if (pcl::io::loadPCDFile<PointType>(sceneFilename, *sceneCloud) == -1) {
+        if (readPointCloud(sceneFilename, *sceneCloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
         }
         PointCloudPtr tmpCloud( new PointCloudT);
-        if (pcl::io::loadPCDFile<PointType>(chairFilename, *tmpCloud) == -1) {
+        if (readPointCloud(chairFilename, *tmpCloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
         }
-        if (pcl::io::loadPCDFile<PointType>(tableFilename, *tableCloud) == -1) {
+        if (readPointCloud(tableFilename, *tableCloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
         }
 
@@ -799,10 +799,10 @@ int main(){
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
 
-    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+    Test test( "/home/ubuntu/3DDataset/3DDPM/testSceneMiddle_compress.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
-    // testSceneMiddle_compress
-    // smallScene2
+    // testSceneMiddle_compress.pcd
+    // smallScene2.pcd
     int start = getMilliCount();
 
 //    test.testTrainSVM();//OK
@@ -813,7 +813,7 @@ int main(){
 
 //    test.initSample();
 
-    test.testTrain();
+//    test.testTrain();
 
     test.testTest();
 

@@ -179,6 +179,36 @@ namespace FFLD
         // The corresponding positions of the descriptors in the space for each level
         std::vector<PointCloudPtr > keypoints_;
     };
+
+    //Read point cloud from a path
+
+    int readPointCloud(std::string object_path, PointCloudPtr point_cloud)
+    {
+        std::string extension = boost::filesystem::extension(object_path);
+        if (extension == ".pcd" || extension == ".PCD")
+        {
+            if (pcl::io::loadPCDFile(object_path.c_str() , *point_cloud) == -1)
+            {
+                std::cout << "\n Cloud reading failed." << std::endl;
+                return (-1);
+            }
+        }
+        else if (extension == ".ply" || extension == ".PLY")
+        {
+            if (pcl::io::loadPLYFile(object_path , *point_cloud) == -1)
+            {
+                std::cout << "\n Cloud reading failed." << std::endl;
+                return (-1);
+            }
+        }
+        else
+        {
+            std::cout << "\n file extension is not correct." << std::endl;
+            return -1;
+        }
+        return 1;
+
+    }
     
     /// Serializes a pyramid to a stream.
     std::ostream & operator<<(std::ostream & os, const GSHOTPyramid & pyramid);

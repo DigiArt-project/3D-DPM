@@ -566,7 +566,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 		
         PointCloudPtr cloud( new PointCloudT);
 		
-        if (pcl::io::loadPCDFile<PointType>(scenes[i].filename().c_str(), *cloud) == -1) {
+        if (readPointCloud(scenes[i].filename().c_str(), *cloud) == -1) {
             cout<<"couldnt open pcd file"<<endl;
 			positives.clear();
 			return;
