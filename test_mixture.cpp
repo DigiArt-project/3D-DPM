@@ -65,14 +65,14 @@ public:
     {
 
 
-        if (readPointCloud(sceneFilename, *sceneCloud) == -1) {
+        if (readPointCloud(string(sceneFilename), sceneCloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
         }
         PointCloudPtr tmpCloud( new PointCloudT);
-        if (readPointCloud(chairFilename, *tmpCloud) == -1) {
+        if (readPointCloud(string(chairFilename), tmpCloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
         }
-        if (readPointCloud(tableFilename, *tableCloud) == -1) {
+        if (readPointCloud(string(tableFilename), tableCloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
         }
 
@@ -374,7 +374,7 @@ public:
 
     void testTrain(){
 
-        int nbParts = 5;
+        int nbParts = 7;
 
 
         Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
@@ -449,7 +449,7 @@ public:
 
 //        cout<<"test::initializeParts root2x = "<< GSHOTPyramid::TensorMap(root2x)() <<endl;
 
-        mixture.initializeParts( nbParts, chairPartSize, root2x);
+        mixture.initializeParts( nbParts, chairPartSize/*, root2x*/);
 
         for(int i=0; i < nbParts; ++i){
             cout<<"test::initializeParts offset["<<i+1<<"] = "<< mixture.models()[0].parts()[i+1].offset <<endl;
@@ -583,7 +583,7 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 4;
+        int nb = 5;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -799,7 +799,7 @@ int main(){
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
 
-    Test test( "/home/ubuntu/3DDataset/3DDPM/testSceneMiddle_compress.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+    Test test( "/home/ubuntu/3DDataset/3DDPM/scene_1.ply", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
     // testSceneMiddle_compress.pcd
     // smallScene2.pcd

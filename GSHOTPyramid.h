@@ -17,12 +17,16 @@
 #include <pcl/features/shot_omp.h>
 #include <pcl/common/common_headers.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/io/pcd_io.h>
+#include<pcl/io/ply_io.h>
 #include <vector>
 
 //Other
 #include "typedefs.h"
 #include "tensor3d.h"
 #include <omp.h>
+#include <boost/filesystem.hpp>
+
 
 //Subsection = interval ?
 //Padding ?
@@ -182,33 +186,7 @@ namespace FFLD
 
     //Read point cloud from a path
 
-    int readPointCloud(std::string object_path, PointCloudPtr point_cloud)
-    {
-        std::string extension = boost::filesystem::extension(object_path);
-        if (extension == ".pcd" || extension == ".PCD")
-        {
-            if (pcl::io::loadPCDFile(object_path.c_str() , *point_cloud) == -1)
-            {
-                std::cout << "\n Cloud reading failed." << std::endl;
-                return (-1);
-            }
-        }
-        else if (extension == ".ply" || extension == ".PLY")
-        {
-            if (pcl::io::loadPLYFile(object_path , *point_cloud) == -1)
-            {
-                std::cout << "\n Cloud reading failed." << std::endl;
-                return (-1);
-            }
-        }
-        else
-        {
-            std::cout << "\n file extension is not correct." << std::endl;
-            return -1;
-        }
-        return 1;
-
-    }
+    int readPointCloud(std::string object_path, PointCloudPtr point_cloud);
     
     /// Serializes a pyramid to a stream.
     std::ostream & operator<<(std::ostream & os, const GSHOTPyramid & pyramid);

@@ -19,7 +19,7 @@ using namespace std;
 typedef pcl::ReferenceFrame RFType;
 
 // Define "PointCloud" to be a pcl::PointCloud of pcl::PointXYZRGB points
-typedef pcl::PointXYZ PointType;
+typedef pcl::PointXYZRGB PointType;
 typedef pcl::PointCloud<PointType> PointCloudT;
 typedef pcl::PointCloud<PointType>::Ptr PointCloudPtr;
 typedef pcl::PointCloud<PointType>::ConstPtr PointCloudConstPtr;

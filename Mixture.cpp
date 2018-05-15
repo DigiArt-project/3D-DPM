@@ -329,10 +329,10 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 	return loss;
 }
 
-void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize, GSHOTPyramid::Level root2x)
+void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize/*, GSHOTPyramid::Level root2x*/)
 {
     for (int i = 0; i < models_.size(); ++i) {
-        models_[i].initializeParts(nbParts, partSize, root2x);
+        models_[i].initializeParts(nbParts, partSize/*, root2x*/);
 //		models_[i + 1] = models_[i].flip();
 	}
 	
@@ -387,7 +387,7 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
     }
 
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int lvl = 0; lvl < nbLevels; ++lvl) {
         int rows = static_cast<int>(convolutions[0][lvl].rows());
         int cols = static_cast<int>(convolutions[0][lvl].cols());
@@ -566,7 +566,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 		
         PointCloudPtr cloud( new PointCloudT);
 		
-        if (readPointCloud(scenes[i].filename().c_str(), *cloud) == -1) {
+        if( readPointCloud(scenes[i].filename(), cloud) == -1) {
             cout<<"couldnt open pcd file"<<endl;
 			positives.clear();
 			return;
@@ -821,7 +821,7 @@ cout<<"Mix::negLatentSearch not found = "<<positive<<endl;
 cout<<"Mix::negLatentSearch test0"<<endl;
         PointCloudPtr cloud( new PointCloudT);
 
-        if (pcl::io::loadPCDFile<PointType>(scenes[i].filename().c_str(), *cloud) == -1) {
+        if (readPointCloud(scenes[i].filename(), cloud) == -1) {
             cout<<"Mix::negLatentSearch couldnt load PCD file"<<endl;
             negatives.clear();
             return;
@@ -980,7 +980,7 @@ public:
 
         vector<double> posMargins(positives_.size());
 		
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < positives_.size(); ++i)
 			posMargins[i] = models_[positives_[i].second].dot(positives_[i].first);
 		
@@ -1006,7 +1006,7 @@ public:
 
 		vector<double> negMargins(negatives_.size());
 		
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < negatives_.size(); ++i)
 			negMargins[i] = models_[negatives_[i].second].dot(negatives_[i].first);
 		
@@ -1198,7 +1198,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 
     if( train_){
         bool sumConvolve = false;
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int i = 0; i < nbModels; ++i){
     //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
 
@@ -1212,7 +1212,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
         }
     } else{
         bool sumConvolve = true;
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int i = 0; i < nbModels; ++i){
     //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
 

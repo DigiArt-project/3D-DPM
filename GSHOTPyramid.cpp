@@ -117,7 +117,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
             Level level( topology[index](0), topology[index](1), topology[index](2));
             int kpt = 0;
-#pragma omp parallel for
+//#pragma omp parallel for
             for (int z = 0; z < level.depths(); ++z){
                 for (int y = 0; y < level.rows(); ++y){
                     for (int x = 0; x < level.cols(); ++x){
@@ -160,7 +160,7 @@ void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolu
 
 //    cout<<"GSHOT::sumConvolve filter = "<<filt()<<endl;
 
-#pragma omp parallel for num_threads(2)
+//#pragma omp parallel for num_threads(2)
     for (int i = 0; i < levels_.size(); ++i){
         cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
            << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
@@ -195,7 +195,7 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
 
     convolutions.resize(levels_.size());
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int i = 0; i < levels_.size(); ++i){
         cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
            << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
@@ -478,7 +478,7 @@ GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, i
     PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
     
 
-#pragma omp parallel for num_threads(omp_get_max_threads())
+//#pragma omp parallel for num_threads(omp_get_max_threads())
     for(int z=0;z<pt_nb_z;++z){
         for(int y=0;y<pt_nb_y;++y){
             for(int x=0;x<pt_nb_x;++x){
@@ -706,5 +706,32 @@ const vector<float> & GSHOTPyramid::resolutions() const{
 
 
 
+//Read point cloud from a path
 
+int FFLD::readPointCloud(std::string object_path, PointCloudPtr point_cloud){
+    std::string extension = boost::filesystem::extension(object_path);
+    if (extension == ".pcd" || extension == ".PCD")
+    {
+        if (pcl::io::loadPCDFile(object_path.c_str() , *point_cloud) == -1)
+        {
+            std::cout << "\n Cloud reading failed." << std::endl;
+            return (-1);
+        }
+    }
+    else if (extension == ".ply" || extension == ".PLY")
+    {
+        if (pcl::io::loadPLYFile(object_path.c_str() , *point_cloud) == -1)
+        {
+            std::cout << "\n Cloud reading failed." << std::endl;
+            return (-1);
+        }
+    }
+    else
+    {
+        std::cout << "\n file extension is not correct." << std::endl;
+        return -1;
+    }
+    return 1;
+
+}
 

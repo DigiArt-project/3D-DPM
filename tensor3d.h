@@ -15,10 +15,14 @@
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/shot_omp.h>
 #include <pcl/common/common_headers.h>
+#include <pcl/io/pcd_io.h>
+#include<pcl/io/ply_io.h>
 #include <vector>
 
 //Other
 #include "typedefs.h"
+#include <boost/filesystem.hpp>
+
 
 //Subsection = interval ?
 //Padding ?
@@ -85,7 +89,7 @@ public:
     }
 
     void setZero(){
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int z = 0; z < depths(); ++z) {
             for (int y = 0; y < rows(); ++y) {
                 for (int x = 0; x < cols(); ++x) {
@@ -119,11 +123,11 @@ public:
         }
         Tensor3D< Type> res(1,1,1);
         res().setConstant( Type::Zero());
-    #pragma omp parallel for num_threads(omp_get_max_threads())
-        for (int z = 0; z < depths(); ++z) {
-            for (int y = 0; y < rows(); ++y) {
-                for (int x = 0; x < cols(); ++x) {
-                    res()(0,0,0) += tensor(z, y, x);
+//#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int i = z; i < p; ++i) {
+            for (int j = y; j < q; ++j) {
+                for (int k = x; k < r; ++k) {
+                    res()(0,0,0) += tensor(i, j, k);
                 }
             }
         }
@@ -149,7 +153,7 @@ public:
 //            cout<<"tensor3D::convolve filterMean("<<i<<") = "<<filterMean(i)<<endl;
 //        }
 
-#pragma omp parallel for num_threads(omp_get_max_threads())
+//#pragma omp parallel for num_threads(omp_get_max_threads())
         for (int z = 0; z < res.depths(); ++z) {
             for (int y = 0; y < res.rows(); ++y) {
                 for (int x = 0; x < res.cols(); ++x) {
@@ -194,7 +198,7 @@ public:
                         }
                     }
 
-                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
+//                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
 //                    cout<<"tensor3D::convolve squaredNormTensor = "<<squaredNormTensor<<endl;
 //                    cout<<"tensor3D::convolve squaredNormFilter = "<<squaredNormFilter<<endl;
 
@@ -214,7 +218,7 @@ public:
     Tensor3D< Type> agglomerate() const{
         Tensor3D< Type> res(1,1,1);
         res().setConstant( Type::Zero());
-#pragma omp parallel for num_threads(omp_get_max_threads())
+//#pragma omp parallel for num_threads(omp_get_max_threads())
         for (int z = 0; z < depths(); ++z) {
             for (int y = 0; y < rows(); ++y) {
                 for (int x = 0; x < cols(); ++x) {
@@ -232,7 +236,7 @@ public:
         t().setConstant( 0);
         for (int z = 0; z < depths(); ++z) {
             for (int y = 0; y < rows(); ++y) {
-#pragma omp parallel for num_threads(omp_get_max_threads())
+//#pragma omp parallel for num_threads(omp_get_max_threads())
                 for (int x = 0; x < cols(); ++x) {
                     t()(0,0,x%size) += tensor(z, y, x);
                 }
@@ -250,7 +254,7 @@ public:
             exit(0);
         }
         Tensor3D< Scalar*> res(p, q, r);
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int i = 0; i < p; ++i) {
             for (int j = 0; j < q; ++j) {
                 for (int k = 0; k < r; ++k) {
@@ -272,7 +276,7 @@ public:
             exit(0);
         }
         Tensor3D< Type> t(p, q, r);
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int i = 0; i < p; ++i) {
             for (int j = 0; j < q; ++j) {
                 for (int k = 0; k < r; ++k) {

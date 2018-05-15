@@ -24,8 +24,7 @@
 #include <tuple>
 //#include "HOGPyramid.h"
 #include "GSHOTPyramid.h"
-#include <pcl/io/pcd_io.h>
-#include<pcl/io/ply_io.h>
+
 
 
 
@@ -125,7 +124,7 @@ public:
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
 	/// @note The model stay unmodified if any of the parameter is invalid.
 	/// @note The parts are always initialized at twice the root resolution.
-    void initializeParts(int nbParts, Model::triple<int, int, int> partSize, GSHOTPyramid::Level root2x);
+    void initializeParts(int nbParts, Model::triple<int, int, int> partSize/*, GSHOTPyramid::Level root2x*/);
 	
 	/// Initializes a training sample with fixed latent variables from a specified position in
 	/// a pyramid of features.
@@ -177,6 +176,7 @@ public:
 	
 	/// Returns the flipped version (horizontally) of a model or a fixed sample.
 	Model flip() const;
+
 	
     /// Computes an in-place 3D quadratic distance transform.
 	/// @param[in,out] matrix Matrix to tranform in-place.

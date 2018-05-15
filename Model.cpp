@@ -117,7 +117,7 @@ Model::triple<int, int, int> Model::partSize() const
         return Model::triple<int, int, int>(0, 0, 0);
 }
 
-void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPyramid::Level root2x)
+void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOTPyramid::Level root2x*/)
 {
     cout<<"Model::initializeParts ..." <<endl;
 
@@ -125,6 +125,48 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize, GSHOTPy
     if (empty() || (nbParts <= 0) || (partSize.first <= 0) || (partSize.second <= 0) || (partSize.third <= 0)) {
         cerr << "Attempting to initialize parts in an empty model" << endl;
         return;
+    }
+
+
+    GSHOTPyramid::Level root = parts_[0].filter;
+    GSHOTPyramid::Level root2x( 2*root.depths()-1, 2*root.rows()-1, 2*root.cols()-1);
+    GSHOTPyramid::Cell nullCell;
+    nullCell.setZero( GSHOTPyramid::DescriptorSize);
+    root2x().setConstant(nullCell);
+
+    //Trilinear interpolation
+    float xd = 0.5;
+    float yd = 0.5;
+    float zd = 0.5;
+    for (int z = 0; z < root.depths()-1; ++z) {
+        int zf = z+1;
+        for (int y = 0; y < root.rows()-1; ++y) {
+            int yf = y+1;
+            for (int x = 0; x < root.cols()-1; ++x) {
+
+                int xf = x+1;
+
+                GSHOTPyramid::Cell c00 = root()(z, y, x) * (1-xd) + root()(z, y, xf) * xd;
+                GSHOTPyramid::Cell c01 = root()(z, yf, x) * (1-xd) + root()(z, yf, xf) * xd;
+                GSHOTPyramid::Cell c10 = root()(zf, y, x) * (1-xd) + root()(zf, y, xf) * xd;
+                GSHOTPyramid::Cell c11 = root()(zf, yf, x) * (1-xd) + root()(zf, yf, xf) * xd;
+
+                GSHOTPyramid::Cell c0 = c00 * (1-yd) + c01 * yd;
+                GSHOTPyramid::Cell c1 = c10 * (1-yd) + c11 * yd;
+
+                GSHOTPyramid::Cell c = c0 * (1-zd) + c1 * zd;
+
+                root2x()(2*z+1, 2*y+1, 2*x+1) = c;
+            }
+        }
+    }
+
+    for (int z = 0; z < root.depths()/*-1*/; ++z) {
+        for (int y = 0; y < root.rows()/*-1*/; ++y) {
+            for (int x = 0; x < root.cols()/*-1*/; ++x) {
+                root2x()(2*z, 2*y, 2*x) = root()(z, y, x);
+            }
+        }
     }
 
     // Compute the energy of each cell
@@ -724,7 +766,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
         if( sumConvolve){
             cout<<"Model::sumConvolve ..."<<endl;
 
-#pragma omp parallel for
+//#pragma omp parallel for
             for (int i = 0; i < nbFilters; ++i){
 
                 pyramid.sumConvolve(parts_[i].filter, tmpConvolutions[i]);
@@ -737,7 +779,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
         } else{
             cout<<"Model::convolve ..."<<endl;
 
-#pragma omp parallel for
+//#pragma omp parallel for
             for (int i = 0; i < nbFilters; ++i){
 
                 pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
@@ -874,7 +916,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 	
     // Add the bias if necessary
     if (bias_) {
-#pragma omp parallel for
+//#pragma omp parallel for
         for (int i = interval; i < nbLevels; ++i){
 //			scores[i].array() += bias_;
             Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
@@ -1009,6 +1051,9 @@ Model & Model::operator*=(double a)
 	
 	return *this;
 }
+
+
+
 //TODO
 Model Model::flip() const
 {
@@ -1039,6 +1084,8 @@ Model Model::flip() const
 	
 	return model;
 }
+
+
 
 template <typename Scalar>
 static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * v, Scalar * y,
@@ -1154,7 +1201,8 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
         for (int y = 0; y < rows; ++y)
             dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
                                  part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
-                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0, &t[0], 1, 1, 4);
+                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
+                                 &t[0], 1, 1, 4);
     cout<<"Model::DT3D 1..."<<endl;
 
 //    for (int z = 0; z < depths; ++z)
