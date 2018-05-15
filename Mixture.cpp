@@ -1129,7 +1129,8 @@ public:
 			}
 			
 			x[j] = models[i].bias();
-			
+            cout<<"From Model bias : "<< models[i].bias() <<endl;
+            cout<<"From Model x["<<j<<"] : "<< x[j] <<endl;
 			++j;
 		}
 	}

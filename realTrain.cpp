@@ -277,7 +277,7 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 5;
+        int nb = 6;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -351,7 +351,7 @@ public:
 
 
     void test( string sceneName){
-
+        sceneResolution = 0.09;
 
         ifstream in("tmp.txt");
 
@@ -409,6 +409,8 @@ public:
 
 
 
+        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
+
         ofstream out("tmpTest.txt");
         vector<Detection> detections;
         Scene scene( originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneName, {});
@@ -462,13 +464,14 @@ int main(){
     int start = getMilliCount();
 
 
-//    test.train("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/",
-//               "/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/jar/full/");
+    test.train("/media/ubuntu/DATA/3DDataset/Cat31_normalized/chair/full/",
+               "/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/jar/full/");
 
     test.test( "/home/ubuntu/3DDataset/3DDPM/scene_2.ply");
 
     // testSceneMiddle_compress.pcd
     // smallScene2.pcd
+    // scene_2.ply
 
     int end = getMilliCount();
 

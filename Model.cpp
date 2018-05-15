@@ -680,11 +680,11 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 //                          scale + pad.z() - partSize().first * 0.5;
         const double scale = 2;//pow(2.0, static_cast<double>(lvl - position(3)) / interval);
         const double xr = (x + (parts_[i + 1].offset(2) + partSize().third) /*- pad.x()*/) *
-                          scale + /*pad.x()*/ - partSize().third;
+                          resolution + /*pad.x()*/ - partSize().third;
         const double yr = (y + (parts_[i + 1].offset(1) + partSize().second) /*- pad.y()*/) *
-                          scale + /*pad.y()*/ - partSize().second;
+                          resolution + /*pad.y()*/ - partSize().second;
         const double zr = (z + (parts_[i + 1].offset(0) + partSize().first) /*- pad.z()*/) *
-                          scale + /*pad.z()*/ - partSize().first;
+                          resolution + /*pad.z()*/ - partSize().first;
         const double dx = xr - position(2)/**pyramid.resolutions()[lvl]*/;
         const double dy = yr - position(1)/**pyramid.resolutions()[lvl]*/;
         const double dz = zr - position(0)/**pyramid.resolutions()[lvl]*/;
@@ -930,7 +930,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 
 double Model::dot(const Model & sample) const
 {
-//    cout<<"Model::dot ..."<< endl;
+    cout<<"Model::dot ..."<< endl;
     double d = bias_ * sample.bias_;
 
 
@@ -962,15 +962,20 @@ double Model::dot(const Model & sample) const
             }
         }
         //TODO !!!! error seg with deformation
-//        if (i) d += parts_[i].deformation.dot(sample.parts_[i].deformation);
+        if (i){
+            for (int j = 0; j < parts_[i].deformation.size(); ++j){
+                d += parts_[i].deformation(j) * sample.parts_[i].deformation(j);
+            }
+        }
     }
 	
 	
 	return d;
 }
 
-double Model::norm() const
-{
+double Model::norm() const{
+    cout<<"Model::norm ..."<< endl;
+
     if( parts_.size() < 1){
         return 0.0;
     } else{
@@ -980,11 +985,10 @@ double Model::norm() const
             n += GSHOTPyramid::TensorMap(parts_[i].filter).squaredNorm();
 
             //TODO
-            //n += parts_[i].deformation.squaredNorm();
-//            for(int j = 0; j < parts_[i].deformation.cols(); ++j){
-
-//                n += 10 * parts_[i].deformation(j,0) * parts_[i].deformation(j,0);
-//            }
+//            n += 10 * parts_[i].deformation.squaredNorm();
+            for(int j = 0; j < parts_[i].deformation.size(); ++j){
+                n += /*10 * */parts_[i].deformation(j) * parts_[i].deformation(j);
+            }
         }
     //    std::cout << "Model::norm sqrt = "<<sqrt(n) << std::endl;
 

@@ -22,7 +22,6 @@
 #ifndef FFLD_MODEL_H
 #define FFLD_MODEL_H
 #include <tuple>
-//#include "HOGPyramid.h"
 #include "GSHOTPyramid.h"
 
 
@@ -48,7 +47,7 @@ public:
     typedef Tensor3D<Position> Positions;
 	
 	/// Type of a 3d quadratic deformation (dx^2 dx dy^2 dy dz^2 dz).
-    typedef Eigen::Matrix<double, 8, 1> Deformation;
+    typedef Eigen::Array<double, 8, 1> Deformation;
 
     template< typename T1, typename T2, typename T3>
     struct triple : std::tuple<T1, T2, T3>{

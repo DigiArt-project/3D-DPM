@@ -198,7 +198,7 @@ public:
                         }
                     }
 
-//                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
+                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
 //                    cout<<"tensor3D::convolve squaredNormTensor = "<<squaredNormTensor<<endl;
 //                    cout<<"tensor3D::convolve squaredNormFilter = "<<squaredNormFilter<<endl;
 
