@@ -115,17 +115,17 @@ public:
             PointType max;
             pcl::getMinMax3D(*cloud, min, max);
 
-            Vector3f resolution( (max.z - min.z)/(chairSize.first),
-                                 (max.y - min.y)/(chairSize.second),
-                                 (max.x - min.x)/(chairSize.third));
-
+            Vector3f resolution( (max.z - min.z)/(chairSize.first/*-2*/),
+                                 (max.y - min.y)/(chairSize.second/*-2*/),
+                                 (max.x - min.x)/(chairSize.third/*-2*/));
+            cout << "scene resolution : " << resolution << endl;
             Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
                                    floor(min.y/resolution(1)),
                                    floor(min.x/resolution(2)));
             Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
                                                     ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
                                                     ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
-            Rectangle chairBox(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
+            Rectangle chairBox(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution/*resolution.sum()/3.0*/);
 
             cout << "chairBox : " << chairBox << endl;
             Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
@@ -165,10 +165,10 @@ public:
 
 
         Mixture mixture( models);
-
-        int interval = 1, nbIterations = 5, nbDatamine = 2, maxNegSample = 20;
+        double C = 0.002, J = 2;
+        int interval = 1, nbIterations = 3, nbDatamine = 1, maxNegSample = 20;
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
-                      nbDatamine, maxNegSample);
+                      nbDatamine, maxNegSample, C, J);
 
         //TODO include initializeParts in train()
         mixture.initializeParts( nbParts, chairPartSize/*, root2x*/);
@@ -178,7 +178,7 @@ public:
 //        }
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
-                      nbIterations, nbDatamine, maxNegSample);
+                      nbIterations, nbDatamine, maxNegSample, C, J);
 
     }
 
@@ -390,7 +390,7 @@ public:
           transform.translation() << -minTmp.x, -minTmp.y, -minTmp.z;
 
           // The same rotation matrix as before; theta radians around Z axis
-          transform.rotate (Eigen::AngleAxisf (1.57, Eigen::Vector3f::UnitX()));
+          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));
           PointCloudPtr sceneCloud (new PointCloudT);
             // You can either apply transform_1 or transform_2; they are the same
             pcl::transformPointCloud (*cloud, *sceneCloud, transform);
@@ -464,8 +464,8 @@ int main(){
     int start = getMilliCount();
 
 
-    test.train("/media/ubuntu/DATA/3DDataset/Cat31_normalized/chair/full/",
-               "/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/jar/full/");
+//    test.train("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/",
+//               "/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/jar/full/");
 
     test.test( "/home/ubuntu/3DDataset/3DDPM/scene_2.ply");
 

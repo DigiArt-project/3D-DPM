@@ -161,7 +161,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 		vector<pair<Model, int> > positives;
 		
         posLatentSearch(scenes, name, pad, interval, overlap, positives);
-
+        cout << "Mix::train found "<<positives.size() << " positives" << endl;
         if(positives.size() > 0) cout << "Mix::train positives isZero = " << GSHOTPyramid::TensorMap(positives[0].first.parts()[0].filter).isZero() << endl;
 
         // Left-right clustering at the first iteration

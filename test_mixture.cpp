@@ -716,6 +716,126 @@ public:
     }
 
     void testTrainSVM(){
+        vector<pair<Model, int> >  positives, negatives;
+        vector<Model::Part> partsP1(1), partsP2(1), partsN1(1);
+
+        GSHOTPyramid::Level p1(1,1,2);
+        GSHOTPyramid::Level p2(1,1,2);
+        GSHOTPyramid::Level n1(1,1,2);
+
+        GSHOTPyramid::Cell c1;
+        c1.setConstant(1);
+        GSHOTPyramid::Cell c0;
+        c0.setConstant(0);
+        p1()(0,0,0) = c1;
+        p1()(0,0,1) = c1;
+        p2()(0,0,0) = c1;
+        p2()(0,0,1) = c0;
+        n1()(0,0,0) = c0;
+        n1()(0,0,1) = c0;
+
+        partsP1[0].filter = p1;
+        partsP1[0].offset.setZero();
+        partsP1[0].deformation.setZero();
+        partsP2[0].filter = p2;
+        partsP2[0].offset.setZero();
+        partsP2[0].deformation.setZero();
+        partsN1[0].filter = n1;
+        partsN1[0].offset.setZero();
+        partsN1[0].deformation.setZero();
+
+        positives.push_back( pair<Model, int>( Model( partsP1), 0));
+        positives.push_back( pair<Model, int>( Model( partsP2), 0));
+        negatives.push_back( pair<Model, int>( Model( partsN1), 0));
+
+
+        Model::triple<int, int, int> rootSize( 1, 1, 2);
+        Model model( rootSize);
+        std::vector<Model> models = { model};
+
+        Mixture mixture( models);
+
+        double C = 1; // cout de classif, plus C grand, moins il y a d'erreur. Poid du hinge loss
+        double J = 1.0; // Poid des positives
+        mixture.trainSVM(positives, negatives, C, J);
+        mixture.trainSVM(positives, negatives, C, J);
+        mixture.trainSVM(positives, negatives, C, J);
+        mixture.trainSVM(positives, negatives, C, J);
+
+//        ofstream out("trainSVM.txt");
+
+        cout << (mixture) << endl;
+
+        Tensor3DF convolution = p1.convolve(mixture.models()[0].parts()[0].filter);
+
+        cout << "convolution : " << convolution() << endl;
+
+
+    }
+
+    char* sceneName;
+    char* tableName;
+    PointCloudPtr sceneCloud;
+    PointCloudPtr chairCloud;
+    PointCloudPtr tableCloud;
+    Vector3i originScene;
+    Rectangle sceneBox;
+    Rectangle chairBox;
+    Rectangle tableBox;
+    float starting_resolution;
+    float sceneResolution;
+    Viewer viewer;
+};
+
+
+int main(){
+    //Turn pcl message to OFF !!!!!!!!!!!!!!!!!!!!
+    pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
+
+
+    Test test( "/home/ubuntu/3DDataset/3DDPM/scene_1.ply", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+
+    // testSceneMiddle_compress.pcd
+    // smallScene2.pcd
+    int start = getMilliCount();
+
+//    test.testTrainSVM();//OK
+//    test.testPosLatSearch();
+//    test.testNegLatSearch();
+
+//    test.createChairModel();
+
+//    test.initSample();
+
+//    test.testTrain();
+
+//    test.testTest();
+
+    test.testTrainSVM();
+
+
+
+
+    int end = getMilliCount();
+
+    cout << "Time : " << end-start << endl;
+
+
+    test.viewer.show();
+
+
+
+
+    return 0;
+}
+
+
+
+
+
+
+
+//void testTrainSVM(){
 
 //        Model::triple<int, int, int> rootSize( sceneSize.first/4,
 //                                           sceneSize.second/4,
@@ -777,59 +897,4 @@ public:
 //        ofstream out2("tmp2.txt");
 
 //        out2 << (mixture);
-    }
-
-    char* sceneName;
-    char* tableName;
-    PointCloudPtr sceneCloud;
-    PointCloudPtr chairCloud;
-    PointCloudPtr tableCloud;
-    Vector3i originScene;
-    Rectangle sceneBox;
-    Rectangle chairBox;
-    Rectangle tableBox;
-    float starting_resolution;
-    float sceneResolution;
-    Viewer viewer;
-};
-
-
-int main(){
-    //Turn pcl message to OFF !!!!!!!!!!!!!!!!!!!!
-    pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
-
-
-    Test test( "/home/ubuntu/3DDataset/3DDPM/scene_1.ply", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
-
-    // testSceneMiddle_compress.pcd
-    // smallScene2.pcd
-    int start = getMilliCount();
-
-//    test.testTrainSVM();//OK
-//    test.testPosLatSearch();
-//    test.testNegLatSearch();
-
-//    test.createChairModel();
-
-//    test.initSample();
-
-//    test.testTrain();
-
-    test.testTest();
-
-
-
-
-    int end = getMilliCount();
-
-    cout << "Time : " << end-start << endl;
-
-
-    test.viewer.show();
-
-
-
-
-    return 0;
-}
-
+//}

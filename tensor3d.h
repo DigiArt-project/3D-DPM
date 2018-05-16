@@ -147,9 +147,9 @@ public:
         res().setConstant( 0);
 
 
-        Type filterMean = filter.sum() / Scalar(filter.size());
+//        Type filterMean = filter.sum() / Scalar(filter.size());
 
-//        for(int i=0; i<352; ++i){
+//        for(int i=0; i<2; ++i){
 //            cout<<"tensor3D::convolve filterMean("<<i<<") = "<<filterMean(i)<<endl;
 //        }
 
@@ -158,30 +158,30 @@ public:
             for (int y = 0; y < res.rows(); ++y) {
                 for (int x = 0; x < res.cols(); ++x) {
 
-                    Type tensorMean = agglomerateBlock(z, y, x, filter.depths(), filter.rows(), filter.cols())()(0,0,0) /
-                            Scalar(filter.size());
+//                    Type tensorMean = agglomerateBlock(z, y, x, filter.depths(), filter.rows(), filter.cols())()(0,0,0) /
+//                            Scalar(filter.size());
 
 
-                    Type squaredNormTensor;
-                    Type squaredNormFilter;
-                    squaredNormTensor.setConstant( 0);
-                    squaredNormFilter.setConstant( 0);
+//                    Type squaredNormTensor;
+//                    Type squaredNormFilter;
+//                    squaredNormTensor.setConstant( 0);
+//                    squaredNormFilter.setConstant( 0);
 //                    Scalar aux( 0);
 
                     for (int dz = 0; dz < filter.depths(); ++dz) {
                         for (int dy = 0; dy < filter.rows(); ++dy) {
                             for (int dx = 0; dx < filter.cols(); ++dx) {
 
-                                Type normTensor = tensor(z+dz, y+dy, x+dx) - tensorMean;
-                                Type normFilter = filter()(dz, dy, dx) - filterMean;
+                                Type normTensor = tensor(z+dz, y+dy, x+dx) /*- tensorMean*/;
+                                Type normFilter = filter()(dz, dy, dx) /*- filterMean*/;
 
 //                                Type sum = filter.sum();
 //                                for(int i=0; i<352; ++i){
-//                                    if (sum(i) !=0) normFilter(i) /= sum(i);
+//                                    if (sum(i) !=0) normFi/*- tensorMean*/lter(i) /= sum(i);
 //                                    else normFilter(i) = 0;
 //                                }
-                                squaredNormTensor += normTensor * normTensor;
-                                squaredNormFilter += normFilter * normFilter;
+//                                squaredNormTensor += normTensor * normTensor;
+//                                squaredNormFilter += normFilter * normFilter;
 //                                aux += normTensor.matrix().dot(normFilter.matrix()) * normTensor.matrix().dot(normFilter.matrix());
                                 res()(z, y, x) += normTensor.matrix().dot(normFilter.matrix());
 
@@ -198,9 +198,9 @@ public:
                         }
                     }
 
-                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
-//                    cout<<"tensor3D::convolve squaredNormTensor = "<<squaredNormTensor<<endl;
-//                    cout<<"tensor3D::convolve squaredNormFilter = "<<squaredNormFilter<<endl;
+//                    res()(z, y, x) /= /*sqrt*/(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
+//                    cout<<"tensor3D::convolve squaredNormTensor.matrix().sum() = "<<squaredNormTensor.matrix().sum()<<endl;
+//                    cout<<"tensor3D::convolve squaredNormFilter.matrix().sum() = "<<squaredNormFilter.matrix().sum()<<endl;
 
 //                    cout<<"tensor3D::convolve res()(z, y, x) = "<<squaredNormTensor.matrix().dot(squaredNormFilter.matrix())<<endl;
 

@@ -30,7 +30,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 //    float starting_kp_reso = 0.2;
 //    float starting_descr_rad = 0.4;
     float resolution;
-    starting_resolution = 0.09;//25 * computeCloudResolution(input);//0.00338117;//
+//    starting_resolution = 0.09;//25 * computeCloudResolution(input);//0.00338117;//
     cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 //    float kp_resolution;
 //    float descr_rad;
