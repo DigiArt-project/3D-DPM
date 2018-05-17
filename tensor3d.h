@@ -22,7 +22,7 @@
 //Other
 #include "typedefs.h"
 #include <boost/filesystem.hpp>
-
+#include "emd_hat.hpp"
 
 //Subsection = interval ?
 //Padding ?
@@ -134,7 +134,15 @@ public:
                 }
             }
         }
-    //        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
+//        Scalar maxi = res()(0,0,0)(0);
+//        for(int j = 1; j < 352; ++j){
+//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
+//        }
+//        if( maxi != 0){
+//            for(int j = 0; j < 352; ++j){
+//                res()(0,0,0)(j) /= maxi;
+//            }
+//        }
         return res;
     }
 
@@ -215,6 +223,51 @@ public:
     }
 
 
+    //Level
+    Tensor3D<Scalar> EMD( Tensor3D< Type> filter) const{
+        cout<<"tensor3D::convolve ..."<<endl;
+
+        Tensor3D<Scalar> res( depths() - filter.depths() + 1,
+                              rows() - filter.rows() + 1,
+                              cols() - filter.cols() + 1);
+
+        res().setConstant( 0);
+
+        // Ground metric definition (certainly highly optimizable)
+
+        vector<double> desc_filter(352);
+
+        std::vector<std::vector<double> > cost_mat;
+        int ground_metric_threshold = 3;
+        std::vector<double> cost_mat_row(352);
+        for (unsigned int i=0; i<352; ++i){
+            desc_filter[i] = filter()(0,0,0)(i);
+            cost_mat.push_back(cost_mat_row);
+        }
+
+//#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < res.depths(); ++z) {
+            for (int y = 0; y < res.rows(); ++y) {
+                for (int x = 0; x < res.cols(); ++x) {
+
+                    vector<double> desc_lvl(352);
+
+                    // Naive ground metric
+                    for (int i=0; i<352; ++i){
+                        desc_lvl[i] = tensor(z, y, x)(i);
+                        for (int j=0; j<352; ++j){
+                            cost_mat[i][j]= std::min( ground_metric_threshold, abs(i-j));
+                        }
+                    }
+
+                    res()(z, y, x) = emd_hat_gd_metric<double>()(desc_lvl, desc_filter, cost_mat, ground_metric_threshold);
+
+                }
+            }
+        }
+        return res;
+    }
+
 
 
     //Level
@@ -229,7 +282,15 @@ public:
                 }
             }
         }
-//        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
+//        Scalar maxi = res()(0,0,0)(0);
+//        for(int j = 1; j < 352; ++j){
+//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
+//        }
+//        if( maxi != 0){
+//            for(int j = 0; j < 352; ++j){
+//                res()(0,0,0)(j) /= maxi;
+//            }
+//        }
         return res;
     }
 

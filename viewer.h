@@ -30,7 +30,7 @@ public:
         pcl::visualization::PointCloudColorHandlerCustom<PointType> single_color(cloud, color(0), color(1), color(2));
         string name = "cloud";
         name.append(std::to_string(id));
-        viewer->addPointCloud( cloud, /*single_color,*/ name.c_str(), 0);
+        viewer->addPointCloud( cloud, single_color, name.c_str(), 0);
         viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, ptSize, name.c_str());
         ++id;
     }

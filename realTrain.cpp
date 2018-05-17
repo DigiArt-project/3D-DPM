@@ -280,7 +280,7 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 6;
+        int nb = 3;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -393,7 +393,7 @@ public:
           transform.translation() << -minTmp.x, -minTmp.y, -minTmp.z;
 
           // The same rotation matrix as before; theta radians around Z axis
-          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));
+//          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));
           PointCloudPtr sceneCloud (new PointCloudT);
             // You can either apply transform_1 or transform_2; they are the same
             pcl::transformPointCloud (*cloud, *sceneCloud, transform);
@@ -604,10 +604,11 @@ int main(){
 
 
 //    test.train("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/",
-//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
+//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full");
 
-    test.test( "/home/ubuntu/3DDataset/3DDPM/scene_2.ply");
+    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd");
 
+    //1 block over 2 is black, why ????
 //    test.checkImages("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/");
 
     // testSceneMiddle_compress.pcd
