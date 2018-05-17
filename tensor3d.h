@@ -119,7 +119,10 @@ public:
         if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
             cerr<<"agglomerateBlock:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
                <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
-            exit(0);
+//            exit(0);
+            p = min(z+p, depths()) - z;
+            q = min(y+q, rows()) - y;
+            r = min(x+r, cols()) - x;
         }
         Tensor3D< Type> res(1,1,1);
         res().setConstant( Type::Zero());

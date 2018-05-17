@@ -22,6 +22,9 @@
 
 #include <sys/timeb.h>
 #include <dirent.h>
+#include "opencv2/highgui/highgui.hpp"
+
+using namespace cv;
 
 using namespace FFLD;
 using namespace std;
@@ -101,7 +104,7 @@ public:
           perror ("could not open directory");
         }
 
-        vector<Scene> scenes(positiveListFiles.size()/* + negativeListFiles.size()*/);
+        vector<Scene> scenes(positiveListFiles.size() + negativeListFiles.size());
 
         for( int i=0; i < positiveListFiles.size(); ++i){
             printf ("%s\n", positiveListFiles[i].c_str());
@@ -134,34 +137,34 @@ public:
         }
 
 
-//        for( int i=0; i < negativeListFiles.size(); ++i){
-//            printf ("%s\n", negativeListFiles[i].c_str());
-//            PointCloudPtr cloud( new PointCloudT);
+        for( int i=0; i < negativeListFiles.size(); ++i){
+            printf ("%s\n", negativeListFiles[i].c_str());
+            PointCloudPtr cloud( new PointCloudT);
 
-//            if (pcl::io::loadPLYFile<PointType>(negativeListFiles[i].c_str(), *cloud) == -1) {
-//                cout<<"couldnt open ply file"<<endl;
-//            }
+            if (pcl::io::loadPLYFile<PointType>(negativeListFiles[i].c_str(), *cloud) == -1) {
+                cout<<"couldnt open ply file"<<endl;
+            }
 
-//            PointType min;
-//            PointType max;
-//            pcl::getMinMax3D(*cloud, min, max);
+            PointType min;
+            PointType max;
+            pcl::getMinMax3D(*cloud, min, max);
 
-//            Vector3f resolution( (max.z - min.z)/(chairSize.first),
-//                                 (max.y - min.y)/(chairSize.second),
-//                                 (max.x - min.x)/(chairSize.third));
+            Vector3f resolution( (max.z - min.z)/(chairSize.first),
+                                 (max.y - min.y)/(chairSize.second),
+                                 (max.x - min.x)/(chairSize.third));
 
-//            Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
-//                                   floor(min.y/resolution(1)),
-//                                   floor(min.x/resolution(2)));
-//            Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
-//                                                    ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
-//                                                    ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
-//            Rectangle box(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
+            Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
+                                   floor(min.y/resolution(1)),
+                                   floor(min.x/resolution(2)));
+            Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
+                                                    ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
+                                                    ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
+            Rectangle box(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
 
-//            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
-//            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
-//                               negativeListFiles[i], {obj});
-//        }
+            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
+            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
+                               negativeListFiles[i], {obj});
+        }
 
 
         Mixture mixture( models);
@@ -362,7 +365,7 @@ public:
 
         Mixture mixture;
         in >> mixture;
-//        mixture.train_ = false;//allow quentin's code
+        mixture.train_ = false;//allow quentin's code
 
         if (mixture.empty()) {
             cerr << "Invalid model file\n" << endl;
@@ -446,6 +449,142 @@ public:
 
     }
 
+    void checkImages(string positiveFolder){
+        vector<string> positiveListFiles;
+        DIR *dir;
+        struct dirent *ent;
+        if ((dir = opendir (positiveFolder.c_str())) != NULL) {
+          while ((ent = readdir (dir)) != NULL) {
+              if( string(ent->d_name).compare(".") != 0 && string(ent->d_name).compare("..") != 0)
+                positiveListFiles.push_back( positiveFolder + ent->d_name);
+//            printf ("%s\n", (folder + ent->d_name).c_str());
+          }
+          closedir (dir);
+        } else {
+          perror ("could not open directory");
+        }
+
+        ifstream in("tmp.txt");
+
+        if (!in.is_open()) {
+            cerr << "Cannot open model file\n" << endl;
+            return;
+        }
+
+        Mixture mixture;
+        in >> mixture;
+
+        if (mixture.empty()) {
+            cerr << "Invalid model file\n" << endl;
+            return;
+        }
+
+
+        int nbParts = 6 + 1;
+        Mat img( positiveListFiles.size() + 1, nbParts * GSHOTPyramid::DescriptorSize, CV_8UC3, cv::Scalar(0,0,0));
+
+        int interval = 1;
+
+        for(int y=0;y<positiveListFiles.size();y++){
+            float maxi = 0;
+
+            PointCloudPtr cloud( new PointCloudT);
+            if (readPointCloud(positiveListFiles[y], cloud) == -1) {
+                cout<<"test::couldnt open pcd file"<<endl;
+            }
+            GSHOTPyramid pyramid(cloud, Eigen::Vector3i( 3,3,3), interval);
+
+            GSHOTPyramid::Level lvl = pyramid.levels()[1].agglomerate();
+
+
+            for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+                if( maxi < lvl()(0,0,0)(x)) maxi = lvl()(0,0,0)(x);
+            }
+            cout<<"maxi descriptor value = "<<maxi<<endl;
+
+
+            for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+                Vec3b color = img.at<Vec3b>(Point(x,y));
+                color[0] = lvl()(0,0,0)(x)/maxi*255/*pyramid.levels()[1].size()*/;
+                color[1] = color[0];
+                color[2] = color[0];
+                img.at<Vec3b>(Point(x,y)) = color;
+            }
+
+            for(int p=1;p<nbParts;p++){
+                maxi = 0;
+                GSHOTPyramid::Level lvl = pyramid.levels()[0].agglomerateBlock(
+                        mixture.models()[0].parts()[p].offset(0),
+                        mixture.models()[0].parts()[p].offset(1),
+                        mixture.models()[0].parts()[p].offset(2),
+                        mixture.models()[0].partSize().first,
+                        mixture.models()[0].partSize().second,
+                        mixture.models()[0].partSize().third);
+
+                for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+                    if( maxi < lvl()(0,0,0)(x)) maxi = lvl()(0,0,0)(x);
+                }
+                cout<<"maxi descriptor value = "<<maxi<<endl;
+
+                for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+                    Vec3b color = img.at<Vec3b>(Point(x+p*GSHOTPyramid::DescriptorSize,y));
+                    color[0] = lvl()(0,0,0)(x)/maxi*255/*/mixture.models()[0].parts()[p].filter.size()*/;
+                    color[1] = color[0];
+                    color[2] = color[0];
+                    img.at<Vec3b>(Point(x+p*GSHOTPyramid::DescriptorSize,y)) = color;
+                }
+
+            }
+
+        }
+
+
+        for(int p=0;p<nbParts;p++){
+
+            GSHOTPyramid::Level mod = mixture.models()[0].parts()[p].filter.agglomerate();
+
+            float maxi = 0, mini = mod()(0,0,0)(0);
+            for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+                if( maxi < mod()(0,0,0)(x)) maxi = mod()(0,0,0)(x);
+                if( mini > mod()(0,0,0)(x)) mini = mod()(0,0,0)(x);
+            }
+            cout<<"maxi model descriptor value = "<<maxi<<endl;
+            cout<<"mini model descriptor value = "<<mini<<endl;
+
+            for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+                if(mod()(0,0,0)(x) > 0){
+                    Vec3b color = img.at<Vec3b>(Point(x+p*GSHOTPyramid::DescriptorSize,positiveListFiles.size()));
+                    color[2] = mod()(0,0,0)(x)/maxi*255;//*mixture.models()[0].parts()[p].filter.size()*/;
+                    img.at<Vec3b>(Point(x+p*GSHOTPyramid::DescriptorSize,positiveListFiles.size())) = color;
+                } else{
+                    Vec3b color = img.at<Vec3b>(Point(x+p*GSHOTPyramid::DescriptorSize,positiveListFiles.size()));
+                    color[1] = mod()(0,0,0)(x)/mini*255;//*mixture.models()[0].parts()[p].filter.size()*/;
+                    img.at<Vec3b>(Point(x+p*GSHOTPyramid::DescriptorSize,positiveListFiles.size())) = color;
+                }
+            }
+
+        }
+
+
+
+        if (img.empty()){
+            cout << "\n Image not created. You"
+                         " have done something wrong. \n";
+            return;    // Unsuccessful.
+        }
+
+        imwrite( "img.jpg", img );
+
+        namedWindow("A_good_name", CV_WINDOW_AUTOSIZE);
+
+        imshow("A_good_name", img);
+//        resizeWindow("A_good_name", 600,600);
+
+        waitKey(0); //wait infinite time for a keypress
+
+        destroyWindow("A_good_name");
+    }
+
 
     float sceneResolution;
     Viewer viewer;
@@ -465,9 +604,11 @@ int main(){
 
 
 //    test.train("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/",
-//               "/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/jar/full/");
+//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
     test.test( "/home/ubuntu/3DDataset/3DDPM/scene_2.ply");
+
+//    test.checkImages("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/");
 
     // testSceneMiddle_compress.pcd
     // smallScene2.pcd

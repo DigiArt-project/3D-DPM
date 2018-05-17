@@ -153,7 +153,7 @@ void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolu
     convolutions.resize(levels_.size());
 //    Tensor3DF filt = TensorMap( filter).agglomerate(DescriptorSize);
     Level filt = filter.agglomerate();
-    filt()(0,0,0) /= filt()(0,0,0).maxCoeff();
+//    filt()(0,0,0) /= filt()(0,0,0).maxCoeff();
 
 
 //    cout<<"GSHOT::sumConvolve filter max Value = "<<TensorMap( filter)().maximum()<<endl;

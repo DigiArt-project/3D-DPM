@@ -1197,7 +1197,7 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 	
 	// Transform the filters if needed
 
-    if( train_){
+//    if( train_){
         bool sumConvolve = false;
 //#pragma omp parallel for
         for (int i = 0; i < nbModels; ++i){
@@ -1211,21 +1211,21 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
             cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
 
         }
-    } else{
-        bool sumConvolve = true;
-//#pragma omp parallel for
-        for (int i = 0; i < nbModels; ++i){
-    //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
+//    } else{
+//        bool sumConvolve = true;
+////#pragma omp parallel for
+//        for (int i = 0; i < nbModels; ++i){
+//    //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
 
-            models_[i].convolve(pyramid, scores[i], sumConvolve, positions ? &(*positions)[i] : 0/*, &convolutions*/);
-    //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
+//            models_[i].convolve(pyramid, scores[i], sumConvolve, positions ? &(*positions)[i] : 0/*, &convolutions*/);
+//    //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
+//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
+//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
+//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
+//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
 
-        }
-    }
+//        }
+//    }
 }
 
 //TODO
