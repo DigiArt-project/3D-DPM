@@ -66,7 +66,7 @@ public:
     Test()
     {
 
-        sceneResolution = 0.09;//25 * GSHOTPyramid::computeCloudResolution(sceneCloud);//0.0845292;//
+        sceneResolution = 0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
     }
@@ -74,8 +74,8 @@ public:
     void train(string positiveFolder, string negativeFolder){
 
         int nbParts = 6;
-        Model::triple<int, int, int> chairSize(6,4,5);//in lvl 1
-        Model::triple<int, int, int> chairPartSize( 6,4,5);//in lvl 0
+        Model::triple<int, int, int> chairSize(8,10,6);//5,6,4in lvl 1
+        Model::triple<int, int, int> chairPartSize(8,10,6);//in lvl 0
         Model model( chairSize, 0);
         std::vector<Model> models = { model};
 
@@ -104,13 +104,13 @@ public:
           perror ("could not open directory");
         }
 
-        vector<Scene> scenes(positiveListFiles.size() + negativeListFiles.size());
+        vector<Scene> scenes(positiveListFiles.size() /*+ negativeListFiles.size()*/);
 
         for( int i=0; i < positiveListFiles.size(); ++i){
             printf ("%s\n", positiveListFiles[i].c_str());
             PointCloudPtr cloud( new PointCloudT);
 
-            if (pcl::io::loadPLYFile<PointType>(positiveListFiles[i].c_str(), *cloud) == -1) {
+            if (readPointCloud(positiveListFiles[i], cloud) == -1) {
                 cout<<"couldnt open ply file"<<endl;
             }
 
@@ -118,17 +118,22 @@ public:
             PointType max;
             pcl::getMinMax3D(*cloud, min, max);
 
-            Vector3f resolution( (max.z - min.z)/(chairSize.first/*-2*/),
-                                 (max.y - min.y)/(chairSize.second/*-2*/),
-                                 (max.x - min.x)/(chairSize.third/*-2*/));
+            Vector3i resolution( (max.z - min.z)/sceneResolution+1,
+                                 (max.y - min.y)/sceneResolution+1,
+                                 (max.x - min.x)/sceneResolution+1);
             cout << "scene resolution : " << resolution << endl;
-            Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
-                                   floor(min.y/resolution(1)),
-                                   floor(min.x/resolution(2)));
-            Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
-                                                    ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
-                                                    ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
-            Rectangle chairBox(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution/*resolution.sum()/3.0*/);
+            Vector3i originScene = Vector3i(floor(min.z/sceneResolution),
+                                   floor(min.y/sceneResolution),
+                                   floor(min.x/sceneResolution));
+            Vector3i originChair = Vector3i(floor(min.z/sceneResolution/2.0),
+                                   floor(min.y/sceneResolution/2.0),
+                                   floor(min.x/sceneResolution/2.0));
+            Model::triple<int, int, int> sceneSize( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);//5,6,4);
+
+            cout << "scene min : " << min << endl;
+
+
+            Rectangle chairBox(originChair , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution*2/*resolution.sum()/3.0*/);
 
             cout << "chairBox : " << chairBox << endl;
             Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
@@ -137,39 +142,39 @@ public:
         }
 
 
-        for( int i=0; i < negativeListFiles.size(); ++i){
-            printf ("%s\n", negativeListFiles[i].c_str());
-            PointCloudPtr cloud( new PointCloudT);
+//        for( int i=0; i < negativeListFiles.size(); ++i){
+//            printf ("%s\n", negativeListFiles[i].c_str());
+//            PointCloudPtr cloud( new PointCloudT);
 
-            if (pcl::io::loadPLYFile<PointType>(negativeListFiles[i].c_str(), *cloud) == -1) {
-                cout<<"couldnt open ply file"<<endl;
-            }
+//            if (readPointCloud(negativeListFiles[i], cloud) == -1) {
+//                cout<<"couldnt open ply file"<<endl;
+//            }
 
-            PointType min;
-            PointType max;
-            pcl::getMinMax3D(*cloud, min, max);
+//            PointType min;
+//            PointType max;
+//            pcl::getMinMax3D(*cloud, min, max);
+// TO CHANGE !!!!!!!!!!!!
+//            Vector3f resolution( (max.z - min.z)/(chairSize.first),
+//                                 (max.y - min.y)/(chairSize.second),
+//                                 (max.x - min.x)/(chairSize.third));
 
-            Vector3f resolution( (max.z - min.z)/(chairSize.first),
-                                 (max.y - min.y)/(chairSize.second),
-                                 (max.x - min.x)/(chairSize.third));
+//            Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
+//                                   floor(min.y/resolution(1)),
+//                                   floor(min.x/resolution(2)));
+//            Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
+//                                                    ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
+//                                                    ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
+//            Rectangle box(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
 
-            Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
-                                   floor(min.y/resolution(1)),
-                                   floor(min.x/resolution(2)));
-            Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
-                                                    ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
-                                                    ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
-            Rectangle box(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
-
-            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
-            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
-                               negativeListFiles[i], {obj});
-        }
+//            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
+//            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
+//                               negativeListFiles[i], {obj});
+//        }
 
 
         Mixture mixture( models);
-        double C = 0.002, J = 2;
-        int interval = 1, nbIterations = 3, nbDatamine = 1, maxNegSample = 20;
+        double C = 0.002, J = 0.5;
+        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 20;
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
                       nbDatamine, maxNegSample, C, J);
 
@@ -292,16 +297,16 @@ public:
 
                 const int argmax = argmaxes[lvl]()(z, y, x);
 
-                cout<<"test:: argmax = "<<argmax<<endl;
-                cout<<"test:: detection score = "<<detections[i].score<<endl;
+//                cout<<"test:: argmax = "<<argmax<<endl;
+//                cout<<"test:: detection score = "<<detections[i].score<<endl;
 
 
                 //draw each parts
                 for (int j = 0; j < positions[argmax].size(); ++j) {
-                    cout<<"test:: zp = "<<positions[argmax][j][lvl]()(z, y, x)(0)<<endl;
-                    cout<<"test:: yp = "<<positions[argmax][j][lvl]()(z, y, x)(1)<<endl;
-                    cout<<"test:: xp = "<<positions[argmax][j][lvl]()(z, y, x)(2)<<endl;
-                    cout<<"test:: lvlp = "<<positions[argmax][j][lvl]()(z, y, x)(3)<<endl;
+//                    cout<<"test:: zp = "<<positions[argmax][j][lvl]()(z, y, x)(0)<<endl;
+//                    cout<<"test:: yp = "<<positions[argmax][j][lvl]()(z, y, x)(1)<<endl;
+//                    cout<<"test:: xp = "<<positions[argmax][j][lvl]()(z, y, x)(2)<<endl;
+//                    cout<<"test:: lvlp = "<<positions[argmax][j][lvl]()(z, y, x)(3)<<endl;
 
                     const int zp = positions[argmax][j][lvl]()(z, y, x)(0);
                     const int yp = positions[argmax][j][lvl]()(z, y, x)(1);
@@ -324,13 +329,13 @@ public:
 
                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
 
-                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
+//                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
 
                     viewer.displayCubeLine(bndbox, Eigen::Vector3f(0,0,0), Vector3i(0,0,255));
                 }
 
                 // Draw the root last
-                cout<<"test:: root bndbox = "<<detections[i]<<endl;
+//                cout<<"test:: root bndbox = "<<detections[i]<<endl;
                 Rectangle box(Vector3i(detections[i].origin()(0), detections[i].origin()(1), detections[i].origin()(2)),
                               mixture.models()[argmax].rootSize().first,
                               mixture.models()[argmax].rootSize().second,
@@ -354,7 +359,7 @@ public:
 
 
     void test( string sceneName){
-        sceneResolution = 0.09;
+
 
         ifstream in("tmp.txt");
 
@@ -377,7 +382,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0.005, overlap=0.5;
+        float threshold=0.5, overlap=0.5;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -394,6 +399,9 @@ public:
 
           // The same rotation matrix as before; theta radians around Z axis
 //          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));
+//          transform.rotate (Eigen::AngleAxisf (-2*1.57, Eigen::Vector3f::UnitY()));
+//          transform.rotate (Eigen::AngleAxisf (1.57, Eigen::Vector3f::UnitZ()));
+
           PointCloudPtr sceneCloud (new PointCloudT);
             // You can either apply transform_1 or transform_2; they are the same
             pcl::transformPointCloud (*cloud, *sceneCloud, transform);
@@ -429,23 +437,23 @@ public:
 
         viewer.addPC( sceneCloud, 3);
 
-        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
-                mixture.models()[0].parts()[0].offset(1),
-                mixture.models()[0].parts()[0].offset(2)),
-                      mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
-                      mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
-        viewer.displayCubeLine(rootBox,
-                               Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-                Vector3i(255,255,0));
-        for(int i=1;i<mixture.models()[0].parts().size();++i){
-            Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
-                    mixture.models()[0].parts()[i].offset(2)),
-                          mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
-                          mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
-            viewer.displayCubeLine(partBox,
-                                   Eigen::Vector3f(0,0,0),
-                    Vector3i(255,0,0));
-        }
+//        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
+//                mixture.models()[0].parts()[0].offset(1),
+//                mixture.models()[0].parts()[0].offset(2)),
+//                      mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
+//                      mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
+//        viewer.displayCubeLine(rootBox,
+//                               Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+//                Vector3i(255,255,0));
+//        for(int i=1;i<mixture.models()[0].parts().size();++i){
+//            Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
+//                    mixture.models()[0].parts()[i].offset(2)),
+//                          mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
+//                          mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
+//            viewer.displayCubeLine(partBox,
+//                                   Eigen::Vector3f(0,0,0),
+//                    Vector3i(255,0,0));
+//        }
 
     }
 
@@ -565,8 +573,6 @@ public:
 
         }
 
-
-
         if (img.empty()){
             cout << "\n Image not created. You"
                          " have done something wrong. \n";
@@ -603,10 +609,10 @@ int main(){
     int start = getMilliCount();
 
 
-//    test.train("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/",
-//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full");
+    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
+               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
-    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd");
+    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene3.pcd");
 
     //1 block over 2 is black, why ????
 //    test.checkImages("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/");
@@ -618,6 +624,118 @@ int main(){
     int end = getMilliCount();
 
     cout << "Time : " << end-start << endl;
+
+
+
+//    Mat img( GSHOTPyramid::DescriptorSize, GSHOTPyramid::DescriptorSize, CV_8UC3, cv::Scalar(0,0,0));
+
+//    PointCloudPtr cloud( new PointCloudT);
+//    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/table.pcd", cloud) == -1) {
+//        cout<<"test::couldnt open pcd file"<<endl;
+//    }
+
+//    PointType minTmp;
+//    PointType min;
+//    PointType max;
+//    pcl::getMinMax3D(*cloud, minTmp, max);
+
+//    min.x = floor(minTmp.x/0.09)*0.09;
+//    min.y = floor(minTmp.y/0.09)*0.09;
+//    min.z = floor(minTmp.z/0.09)*0.09;
+
+//    float resolution = 0.009;
+//    PointCloudPtr keypoints = GSHOTPyramid::compute_keypoints(resolution, min, max, 0);
+
+//    DescriptorsPtr descriptors (new Descriptors());
+//    SurfaceNormalsPtr normals (new SurfaceNormals());
+
+//    pcl::NormalEstimation<PointType,NormalType> norm_est;
+//    norm_est.setKSearch (8);
+//    norm_est.setInputCloud (cloud);
+//    norm_est.compute (*normals);
+
+//    pcl::SHOTEstimation<PointType, NormalType, DescriptorType> descr_est;
+//    descr_est.setRadiusSearch (2*resolution);
+//    descr_est.setInputCloud (keypoints);
+//    descr_est.setInputNormals (normals);
+//    descr_est.setSearchSurface (cloud);
+//    descr_est.compute (*descriptors);
+
+//    cout<<"GSHOT:: descriptors size = "<<descriptors->size()<<endl;
+
+
+//    for (size_t i = 0; i < descriptors->size(); ++i){
+
+//        if (pcl_isnan(descriptors->points[i].descriptor[0])){
+//            descriptors->points[i].descriptor[0] = 0;
+//        }
+//        for (size_t j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
+
+//            if (pcl_isnan(descriptors->points[i].descriptor[j])){
+//                descriptors->points[i].descriptor[j] = 0;
+//            }
+//        }
+//    }
+
+
+//    GSHOTPyramid::Level level( descriptors->size(),1,1);
+//    int kpt = 0;
+////#pragma omp parallel for
+//    for (int z = 0; z < level.depths(); ++z){
+//        for (int y = 0; y < level.rows(); ++y){
+//            for (int x = 0; x < level.cols(); ++x){
+//                for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+//                    level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
+////                            if(descriptors->points[kpt].descriptor[k]<0){
+////                                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] = "
+////                                     << descriptors->points[kpt].descriptor[k] << endl;
+////                            }
+//                }
+//                ++kpt;
+//            }
+//        }
+//    }
+
+//    GSHOTPyramid::Level lvl = level.agglomerate();
+
+//    float maxi = 0, mini = lvl()(0,0,0)(0);
+//    for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+//        if( maxi < lvl()(0,0,0)(x)) maxi = lvl()(0,0,0)(x);
+//        if( mini > lvl()(0,0,0)(x)) mini = lvl()(0,0,0)(x);
+//    }
+//    cout<<"maxi model descriptor value = "<<maxi<<endl;
+//    cout<<"mini model descriptor value = "<<mini<<endl;
+
+
+//    for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
+//        for(int y=0;y<GSHOTPyramid::DescriptorSize;y++){
+
+//            Vec3b color = img.at<Vec3b>(Point(x, y));
+//            color[0] = lvl()(0,0,0)(x)/maxi*255;//*mixture.models()[0].parts()[p].filter.size()*/;
+//            color[1] = color[0];
+//            color[2] = color[0];
+//            img.at<Vec3b>(Point(x, y)) = color;
+//        }
+//    }
+
+
+
+//    if (img.empty()){
+//        cout << "\n Image not created. You"
+//                     " have done something wrong. \n";
+//        return 0;    // Unsuccessful.
+//    }
+
+//    imwrite( "img.jpg", img );
+
+//    namedWindow("A_good_name", CV_WINDOW_AUTOSIZE);
+
+//    imshow("A_good_name", img);
+////        resizeWindow("A_good_name", 600,600);
+
+//    waitKey(0); //wait infinite time for a keypress
+
+//    destroyWindow("A_good_name");
 
 
     test.viewer.show();

@@ -793,10 +793,11 @@ int main(){
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
 
 
-    Test test( "/home/ubuntu/3DDataset/3DDPM/scene_1.ply", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
+    Test test( "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd", "/home/ubuntu/3DDataset/3DDPM/chair.pcd", "/home/ubuntu/3DDataset/3DDPM/table.pcd");
 
     // testSceneMiddle_compress.pcd
     // smallScene2.pcd
+    // scene_1.ply
     int start = getMilliCount();
 
 //    test.testTrainSVM();//OK
@@ -807,11 +808,11 @@ int main(){
 
 //    test.initSample();
 
-//    test.testTrain();
+    test.testTrain();
 
-//    test.testTest();
+    test.testTest();
 
-    test.testTrainSVM();
+//    test.testTrainSVM();
 
 
 

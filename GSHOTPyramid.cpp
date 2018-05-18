@@ -14,7 +14,8 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval, float starting_resolution, int nbOctave):
+GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval, float starting_resolution,
+                           int nbOctave):
 pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
     if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
@@ -163,31 +164,40 @@ void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolu
 
 //#pragma omp parallel for num_threads(2)
     for (int i = 0; i < levels_.size(); ++i){
-        cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
+        cout<<"GSHOTPyramid::sumConvolve filter.size() : "<< filter.size()
            << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
 //        cout<<"GSHOT::sumConvolve lvl = ";
 
-        Level lvl( levels_[i].depths() - filter.depths() + 1,
-                   levels_[i].rows() - filter.rows() + 1,
-                   levels_[i].cols() - filter.cols() + 1);
-        for (int z = 0; z < lvl.depths(); ++z) {
-            for (int y = 0; y < lvl.rows(); ++y) {
-                for (int x = 0; x < lvl.cols(); ++x) {
-                    lvl()(z, y, x) = levels_[i].agglomerateBlock(z, y, x,
-                                                            filter.depths(),
-                                                            filter.rows(),
-                                                            filter.cols())()(0,0,0);
-//                    lvl()(z, y, x) /= lvl()(z, y, x).maxCoeff();
-//                        cout<< lvl()(z, y, x)(j) << " ";
+        if ((levels_[i]().dimension(0) < filter().dimension(0)) || (levels_[i]().dimension(1) < filter().dimension(1) )
+                || (levels_[i]().dimension(2) < filter().dimension(2) )) {
+            cout<<"GSHOTPyramid::sumConvolve error : " <<levels_[i]().dimension(0) - filter().dimension(0)+1<<" < "<<filt().dimension(0)
+               <<" / " << levels_[i]().dimension(1) - filter().dimension(1)+1<<" < "<<filt().dimension(1)
+              <<" / " << levels_[i]().dimension(2) - filter().dimension(2)+1<<" < "<<filt().dimension(2)<< endl;
+            return;
+        } else{
+            Level lvl( levels_[i].depths() - filter.depths() + 1,
+                       levels_[i].rows() - filter.rows() + 1,
+                       levels_[i].cols() - filter.cols() + 1);
 
-//                     cout << endl;
+            for (int z = 0; z < lvl.depths(); ++z) {
+                for (int y = 0; y < lvl.rows(); ++y) {
+                    for (int x = 0; x < lvl.cols(); ++x) {
+                        lvl()(z, y, x) = levels_[i].agglomerateBlock(z, y, x,
+                                                                filter.depths(),
+                                                                filter.rows(),
+                                                                filter.cols())()(0,0,0);
+    //                    lvl()(z, y, x) /= lvl()(z, y, x).maxCoeff();
+    //                        cout<< lvl()(z, y, x)(j) << " ";
+
+    //                     cout << endl;
+                    }
                 }
             }
+
+
+
+            Convolve(/*TensorMap(*/lvl/*)*/, filt, convolutions[i]);
         }
-
-
-
-        Convolve(/*TensorMap(*/lvl/*)*/, filt, convolutions[i]);
     }
 }
 
@@ -510,7 +520,7 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     SurfaceNormalsPtr normals (new SurfaceNormals());
 
     pcl::NormalEstimation<PointType,NormalType> norm_est;
-    norm_est.setKSearch (3);
+    norm_est.setKSearch (8);
     norm_est.setInputCloud (input);
     norm_est.compute (*normals);
 
@@ -548,7 +558,7 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
 
 //        float sum = 0;
         for (size_t j = 0; j < DescriptorSize; ++j){
-            descriptors->points[i].descriptor[j] = value_descriptor_scaled.at(j);
+            descriptors->points[i].descriptor[j] = data_tmp[j];//value_descriptor_scaled.at(j);
 //            cout<<"GSHOTPyramid::descriptor normalized : "<< descriptors->points[i].descriptor[j] << endl;
 //            sum += descriptors->points[i].descriptor[j];
         }

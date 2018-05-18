@@ -74,7 +74,7 @@ namespace FFLD
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
         GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5,
-                     float starting_resolution = 0.09, int nbOctave = 2);
+                     float starting_resolution = 0.09/2.0, int nbOctave = 2);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
@@ -156,7 +156,7 @@ namespace FFLD
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
         
         // Method creating the keypoint grid using the min/max values of the input
-        PointCloudPtr
+        /*static */PointCloudPtr
         compute_keypoints(float grid_reso, PointType min, PointType max, int index);
         
 //        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)

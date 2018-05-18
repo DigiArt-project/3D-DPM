@@ -115,39 +115,6 @@ public:
     }
 
     //Level
-    Tensor3D< Type> agglomerateBlock(int z, int y, int x, int p, int q, int r) const{
-        if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
-            cerr<<"agglomerateBlock:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
-               <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
-//            exit(0);
-            p = min(z+p, depths()) - z;
-            q = min(y+q, rows()) - y;
-            r = min(x+r, cols()) - x;
-        }
-        Tensor3D< Type> res(1,1,1);
-        res().setConstant( Type::Zero());
-//#pragma omp parallel for num_threads(omp_get_max_threads())
-        for (int i = z; i < p; ++i) {
-            for (int j = y; j < q; ++j) {
-                for (int k = x; k < r; ++k) {
-                    res()(0,0,0) += tensor(i, j, k);
-                }
-            }
-        }
-//        Scalar maxi = res()(0,0,0)(0);
-//        for(int j = 1; j < 352; ++j){
-//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
-//        }
-//        if( maxi != 0){
-//            for(int j = 0; j < 352; ++j){
-//                res()(0,0,0)(j) /= maxi;
-//            }
-//        }
-        return res;
-    }
-
-
-    //Level
     Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
         cout<<"tensor3D::convolve ..."<<endl;
 
@@ -271,6 +238,45 @@ public:
 
 
     //Level
+    Tensor3D< Type> agglomerateBlock(int z, int y, int x, int p, int q, int r) const{
+        if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
+            cerr<<"agglomerateBlock:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
+               <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
+//            exit(0);
+            p = min(z+p, depths()) - z;
+            q = min(y+q, rows()) - y;
+            r = min(x+r, cols()) - x;
+        }
+        Tensor3D< Type> res(1,1,1);
+        res().setConstant( Type::Zero());
+//#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int i = z; i < p; ++i) {
+            for (int j = y; j < q; ++j) {
+                for (int k = x; k < r; ++k) {
+                    res()(0,0,0) += tensor(i, j, k);
+                }
+            }
+        }
+        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
+        for(int j = 1; j < 352; ++j){
+            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
+            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
+        }
+        if( maxi != 0){
+            for(int j = 0; j < 352; ++j){
+                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= maxi;
+            }
+        }
+//        if( mini != 0){
+//            for(int j = 0; j < 352; ++j){
+//                if( res()(0,0,0)(j) < 0) res()(0,0,0)(j) /= -mini;
+//            }
+//        }
+        return res;
+    }
+
+
+    //Level
     Tensor3D< Type> agglomerate() const{
         Tensor3D< Type> res(1,1,1);
         res().setConstant( Type::Zero());
@@ -282,13 +288,19 @@ public:
                 }
             }
         }
-//        Scalar maxi = res()(0,0,0)(0);
-//        for(int j = 1; j < 352; ++j){
-//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
-//        }
-//        if( maxi != 0){
+        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
+        for(int j = 1; j < 352; ++j){
+            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
+            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
+        }
+        if( maxi != 0){
+            for(int j = 0; j < 352; ++j){
+                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= maxi;
+            }
+        }
+//        if( mini != 0){
 //            for(int j = 0; j < 352; ++j){
-//                res()(0,0,0)(j) /= maxi;
+//                if( res()(0,0,0)(j) < 0) res()(0,0,0)(j) /= -mini;
 //            }
 //        }
         return res;

@@ -21,17 +21,17 @@ int main(){
     PointCloudPtr cloud1( new PointCloudT);
     PointCloudPtr cloud2( new PointCloudT);
 
-    if (pcl::io::loadPCDFile<PointType>("/home/ubuntu/3DDataset/3DDPM/chair.pcd", *cloud1) == -1) {
+    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_1_normalize.ply", cloud1) == -1) {
         cout<<"test::couldnt open pcd file"<<endl;
     }
-    if (pcl::io::loadPCDFile<PointType>("/home/ubuntu/3DDataset/3DDPM/table.pcd", *cloud2) == -1) {
+    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/table.pcd", cloud2) == -1) {
         cout<<"test::couldnt open pcd file"<<endl;
     }
 
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
     // Define a translation of 2.5 meters on the x axis.
-    transform.translation() << 2, 0.0, 0.0;
+    transform.translation() << 1, 2.0, 0.0;
 
     pcl::transformPointCloud (*cloud1, *finalCloud, transform);
 
