@@ -990,7 +990,11 @@ public:
 				
 				if (g)
 					gradients[positives_[i].second] -= positives_[i].first;
-			}
+            } /*else{
+                cout << "Loss:: positiveScore not taken into account : " << posMargins[i] << endl;
+                if (g)
+                    gradients[positives_[i].second] -= positives_[i].first;
+            }*/
 		}
 		
 
@@ -1129,8 +1133,8 @@ public:
 			}
 			
 			x[j] = models[i].bias();
-            cout<<"From Model bias : "<< models[i].bias() <<endl;
-            cout<<"From Model x["<<j<<"] : "<< x[j] <<endl;
+//            cout<<"From Model bias : "<< models[i].bias() <<endl;
+//            cout<<"From Model x["<<j<<"] : "<< x[j] <<endl;
 			++j;
 		}
 	}
@@ -1153,7 +1157,7 @@ double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 
 	detail::Loss loss(models_, positives, negatives, C, J, maxIterations);
 
-	LBFGS lbfgs(&loss, 0.001, maxIterations, 20, 20);
+    LBFGS lbfgs(&loss, 0.001, maxIterations, 20, 20);
 
 	
 	// Start from the current models

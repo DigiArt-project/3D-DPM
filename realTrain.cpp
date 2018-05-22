@@ -73,7 +73,9 @@ public:
 
     void train(string positiveFolder, string negativeFolder){
 
-        int nbParts = 6;
+        int nbParts = 4;
+        double C = 0.002, J = 2;
+        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 20;
         Model::triple<int, int, int> chairSize(8,10,6);//5,6,4in lvl 1
         Model::triple<int, int, int> chairPartSize(8,10,6);//in lvl 0
         Model model( chairSize, 0);
@@ -104,7 +106,7 @@ public:
           perror ("could not open directory");
         }
 
-        vector<Scene> scenes(positiveListFiles.size() /*+ negativeListFiles.size()*/);
+        vector<Scene> scenes(positiveListFiles.size() + negativeListFiles.size());
 
         for( int i=0; i < positiveListFiles.size(); ++i){
             printf ("%s\n", positiveListFiles[i].c_str());
@@ -142,39 +144,43 @@ public:
         }
 
 
-//        for( int i=0; i < negativeListFiles.size(); ++i){
-//            printf ("%s\n", negativeListFiles[i].c_str());
-//            PointCloudPtr cloud( new PointCloudT);
+        for( int i=0; i < negativeListFiles.size(); ++i){
+            printf ("%s\n", negativeListFiles[i].c_str());
+            PointCloudPtr cloud( new PointCloudT);
 
-//            if (readPointCloud(negativeListFiles[i], cloud) == -1) {
-//                cout<<"couldnt open ply file"<<endl;
-//            }
+            if (readPointCloud(negativeListFiles[i], cloud) == -1) {
+                cout<<"couldnt open ply file"<<endl;
+            }
 
-//            PointType min;
-//            PointType max;
-//            pcl::getMinMax3D(*cloud, min, max);
-// TO CHANGE !!!!!!!!!!!!
-//            Vector3f resolution( (max.z - min.z)/(chairSize.first),
-//                                 (max.y - min.y)/(chairSize.second),
-//                                 (max.x - min.x)/(chairSize.third));
+            PointType min;
+            PointType max;
+            pcl::getMinMax3D(*cloud, min, max);
 
-//            Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
-//                                   floor(min.y/resolution(1)),
-//                                   floor(min.x/resolution(2)));
-//            Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
-//                                                    ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
-//                                                    ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
-//            Rectangle box(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
+            Vector3i resolution( (max.z - min.z)/sceneResolution+1,
+                                 (max.y - min.y)/sceneResolution+1,
+                                 (max.x - min.x)/sceneResolution+1);
+            cout << "scene resolution : " << resolution << endl;
 
-//            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
-//            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
-//                               negativeListFiles[i], {obj});
-//        }
+            Vector3i originScene = Vector3i(floor(min.z/sceneResolution),
+                                   floor(min.y/sceneResolution),
+                                   floor(min.x/sceneResolution));
+            Vector3i originBox = Vector3i(floor(min.z/sceneResolution/2.0),
+                                   floor(min.y/sceneResolution/2.0),
+                                   floor(min.x/sceneResolution/2.0));
+            Model::triple<int, int, int> sceneSize( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);//5,6,4);
+
+            cout << "scene min : " << min << endl;
+
+            Rectangle box(originBox , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution*2);
+
+            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
+            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
+                               negativeListFiles[i], {obj});
+        }
 
 
         Mixture mixture( models);
-        double C = 0.002, J = 0.5;
-        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 20;
+
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
                       nbDatamine, maxNegSample, C, J);
 
@@ -238,13 +244,29 @@ public:
             }
 
             cout << "test::detect limit z : " << offz << " / " << offz+depths<< endl;
+
+            float maxi = scores[lvl].max();
             cout << "test::detect limit y : " << offy << " / " << offy+rows<< endl;
+
+            PointCloudPtr scoreCloud(new PointCloudT());
+            scoreCloud->width    = scores[lvl].size();
+            scoreCloud->height   = 1;
+            scoreCloud->points.resize (scoreCloud->width * scoreCloud->height);
             cout << "test::detect limit x : " << offx << " / " << offx+cols<< endl;
 
             for (int z = 0; z < depths; ++z) {
                 for (int y = 0; y < rows; ++y) {
                     for (int x = 0; x < cols; ++x) {
                         const double score = scores[lvl]()(z, y, x);
+
+                        PointType p = PointType();
+                        p.z = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).z;
+                        p.y = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).y;
+                        p.x = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).x;
+                        p.r = score / maxi*255;
+                        p.g = score / maxi*255;
+                        p.b = score / maxi*255;
+                        scoreCloud->at(x + y * cols + z * rows * cols) = p;
 
                         cout<<"test:: scores = "<<score<<endl;
 
@@ -271,6 +293,8 @@ public:
                     }
                 }
             }
+//            viewer.addPC(scoreCloud, 4, Eigen::Vector3i(255, 255, 255));
+
         }
 
         cout<<"test:: detections.size = "<<detections.size()<<endl;
@@ -285,7 +309,7 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 3;
+        int nb = 4;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -377,12 +401,10 @@ public:
             return;
         }
 
-        cout<<"test model root norm : "<<sqrt(GSHOTPyramid::TensorMap(mixture.models()[0].parts()[0].filter).squaredNorm())<<endl;
-
 
 
         int interval = 1;
-        float threshold=0.5, overlap=0.5;
+        float threshold=0., overlap=0.5;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -395,11 +417,11 @@ public:
         Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
           // Define a translation of 2.5 meters on the x axis.
-          transform.translation() << -minTmp.x, -minTmp.y, -minTmp.z;
+//          transform.translation() << -minTmp.x, -minTmp.y, -minTmp.z;
 
           // The same rotation matrix as before; theta radians around Z axis
 //          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));
-//          transform.rotate (Eigen::AngleAxisf (-2*1.57, Eigen::Vector3f::UnitY()));
+//          transform.rotate (Eigen::AngleAxisf (/*-2**/1.57, Eigen::Vector3f::UnitY()));//for smallScene3
 //          transform.rotate (Eigen::AngleAxisf (1.57, Eigen::Vector3f::UnitZ()));
 
           PointCloudPtr sceneCloud (new PointCloudT);
@@ -417,10 +439,6 @@ public:
         Model::triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution)+1,
                                                 ceil((maxScene.y-originScene(1)*sceneResolution)/sceneResolution)+1,
                                                 ceil((maxScene.x-originScene(2)*sceneResolution)/sceneResolution)+1);
-
-
-
-        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
 
         ofstream out("tmpTest.txt");
         vector<Detection> detections;
@@ -488,7 +506,7 @@ public:
         }
 
 
-        int nbParts = 6 + 1;
+        int nbParts = 4 + 1;
         Mat img( positiveListFiles.size() + 1, nbParts * GSHOTPyramid::DescriptorSize, CV_8UC3, cv::Scalar(0,0,0));
 
         int interval = 1;
@@ -609,13 +627,13 @@ int main(){
     int start = getMilliCount();
 
 
-    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
-               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
+//    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
+//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
     test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene3.pcd");
 
     //1 block over 2 is black, why ????
-//    test.checkImages("/media/ubuntu/DATA/3DDataset/StructureSensor_normalized/chair/full/");
+//    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
 
     // testSceneMiddle_compress.pcd
     // smallScene2.pcd
@@ -624,6 +642,47 @@ int main(){
     int end = getMilliCount();
 
     cout << "Time : " << end-start << endl;
+
+    ifstream in("tableModel4parts1pos.txt");
+
+    if (!in.is_open()) {
+        cerr << "Cannot open model file\n" << endl;
+    }
+
+    Mixture mixTable;
+    in >> mixTable;
+
+    if (mixTable.empty()) {
+        cerr << "Invalid model file\n" << endl;
+    }
+
+    ifstream in2("chairModel4parts1pos.txt");
+
+    if (!in2.is_open()) {
+        cerr << "Cannot open model file\n" << endl;
+    }
+
+    Mixture mixChair;
+    in2 >> mixChair;
+
+    if (mixChair.empty()) {
+        cerr << "Invalid model file\n" << endl;
+    }
+
+    cout<<"Chair dot Table = " << mixChair.models()[0].dot(mixTable.models()[0]) << endl;
+    cout<<"Table dot Chair = " << mixTable.models()[0].dot(mixChair.models()[0]) << endl;
+    cout<<"Table dot Table = " << mixTable.models()[0].dot(mixTable.models()[0]) << endl;
+    cout<<"Chair dot Chair = " << mixChair.models()[0].dot(mixChair.models()[0]) << endl;
+
+    cout<<"Chair norm = " << mixChair.models()[0].norm() << endl;
+    cout<<"Table norm = " << mixTable.models()[0].norm() << endl;
+
+    cout<<"Part 0 agglo : " << endl;
+
+    cout<<"Chair dot Table = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
+    cout<<"Table dot Chair = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
+    cout<<"Table dot Table = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
+    cout<<"Chair dot Chair = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
 
 
 

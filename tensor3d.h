@@ -257,16 +257,16 @@ public:
                 }
             }
         }
-        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
-        for(int j = 1; j < 352; ++j){
-            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
-            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
-        }
-        if( maxi != 0){
-            for(int j = 0; j < 352; ++j){
-                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= maxi;
-            }
-        }
+//        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
+//        for(int j = 1; j < 352; ++j){
+//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
+//            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
+//        }
+//        if( maxi != 0){
+//            for(int j = 0; j < 352; ++j){
+//                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= p*q*r;
+//            }
+//        }
 //        if( mini != 0){
 //            for(int j = 0; j < 352; ++j){
 //                if( res()(0,0,0)(j) < 0) res()(0,0,0)(j) /= -mini;
@@ -288,16 +288,16 @@ public:
                 }
             }
         }
-        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
-        for(int j = 1; j < 352; ++j){
-            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
-            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
-        }
-        if( maxi != 0){
-            for(int j = 0; j < 352; ++j){
-                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= maxi;
-            }
-        }
+//        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
+//        for(int j = 1; j < 352; ++j){
+//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
+//            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
+//        }
+//        if( maxi != 0){
+//            for(int j = 0; j < 352; ++j){
+//                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= depths()*rows()*cols();
+//            }
+//        }
 //        if( mini != 0){
 //            for(int j = 0; j < 352; ++j){
 //                if( res()(0,0,0)(j) < 0) res()(0,0,0)(j) /= -mini;
@@ -320,6 +320,22 @@ public:
         }
 //        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
         return t;
+    }
+
+    //Level
+    Scalar dot( const Tensor3D< Type>& sample) const{
+        Scalar res = 0;
+//#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    for (int j = 0; j < 352; ++j) {
+                        res += tensor(z, y, x)(j) * sample()(z, y, x)(j);
+                    }
+                }
+            }
+        }
+        return res;
     }
 
     //return a block of size (p, q, r) from point (z, y, x)
@@ -430,6 +446,21 @@ public:
                         for (int j = 0; j < rows(); ++j) {
                             for (int k = 0; k < cols(); ++k) {
                                 res += tensor(i, j, k) * tensor(i, j, k);
+                            }
+                        }
+                    }
+        return res;
+    }
+
+    Type max() const{
+                    if( tensor.size() <= 0){
+                        return 0;
+                    }
+                    Type res = tensor(0,0,0);
+                    for (int i = 0; i < depths(); ++i) {
+                        for (int j = 0; j < rows(); ++j) {
+                            for (int k = 0; k < cols(); ++k) {
+                                if( res < tensor(i, j, k)) res = tensor(i, j, k);
                             }
                         }
                     }

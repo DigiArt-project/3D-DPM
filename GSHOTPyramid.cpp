@@ -558,7 +558,7 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
 
 //        float sum = 0;
         for (size_t j = 0; j < DescriptorSize; ++j){
-            descriptors->points[i].descriptor[j] = data_tmp[j];//value_descriptor_scaled.at(j);
+            descriptors->points[i].descriptor[j] = value_descriptor_scaled.at(j);
 //            cout<<"GSHOTPyramid::descriptor normalized : "<< descriptors->points[i].descriptor[j] << endl;
 //            sum += descriptors->points[i].descriptor[j];
         }

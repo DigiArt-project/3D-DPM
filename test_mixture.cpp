@@ -374,7 +374,7 @@ public:
 
     void testTrain(){
 
-        int nbParts = 7;
+        int nbParts = 5;
 
 
         Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());

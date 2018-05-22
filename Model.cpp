@@ -660,8 +660,8 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
                                 partSize().third)).isZero()<<endl;
 
         // Extract the part filter
-        sample.parts_[i + 1].filter() = level.block(position(0), position(1), position(2), partSize().first,
-                                                  partSize().second, partSize().third)();
+        sample.parts_[i + 1].filter = level.block(position(0), position(1), position(2), partSize().first,
+                                                  partSize().second, partSize().third);
 		
         // Set the part offset to the position
         sample.parts_[i + 1].offset = position;
@@ -678,13 +678,13 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 //                          scale + pad.y() - partSize().second * 0.5;
 //        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first * 0.5) * 0.5 - pad.z()) *
 //                          scale + pad.z() - partSize().first * 0.5;
-        const double scale = 2;//pow(2.0, static_cast<double>(lvl - position(3)) / interval);
+        const double scale = pow(2.0, static_cast<double>(lvl - position(3)) / interval);
         const double xr = (x + (parts_[i + 1].offset(2) + partSize().third) /*- pad.x()*/) *
-                          resolution + /*pad.x()*/ - partSize().third;
+                          scale + /*pad.x()*/ - partSize().third;
         const double yr = (y + (parts_[i + 1].offset(1) + partSize().second) /*- pad.y()*/) *
-                          resolution + /*pad.y()*/ - partSize().second;
+                          scale + /*pad.y()*/ - partSize().second;
         const double zr = (z + (parts_[i + 1].offset(0) + partSize().first) /*- pad.z()*/) *
-                          resolution + /*pad.z()*/ - partSize().first;
+                          scale + /*pad.z()*/ - partSize().first;
         const double dx = xr - position(2)/**pyramid.resolutions()[lvl]*/;
         const double dy = yr - position(1)/**pyramid.resolutions()[lvl]*/;
         const double dz = zr - position(0)/**pyramid.resolutions()[lvl]*/;
@@ -930,7 +930,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 
 double Model::dot(const Model & sample) const
 {
-    cout<<"Model::dot ..."<< endl;
+    double norm = max( this->norm(), sample.norm());
+
+//    cout<<"Model::dot ..."<< endl;
     double d = bias_ * sample.bias_;
 
 
@@ -947,6 +949,14 @@ double Model::dot(const Model & sample) const
             cout<<"Model::dot bug2"<< endl;
             return numeric_limits<double>::quiet_NaN();
         }
+
+//        GSHOTPyramid::Level f1 = parts_[i].filter.agglomerate();
+//        GSHOTPyramid::Level f2 = sample.parts_[i].filter.agglomerate();
+
+//        for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){;
+//            d += f1()(0,0,0)(j) * f2()(0,0,0)(j);
+//        }
+
         for (int z = 0; z < parts_[i].filter.depths(); ++z){
             for (int y = 0; y < parts_[i].filter.rows(); ++y){
                 for (int x = 0; x < parts_[i].filter.cols(); ++x){
@@ -961,6 +971,7 @@ double Model::dot(const Model & sample) const
                 }
             }
         }
+
         //TODO !!!! error seg with deformation
         if (i){
             for (int j = 0; j < parts_[i].deformation.size(); ++j){
@@ -969,12 +980,12 @@ double Model::dot(const Model & sample) const
         }
     }
 	
-	
+//    d /= norm * norm;
 	return d;
 }
 
 double Model::norm() const{
-    cout<<"Model::norm ..."<< endl;
+//    cout<<"Model::norm ..."<< endl;
 
     if( parts_.size() < 1){
         return 0.0;
