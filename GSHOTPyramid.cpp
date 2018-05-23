@@ -238,6 +238,8 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
 
     convolution = level.convolve(filter);
 
+//    convolution = level.chi2Convolve(filter);
+
 //    convolution = level.EMD(filter);
 
 

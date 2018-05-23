@@ -33,6 +33,8 @@ int getMilliCount(){
     return nCount;
 }
 
+
+
 struct Detection : public Rectangle
 {
     GSHOTPyramid::Scalar score;
@@ -55,6 +57,10 @@ struct Detection : public Rectangle
         return score > detection.score;
     }
 };
+
+bool ascendingOrder( struct Detection score1, struct Detection score2){
+    return score2 < score1;
+}
 
 class Test{
 public:
@@ -374,7 +380,7 @@ public:
 
     void testTrain(){
 
-        int nbParts = 5;
+        int nbParts = 0;
 
 
         Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
@@ -406,9 +412,10 @@ public:
 
         Mixture mixture( models);
 
-        int interval = 1, nbIterations = 5, nbDatamine = 2, maxNegSample = 20;
+        int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 20;
+        double C = 0.002, J = 2;
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
-                      nbDatamine, maxNegSample);
+                      nbDatamine, maxNegSample, C, J);
 
         cout << "test:: root filter initialized" << endl;
 
@@ -456,7 +463,7 @@ public:
         }
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
-                      nbIterations, nbDatamine, maxNegSample);
+                      nbIterations, nbDatamine, maxNegSample, C, J);
 
 //        Eigen::Vector3i origin(chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2));//check comment : Mix:PosLatentSearch found a positive sample at : -2 -1 4 / 0.169058
 
@@ -573,7 +580,7 @@ public:
 
         cout<<"test:: detections.size = "<<detections.size()<<endl;
         // Non maxima suppression
-        sort(detections.begin(), detections.end());
+        sort(detections.begin(), detections.end(), ascendingOrder);
 
         for (int i = 1; i < detections.size(); ++i){
             detections.resize(remove_if(detections.begin() + i, detections.end(),
@@ -583,7 +590,7 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 5;
+        int nb = 6;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -680,7 +687,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0.005, overlap=0.5;
+        float threshold=0.0, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
 
 //        viewer.addPC(pyramid.keypoints_[0], 1, Eigen::Vector3i(100, 100, 100));

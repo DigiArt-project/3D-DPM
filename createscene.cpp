@@ -20,52 +20,63 @@ int main(){
     PointCloudPtr finalCloud( new PointCloudT);
     PointCloudPtr cloud1( new PointCloudT);
     PointCloudPtr cloud2( new PointCloudT);
+    PointCloudPtr cloud3( new PointCloudT);
+    PointCloudPtr cloud4( new PointCloudT);
+    PointCloudPtr cloud5( new PointCloudT);
+    PointCloudPtr cloudTmp( new PointCloudT);
 
-    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_1_normalize.ply", cloud1) == -1) {
+
+
+
+    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_1_normalize.ply", cloudTmp) == -1) {
         cout<<"test::couldnt open pcd file"<<endl;
     }
-    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/table.pcd", cloud2) == -1) {
+    Eigen::Affine3f transform1 = Eigen::Affine3f::Identity();
+
+    transform1.translation() << 1, 2.0, -1.0;
+
+    pcl::transformPointCloud (*cloudTmp, *cloud1, transform1);
+
+    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_3_normalize.ply", cloudTmp) == -1) {
         cout<<"test::couldnt open pcd file"<<endl;
     }
+    Eigen::Affine3f transform2 = Eigen::Affine3f::Identity();
 
-    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+    transform2.translation() << 2, 0, 0.0;
 
-    // Define a translation of 2.5 meters on the x axis.
-    transform.translation() << 1, 2.0, 0.0;
+    pcl::transformPointCloud (*cloudTmp, *cloud2, transform2);
+    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_7_normalize.ply", cloudTmp) == -1) {
+        cout<<"test::couldnt open pcd file"<<endl;
+    }
+    Eigen::Affine3f transform3 = Eigen::Affine3f::Identity();
 
-    pcl::transformPointCloud (*cloud1, *finalCloud, transform);
+    transform3.translation() << 0.5, 0, -0.1;
 
-    PointType minChair;
-    PointType maxChair;
-    pcl::getMinMax3D(*finalCloud , minChair, maxChair);
+    pcl::transformPointCloud (*cloudTmp, *cloud3, transform3);
+    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_6_normalize.ply", cloudTmp) == -1) {
+        cout<<"test::couldnt open pcd file"<<endl;
+    }
+    Eigen::Affine3f transform4 = Eigen::Affine3f::Identity();
 
-//    cout<<"test::min : "<<minChair<<endl;
-//    cout<<"test::max : "<<maxChair<<endl;
+    transform4.translation() << 2.1, 2.0, 0.0;
 
-    float chairResolution = GSHOTPyramid::computeCloudResolution(finalCloud);
-    Model::triple<int, int, int> chairSize( (maxChair.z-minChair.z)/chairResolution+1,
-                                            (maxChair.y-minChair.y)/chairResolution+1,
-                                            (maxChair.x-minChair.x)/chairResolution+1);
+    pcl::transformPointCloud (*cloudTmp, *cloud4, transform4);
+    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/table.pcd", cloudTmp) == -1) {
+        cout<<"test::couldnt open pcd file"<<endl;
+    }
+    Eigen::Affine3f transform5 = Eigen::Affine3f::Identity();
 
-//    Rectangle chairBox(Eigen::Vector3i(0,0,0), chairSize.third, chairSize.second, chairSize.first);
+    transform5.translation() << 2, 2, 2;
 
+    pcl::transformPointCloud (*cloudTmp, *cloud5, transform5);
 
-    PointType minTable;
-    PointType maxTable;
-    pcl::getMinMax3D(*cloud2 , minTable, maxTable);
-
-
-    float tableTesolution = GSHOTPyramid::computeCloudResolution(cloud2);
-    Model::triple<int, int, int> tableSize( (maxTable.z-minTable.z)/tableTesolution+1,
-                                            (maxTable.y-minTable.y)/tableTesolution+1,
-                                            (maxTable.x-minTable.x)/tableTesolution+1);
-
-//    Rectangle tableBox(Eigen::Vector3i(0,0,0), tableSize.third, tableSize.second, tableSize.first);
-
-
-
-
+    *finalCloud += *cloud1;
     *finalCloud += *cloud2;
+    *finalCloud += *cloud3;
+    *finalCloud += *cloud4;
+    *finalCloud += *cloud5;
+    *finalCloud += *cloudTmp;
+
 
     Viewer view;
 
@@ -73,7 +84,7 @@ int main(){
 //    view.displayCubeLine(chairBox, chairResolution, minChair);
 //    view.displayCubeLine(tableBox, tableTesolution, minTable);
 
-    pcl::io::savePCDFileASCII ("smallScene1.pcd", *finalCloud);
+    pcl::io::savePCDFileASCII ("smallScene5.pcd", *finalCloud);
 
     view.show();
 

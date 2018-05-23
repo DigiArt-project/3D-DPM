@@ -189,6 +189,55 @@ public:
         return res;
     }
 
+    //Level
+    Tensor3D<Scalar> chi2Convolve( Tensor3D< Type> filter) const{
+        cout<<"tensor3D::convolve ..."<<endl;
+
+        Tensor3D<Scalar> res( depths() - filter.depths() + 1,
+                              rows() - filter.rows() + 1,
+                              cols() - filter.cols() + 1);
+
+        res().setConstant( 0);
+
+//#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < res.depths(); ++z) {
+            for (int y = 0; y < res.rows(); ++y) {
+                for (int x = 0; x < res.cols(); ++x) {
+
+
+                    for (int dz = 0; dz < filter.depths(); ++dz) {
+                        for (int dy = 0; dy < filter.rows(); ++dy) {
+                            for (int dx = 0; dx < filter.cols(); ++dx) {
+
+//                                Type candidate = tensor(z+dz, y+dy, x+dx);
+//                                for (int j = 0; j < 352; ++j) {
+//                                    Scalar denominator = (abs(filter()(dz, dy, dx)(j)) /*+ abs(candidate(j))*/);
+//                                    if( denominator != 0){
+//                                        res()(z, y, x) += (filter()(dz, dy, dx)(j) /*- candidate(j)*/) * (filter()(dz, dy, dx)(j) /*- candidate(j)*/)
+//                                                / denominator;
+//                                    }
+//                                }
+
+                                Type candidate = tensor(z+dz, y+dy, x+dx);
+                                Type numerator = (filter()(dz, dy, dx) - candidate) * (filter()(dz, dy, dx) - candidate);
+                                Type denominator = abs(filter()(dz, dy, dx)) + abs(candidate);
+                                for (int j = 0; j < 352; ++j) {
+                                    if( denominator(j) != 0){
+                                        res()(z, y, x) += numerator(j) / denominator(j);
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+
+                }
+            }
+        }
+        return res;
+    }
+
 
     //Level
     Tensor3D<Scalar> EMD( Tensor3D< Type> filter) const{

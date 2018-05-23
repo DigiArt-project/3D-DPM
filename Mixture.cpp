@@ -261,6 +261,8 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
                  << ", # positives: " << positives.size() << ", # hard negatives: " << j
                  << " (already in the cache) + " << (negatives.size() - j) << " (new) = "
                  << negatives.size() << ", loss (cache): " << loss << endl;
+
+//            initializeParts();
 			
 //            // Unmerge the left / right samples
 //            for (int i = 0; i < positives.size(); ++i) {
@@ -1157,7 +1159,8 @@ double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 
 	detail::Loss loss(models_, positives, negatives, C, J, maxIterations);
 
-    LBFGS lbfgs(&loss, 0.001, maxIterations, 20, 20);
+    double epsilon = 0.001;
+    LBFGS lbfgs(&loss, epsilon, maxIterations, 20, 20);
 
 	
 	// Start from the current models

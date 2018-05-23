@@ -769,7 +769,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 //#pragma omp parallel for
             for (int i = 0; i < nbFilters; ++i){
 
-                pyramid.sumConvolve(parts_[i].filter, tmpConvolutions[i]);
+                pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
                 cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
                    << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
                 cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;

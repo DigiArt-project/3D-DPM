@@ -75,7 +75,7 @@ public:
 
         int nbParts = 4;
         double C = 0.002, J = 2;
-        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 20;
+        int interval = 1, nbIterations = 3, nbDatamine = 1, maxNegSample = 20;
         Model::triple<int, int, int> chairSize(8,10,6);//5,6,4in lvl 1
         Model::triple<int, int, int> chairPartSize(8,10,6);//in lvl 0
         Model model( chairSize, 0);
@@ -404,7 +404,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0., overlap=0.5;
+        float threshold=0.0, overlap=0.5;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -627,10 +627,10 @@ int main(){
     int start = getMilliCount();
 
 
-//    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
-//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
+    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
+               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
-    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene3.pcd");
+    test.test( "/home/ubuntu/3DDataset/3DDPM/scene_2.ply");
 
     //1 block over 2 is black, why ????
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
