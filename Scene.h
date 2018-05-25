@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+#include <libxml/parser.h>
+
 namespace FFLD
 {
 /// The Scene class represents a Pascal scene, consisting of a (filename to a) jpeg image and a list

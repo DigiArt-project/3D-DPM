@@ -60,6 +60,10 @@ struct Detection : public Rectangle
     }
 };
 
+bool ascendingOrder( struct Detection score1, struct Detection score2){
+    return score2 < score1;
+}
+
 class Test{
 public:
 
@@ -270,8 +274,7 @@ public:
 
                         cout<<"test:: scores = "<<score<<endl;
 
-                        //TODO !!!!!
-                        if (score > threshold) {
+                        if (score >= threshold) {
 
                                 Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
                                                        (y+offy)/*- pad.y()*/,
@@ -299,7 +302,7 @@ public:
 
         cout<<"test:: detections.size = "<<detections.size()<<endl;
         // Non maxima suppression
-        sort(detections.begin(), detections.end());
+        sort(detections.begin(), detections.end()/*, ascendingOrder*/);
 
         for (int i = 1; i < detections.size(); ++i){
             detections.resize(remove_if(detections.begin() + i, detections.end(),
@@ -309,7 +312,7 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 4;
+        int nb = 5;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -322,7 +325,7 @@ public:
                 const int argmax = argmaxes[lvl]()(z, y, x);
 
 //                cout<<"test:: argmax = "<<argmax<<endl;
-//                cout<<"test:: detection score = "<<detections[i].score<<endl;
+                cout<<"test:: detection score = "<<detections[i].score<<endl;
 
 
                 //draw each parts
@@ -455,23 +458,23 @@ public:
 
         viewer.addPC( sceneCloud, 3);
 
-//        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
-//                mixture.models()[0].parts()[0].offset(1),
-//                mixture.models()[0].parts()[0].offset(2)),
-//                      mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
-//                      mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
-//        viewer.displayCubeLine(rootBox,
-//                               Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-//                Vector3i(255,255,0));
-//        for(int i=1;i<mixture.models()[0].parts().size();++i){
-//            Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
-//                    mixture.models()[0].parts()[i].offset(2)),
-//                          mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
-//                          mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
-//            viewer.displayCubeLine(partBox,
-//                                   Eigen::Vector3f(0,0,0),
-//                    Vector3i(255,0,0));
-//        }
+        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
+                mixture.models()[0].parts()[0].offset(1),
+                mixture.models()[0].parts()[0].offset(2)),
+                      mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
+                      mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
+        viewer.displayCubeLine(rootBox,
+                               Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+                Vector3i(255,255,0));
+        for(int i=1;i<mixture.models()[0].parts().size();++i){
+            Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
+                    mixture.models()[0].parts()[i].offset(2)),
+                          mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
+                          mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
+            viewer.displayCubeLine(partBox,
+                                   Eigen::Vector3f(0,0,0),
+                    Vector3i(255,0,0));
+        }
 
     }
 
@@ -630,7 +633,7 @@ int main(){
     test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
                "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
-    test.test( "/home/ubuntu/3DDataset/3DDPM/scene_2.ply");
+//    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene3.pcd");
 
     //1 block over 2 is black, why ????
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
@@ -683,7 +686,6 @@ int main(){
     cout<<"Table dot Chair = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
     cout<<"Table dot Table = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
     cout<<"Chair dot Chair = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
-
 
 
 //    Mat img( GSHOTPyramid::DescriptorSize, GSHOTPyramid::DescriptorSize, CV_8UC3, cv::Scalar(0,0,0));

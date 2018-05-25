@@ -191,7 +191,7 @@ public:
 
     //Level
     Tensor3D<Scalar> chi2Convolve( Tensor3D< Type> filter) const{
-        cout<<"tensor3D::convolve ..."<<endl;
+        cout<<"tensor3D::chi2Convolve ..."<<endl;
 
         Tensor3D<Scalar> res( depths() - filter.depths() + 1,
                               rows() - filter.rows() + 1,
@@ -209,29 +209,32 @@ public:
                         for (int dy = 0; dy < filter.rows(); ++dy) {
                             for (int dx = 0; dx < filter.cols(); ++dx) {
 
+                                Type candidate = tensor(z+dz, y+dy, x+dx);
+                                for (int j = 0; j < 352; ++j) {
+                                    Scalar denominator = (abs(filter()(dz, dy, dx)(j)) + abs(candidate(j)));
+                                    if( denominator != 0){
+                                        res()(z, y, x) += (filter()(dz, dy, dx)(j) - candidate(j)) * (filter()(dz, dy, dx)(j) - candidate(j))
+                                                / denominator;
+                                    }
+//                                    cout<<"tensor3D::chi2Convolve res = "<<(filter()(dz, dy, dx)(j) - filter()(dz, dy, dx)(j)) * (filter()(dz, dy, dx)(j) - filter()(dz, dy, dx)(j))<<endl;
+
+
+                                }
+
 //                                Type candidate = tensor(z+dz, y+dy, x+dx);
+//                                Type numerator = (filter()(dz, dy, dx) - candidate) * (filter()(dz, dy, dx) - candidate);
+//                                Type denominator = abs(filter()(dz, dy, dx)) + abs(candidate);
 //                                for (int j = 0; j < 352; ++j) {
-//                                    Scalar denominator = (abs(filter()(dz, dy, dx)(j)) /*+ abs(candidate(j))*/);
-//                                    if( denominator != 0){
-//                                        res()(z, y, x) += (filter()(dz, dy, dx)(j) /*- candidate(j)*/) * (filter()(dz, dy, dx)(j) /*- candidate(j)*/)
-//                                                / denominator;
+//                                    if( denominator(j) != 0){
+//                                        res()(z, y, x) += numerator(j)/* / denominator(j)*/;
 //                                    }
 //                                }
-
-                                Type candidate = tensor(z+dz, y+dy, x+dx);
-                                Type numerator = (filter()(dz, dy, dx) - candidate) * (filter()(dz, dy, dx) - candidate);
-                                Type denominator = abs(filter()(dz, dy, dx)) + abs(candidate);
-                                for (int j = 0; j < 352; ++j) {
-                                    if( denominator(j) != 0){
-                                        res()(z, y, x) += numerator(j) / denominator(j);
-                                    }
-                                }
 
                             }
                         }
                     }
 
-
+//                    cout<<"tensor3D::chi2Convolve res = "<<res()(z, y, x)<<endl;
                 }
             }
         }
@@ -306,6 +309,8 @@ public:
                 }
             }
         }
+        for(int j = 0; j < 352; ++j) res()(0,0,0)(j) /= p*q*r;
+
 //        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
 //        for(int j = 1; j < 352; ++j){
 //            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
@@ -337,6 +342,7 @@ public:
                 }
             }
         }
+        for(int j = 0; j < 352; ++j) res()(0,0,0)(j) /= depths()*rows()*cols();
 //        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
 //        for(int j = 1; j < 352; ++j){
 //            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
@@ -385,6 +391,27 @@ public:
             }
         }
         return res;
+    }
+
+    //Level
+    Tensor3D< Type> operator*( const Scalar& coef) const{
+        Tensor3D< Type> res = *this;
+//#pragma omp parallel for num_threads(omp_get_max_threads())
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    for (int j = 0; j < 352; ++j) {
+                        res()(z, y, x)(j) *= coef;
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+
+    Type last() const{
+        return tensor(depths()-1, rows()-1, cols()-1);
     }
 
     //return a block of size (p, q, r) from point (z, y, x)

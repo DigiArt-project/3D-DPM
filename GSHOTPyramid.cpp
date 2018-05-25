@@ -260,6 +260,9 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
     cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;
     cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
     cout<<"GSHOTPyramid::convolve results.cols() : "<< convolution.cols() << endl;
+
+    cout<<"GSHOTPyramid::convolve results.last() : "<< convolution.last() << endl;
+
 }
 
 
@@ -452,26 +455,17 @@ GSHOTPyramid::~GSHOTPyramid()
 
 
 
-std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data, float max, float min){
+std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data){
     std::vector<float> result_min_max(data.size());
-
-//    cout<<"GSHOTPyramid::result max : "<< max << endl;
-
-//    cout<<"GSHOTPyramid::result min : "<< min << endl;
-
-    if(max == min) return result_min_max;
 
     float sum = 0;
     for (int i = 0; i < data.size(); i++){
-        sum+=(data.at(i) - min)/(max - min);
+        sum += data.at(i);
     }
 
 
-//    cout<<"GSHOTPyramid::result_min_max sum : "<< sum << endl;
-
     for (int i = 0; i < data.size(); i++){
-        result_min_max[i] = (data.at(i) - min)/(max - min)/sum;
-//        cout<<"GSHOTPyramid::result_min_max[i] : "<< result_min_max[i] << endl;
+        if( sum != 0) result_min_max[i] = data.at(i) /sum;
     }
 
     return result_min_max;
@@ -561,7 +555,6 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
 //        float sum = 0;
         for (size_t j = 0; j < DescriptorSize; ++j){
             descriptors->points[i].descriptor[j] = value_descriptor_scaled.at(j);
-//            cout<<"GSHOTPyramid::descriptor normalized : "<< descriptors->points[i].descriptor[j] << endl;
 //            sum += descriptors->points[i].descriptor[j];
         }
 //        cout<<"GSHOTPyramid::sum of the descriptor normalized : "<< sum << endl;

@@ -792,6 +792,8 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 //        }
 		
         convolutions = &tmpConvolutions;
+        cout<<"Model::convolutions[model0][lvl0].last() : "<< (*convolutions)[0][0].last() << endl;
+        cout<<"Model::convolutions[model0][lvl1].last() : "<< (*convolutions)[0][1].last() << endl;
 
 	}
 	
@@ -913,17 +915,19 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
     cout<<"Model::convolve score[0].isZero() : "<<scores[0].isZero()<<endl;
     cout<<"Model::convolve score[1].isZero() : "<<scores[1].isZero()<<endl;
 
-	
+
     // Add the bias if necessary
-    if (bias_) {
-//#pragma omp parallel for
-        for (int i = interval; i < nbLevels; ++i){
-//			scores[i].array() += bias_;
-            Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
-            biasTensor().setConstant( bias_);
-            scores[i]() += biasTensor();
-        }
-    }
+//    if (bias_) {
+////#pragma omp parallel for
+//        for (int i = interval; i < nbLevels; ++i){
+////			scores[i].array() += bias_;
+//            Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
+//            biasTensor().setConstant( bias_);
+//            scores[i]() += biasTensor();
+//        }
+//    }
+
+
 //    cout<<"Model::convolve done"<<endl;
 
 }
@@ -950,29 +954,28 @@ double Model::dot(const Model & sample) const
             return numeric_limits<double>::quiet_NaN();
         }
 
-//        GSHOTPyramid::Level f1 = parts_[i].filter.agglomerate();
-//        GSHOTPyramid::Level f2 = sample.parts_[i].filter.agglomerate();
+        GSHOTPyramid::Level f1 = parts_[i].filter.agglomerate();
+        GSHOTPyramid::Level f2 = sample.parts_[i].filter.agglomerate();
 
-//        for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){;
-//            d += f1()(0,0,0)(j) * f2()(0,0,0)(j);
-//        }
-
-        for (int z = 0; z < parts_[i].filter.depths(); ++z){
-            for (int y = 0; y < parts_[i].filter.rows(); ++y){
-                for (int x = 0; x < parts_[i].filter.cols(); ++x){
-                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
-//                        cout<<"Model::dot parts_[i].filter()(z, y, x)(j) = "<<parts_[i].filter()(z, y, x)(j)<<endl;
-//                        cout<<"Model::dot sample.parts_[i].filter()(z, y, x)(j) = "<<sample.parts_[i].filter()(z, y, x)(j)<<endl;
-
-                        d += parts_[i].filter()(z, y, x)(j) * sample.parts_[i].filter()(z, y, x)(j);
-//                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
-//                            GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
-                    }
-                }
-            }
+        for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){;
+            d += f1()(0,0,0)(j) * f2()(0,0,0)(j);
         }
 
-        //TODO !!!! error seg with deformation
+//        for (int z = 0; z < parts_[i].filter.depths(); ++z){
+//            for (int y = 0; y < parts_[i].filter.rows(); ++y){
+//                for (int x = 0; x < parts_[i].filter.cols(); ++x){
+//                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
+////                        cout<<"Model::dot parts_[i].filter()(z, y, x)(j) = "<<parts_[i].filter()(z, y, x)(j)<<endl;
+////                        cout<<"Model::dot sample.parts_[i].filter()(z, y, x)(j) = "<<sample.parts_[i].filter()(z, y, x)(j)<<endl;
+
+//                        d += parts_[i].filter()(z, y, x)(j) * sample.parts_[i].filter()(z, y, x)(j);
+////                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
+////                            GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
+//                    }
+//                }
+//            }
+//        }
+
         if (i){
             for (int j = 0; j < parts_[i].deformation.size(); ++j){
                 d += parts_[i].deformation(j) * sample.parts_[i].deformation(j);

@@ -177,65 +177,26 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
         for (int datamine = 0; datamine < nbDatamine; ++datamine) {
             // Remove easy samples (keep hard ones)
             int j = 0;
-            cout<<"Mix::train test 000000001"<<endl;
+            cout<<"Mix::train datamine : "<<datamine<<endl;
             for (int i = 0; i < negatives.size(); ++i)
                 if ((negatives[i].first.parts()[0].deformation(4) =
                      models_[negatives[i].second].dot(negatives[i].first)) > -1.01)
                     negatives[j++] = negatives[i];
-            cout<<"Mix::train test 000000002"<<endl;
+            cout<<"Mix::train j : "<<j<<endl;
 
             negatives.resize(j);
 
             //TODO
             // Sample new hard negatives
             negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
-            cout<<"Mix::train test 000000003"<<endl;
 
             // Stop if there are no new hard negatives
-            if (datamine && (negatives.size() == j))
-                break;
-			
-//            // Merge the left / right samples for more efficient training
-//            vector<int> posComponents(positives.size());
-			
-//            for (int i = 0; i < positives.size(); ++i) {
-//                posComponents[i] = positives[i].second;
-				
-//                // if positives[i].second is impair flip the model
-//                if (positives[i].second & 1)
-//                    positives[i].first = positives[i].first.flip();
-//                // positives[i].second = 0,0,1,1,2,...
-//                positives[i].second >>= 1;
-//            }
-			
-//            vector<int> negComponents(negatives.size());
-			
-//            for (int i = 0; i < negatives.size(); ++i) {
-//                negComponents[i] = negatives[i].second;
-				
-//                if (negatives[i].second & 1)
-//                    negatives[i].first = negatives[i].first.flip();
-				
-//                negatives[i].second >>= 1;
-//            }
-			
-//            for(int i=0;i<models_.size(); ++i){
-//                for(int j=0;j<models_[i].parts().size(); ++j){
-//                    cout<<"Mix::train loop mid1 models_["<<i<<"].parts_["<<j<<"].filter.size() : "<< models_[i].parts()[j].filter.size() <<endl;
-//                }
-//            }
+            if (datamine && (negatives.size() == j)){
+                cout<<"Mix::train stop because no new hard negatives"<<endl;
 
-//            // Merge the left / right models for more efficient training
-//            for (int i = 1; i < models_.size() / 2; ++i)
-//                models_[i] = models_[i * 2];
-			
-//            models_.resize(models_.size() / 2);
-			
-//            for(int i=0;i<models_.size(); ++i){
-//                for(int j=0;j<models_[i].parts().size(); ++j){
-//                    cout<<"Mix::train loop mid2 models_["<<i<<"].parts_["<<j<<"].filter.size() : "<< models_[i].parts()[j].filter.size() <<endl;
-//                }
-//            }
+                break;
+            }
+
 
             const int maxIterations =
                 min(max(10.0 * sqrt(static_cast<double>(positives.size())), 100.0), 1000.0);
@@ -262,71 +223,29 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
                  << " (already in the cache) + " << (negatives.size() - j) << " (new) = "
                  << negatives.size() << ", loss (cache): " << loss << endl;
 
-//            initializeParts();
-			
-//            // Unmerge the left / right samples
-//            for (int i = 0; i < positives.size(); ++i) {
-//                positives[i].second = posComponents[i];
-				
-//                if (positives[i].second & 1)
-//                    positives[i].first = positives[i].first.flip();
-//            }
-			
-//            for (int i = 0; i < negatives.size(); ++i) {
-//                negatives[i].second = negComponents[i];
-				
-//                if (negatives[i].second & 1)
-//                    negatives[i].first = negatives[i].first.flip();
-//            }
-			
-//            // Unmerge the left / right models
-//            models_.resize(models_.size() * 2);
-			
-//            for (int i = static_cast<int>(models_.size()) / 2 - 1; i >= 0; --i) {
-//                models_[i * 2    ] = models_[i];
-//                models_[i * 2 + 1] = models_[i].flip();
-//            }
-			
+
             // The filters definitely changed
-//            filterCache_.clear();
             cached_ = false;
             zero_ = false;
             cout << "Mix:: set cached_ to false" << endl;
             cout << "Mix:: set zero_ to false" << endl;
 
-//            for(int i=0; i<models_[0].parts().size(); ++i){
-//                bool hasNegValue=false;
-//                for (int z = 0; z < models_[0].parts()[i].filter.depths(); ++z) {
-//                    for (int y = 0; y < models_[0].parts()[i].filter.rows(); ++y) {
-//                        for (int x = 0; x < models_[0].parts()[i].filter.cols(); ++x) {
-//                            for (int j = 0; j < 352; ++j) {
-//                                if( models_[0].parts()[i].filter()(z, y, x)(j) < 0) hasNegValue = true;
-//                            }
-//                        }
-//                    }
-//                }
-//                if(hasNegValue) cout<<"Mix::train model part "<<i<<" hasNegValue" << endl;
-//            }
-			
+
             // Save the latest model so as to be able to look at it while training
             ofstream out("tmp.txt");
 			
             out << (*this);
 			
             // Stop if we are not making progress
-            if ((0.999 * loss < prevLoss) && (negatives.size() < maxNegatives))
+            if ((0.999 * loss < prevLoss) && (negatives.size() < maxNegatives)){
+                cout<<"Mix::train stop because not making progress"<<endl;
                 break;
+            }
 			
             prevLoss = loss;
         }
 
-//        for(int i=0;i<models_.size(); ++i){
-//            for(int j=0;j<models_[i].parts().size(); ++j){
-//                cout<<"Mix::train loop end models_["<<i<<"].parts_["<<j<<"].filter.size() : "<< models_[i].parts()[j].filter.size() <<endl;
-//            }
-//        }
 	}
-//    out.close();
 	
 	return loss;
 }
@@ -374,6 +293,12 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
     // Convolve with all the models
     vector<vector<Tensor3DF> > convolutions;//[mod][lvl]
     convolve(pyramid, convolutions, positions);
+    if(convolutions[0][0].size() == 0) {
+        cout<<"Mixture::convolutions[model0][lvl0] is empty" << endl;
+    } else{
+        cout<<"Mixture::convolutions[model0][lvl0].last() : "<< convolutions[0][0].last() << endl;
+    }
+    cout<<"Mixture::convolutions[model0][lvl1].last() : "<< convolutions[0][1].last() << endl;
 
 
     // In case of error
@@ -666,7 +591,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                         for (int x = 0; x < cols; ++x) {
                             // Find the best matching model (highest score or else most intersecting)
                             int model = 0;//zero_ ? 0 : argmaxes[lvl]()(z, y, x);
-                            double intersection = 0.0;
+                            double intersection = -1.0;
 
                             // Try all models and keep the most intersecting one
                             if (zero_) {
@@ -725,8 +650,15 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                                 //No use in 3D
                                 //clipBndBox(bndbox, scenes[i]);
-                                if(intersector(bndbox, &intersection)){
-//                                    cout << "Mix::posLatentSearch intersector True, scores = " << scores[lvl]()(z, y, x) << endl;
+                                double inter = 0.0;
+
+                                if(intersector(bndbox, &inter)){
+                                    if (inter > intersection) {
+                                        intersection = inter;
+                                    }
+                                    cout << "Mix::posLatentSearch intersector True, scores = " << scores[lvl]()(z, y, x) <<" / "<< maxScore<< endl;
+
+                                    cout << "Mix::posLatentSearch intersection = " << intersection <<" / "<< maxInter<< endl;
                                 }
 
 //                                cout << "Mix::posLatentSearch intersector bndbox : " << scenes[i].objects()[j].bndbox() << endl;
@@ -735,7 +667,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             }
 
 
-                            if ((intersection >= maxInter) && (zero_ || (scores[lvl]()(z, y, x) > maxScore))) {
+                            if ((intersection >= maxInter) /*&& (zero_ || (scores[lvl]()(z, y, x) > maxScore))*/) {
                                 argModel = model;
                                 argX = x;
                                 argY = y;
@@ -745,8 +677,10 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 argOffZ = offz;
                                 argLvl = lvl;
 
-                                if (!zero_)
+                                if (!zero_){
                                     maxScore = scores[lvl]()(z, y, x);
+                                    cout << "Mix::posLatentSearch set maxScore = " << maxScore<< endl;
+                                }
 
                                 maxInter = intersection;
                             }
@@ -1159,6 +1093,11 @@ double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 
 	detail::Loss loss(models_, positives, negatives, C, J, maxIterations);
 
+    cout << "Mix::trainSVM model norm = " << models_[0].norm() << endl;
+    if(positives.size() > 0) cout << "Mix::trainSVM positives[0] norm = " << positives[0].first.norm() << endl;
+    else cout << "Mix::trainSVM no positives" << endl;
+
+
     double epsilon = 0.001;
     LBFGS lbfgs(&loss, epsilon, maxIterations, 20, 20);
 
@@ -1167,11 +1106,16 @@ double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 	VectorXd x(loss.dim());
 	
 	detail::Loss::FromModels(models_, x.data());
-	
+    cout << "Mix::trainSVM x.data() norm = " << x.norm() << endl;
+
 	const double l = lbfgs(x.data());
-	
+    cout << "Mix::trainSVM x.data() norm after training = " << x.norm() << endl;
+
 	detail::Loss::ToModels(x.data(), models_);
-	
+    cout << "Mix::trainSVM x.data() norm after training2 = " << x.norm() << endl;
+
+    cout << "Mix::trainSVM model norm after training = " << models_[0].norm() << endl;
+
 	return l;
 }
 

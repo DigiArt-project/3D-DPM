@@ -30,6 +30,9 @@
 #include <algorithm>
 #include <cassert>
 
+using namespace std;
+
+
 LBFGS::IFunction::~IFunction()
 {
 }
@@ -70,8 +73,6 @@ double LBFGS::operator()(double * argx) const
 	function_->progress(argx, g.data(), static_cast<int>(x.rows()), fx, x.norm(), g.norm(), 0.0, 0,
 						1);
 
-//    return fx;//TO remove
-
 	// Histories of the previous solution (required by L-BFGS)
 	VectorXd px; // Previous solution x_{t-1}
 	VectorXd pg; // Previous gradient g_{t-1}
@@ -81,17 +82,21 @@ double LBFGS::operator()(double * argx) const
 	// Number of iterations remaining
 	for (int i = 0, j = 0; j < maxIterations_; ++i, ++j) {
 		// Relative tolerance
-		const double relativeEpsilon = epsilon_ * std::max(1.0, x.norm());
-		
+        const double relativeEpsilon = epsilon_ * std::max(1.0, x.norm());
+
 		// Check the norm of the gradient against convergence threshold
-		if (g.norm() < relativeEpsilon)
+        if (g.norm() < relativeEpsilon){
+            cout<<"LBFGS:: return because norm of the gradient against convergence threshold"<<endl;
 			return fx;
+        }
 		
 		// Get a new descent direction using the L-BFGS algorithm
-		VectorXd z = g;
+        VectorXd z = g;
 		
 		if (i && maxHistory_) {
 			// Update the histories
+            cout<<"LBFGS:: Update the histories"<<endl;
+
 			const int h = std::min(i, maxHistory_); // Current length of the histories
 			const int end = (i - 1) % h;
 			
@@ -118,7 +123,7 @@ double LBFGS::operator()(double * argx) const
 				z += dxs.col(k) * (a(k) - b);
 			}
 		}
-		
+
 		// Save the previous state
 		px = x;
 		pg = g;
@@ -127,15 +132,14 @@ double LBFGS::operator()(double * argx) const
 		// optimization starting from the current solution
 		double descent = -z.dot(g);
 		
-		if (descent > -0.0001 * relativeEpsilon) {
+        if (descent > -0.0001 * relativeEpsilon) {
 			z = g;
 			i = 0;
 			descent = -z.dot(g);
 		}
-//        std::cout << "LBFGS::() optimization backtracking ..." << std::endl;
 
 		// Backtracking using Wolfe's first condition (Armijo condition)
-		double step = i ? 1.0 : (1.0 / g.norm());
+        double step = i ? 1.0 : (1.0 / g.norm());
 		bool down = false;
 		int ls;
 		
@@ -145,8 +149,8 @@ double LBFGS::operator()(double * argx) const
 			VectorXd ng(x.rows());
 			const double nfx = (*function_)(nx.data(), ng.data());
 			
-			if (nfx <= fx + 0.0001 * step * descent) { // First Wolfe condition
-				if ((-z.dot(ng) >= 0.9 * descent) || down) { // Second Wolfe condition
+            if (nfx <= fx + 0.0001 * step * descent) { // First Wolfe condition
+                if ((-z.dot(ng) >= 0.9 * descent) || down) { // Second Wolfe condition
 					x = nx;
 					g = ng;
 					fx = nfx;
@@ -156,7 +160,7 @@ double LBFGS::operator()(double * argx) const
 					step *= 2.0;
 				}
 			}
-			else {
+            else {
 				step *= 0.5;
 				down = true;
 			}

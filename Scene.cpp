@@ -59,135 +59,135 @@ static inline Result content(const xmlNodePtr cur)
 }
 
 //deprecated because we don't use pre segmented data
-/*
-Scene::Scene(const string & filename)
-{
-	const string Names[20] =
-	{
-		"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
-		"diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa",
-		"train", "tvmonitor"
-	};
+
+//Scene::Scene(const string & filename)
+//{
+//	const string Names[20] =
+//	{
+//		"aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
+//		"diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa",
+//		"train", "tvmonitor"
+//	};
 	
-	const string Poses[4] =
-	{
-		"Frontal", "Left", "Rear", "Right"
-	};
+//	const string Poses[4] =
+//	{
+//		"Frontal", "Left", "Rear", "Right"
+//	};
 	
-	xmlDoc * doc = xmlParseFile(filename.c_str());
+//	xmlDoc * doc = xmlParseFile(filename.c_str());
 	
-	if (doc == NULL) {
-		cerr << "Could not open " << filename << endl;
-		return;
-	}
+//	if (doc == NULL) {
+//		cerr << "Could not open " << filename << endl;
+//		return;
+//	}
 	
-	xmlNodePtr cur = xmlDocGetRootElement(doc);
+//	xmlNodePtr cur = xmlDocGetRootElement(doc);
 	
-	if (cur == NULL) {
-		xmlFreeDoc(doc);
-		cerr << "Could not open " << filename << endl;
-		return;
-	}
+//	if (cur == NULL) {
+//		xmlFreeDoc(doc);
+//		cerr << "Could not open " << filename << endl;
+//		return;
+//	}
 	
-	if (xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("annotation"))) {
-		xmlFreeDoc(doc);
-		cerr << "Could not open " << filename << endl;
-		return;
-	}
+//	if (xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("annotation"))) {
+//		xmlFreeDoc(doc);
+//		cerr << "Could not open " << filename << endl;
+//		return;
+//	}
 	
-	cur = cur->xmlChildrenNode;
+//	cur = cur->xmlChildrenNode;
 	
-	while (cur != NULL) {
-		if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("filename"))) {
-			// Full path
-			size_t last = filename.rfind('/');
+//	while (cur != NULL) {
+//		if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("filename"))) {
+//			// Full path
+//			size_t last = filename.rfind('/');
 			
-			if (last != string::npos) {
-				last = filename.rfind('/', last - 1);
+//			if (last != string::npos) {
+//				last = filename.rfind('/', last - 1);
 				
-				if (last != string::npos)
-					filename_ = filename.substr(0, last) + "/JPEGImages/" +
-								content<string>(cur);
-			}
-		}
-		else if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("size"))) {
-			xmlNodePtr cur2 = cur->xmlChildrenNode;
+//				if (last != string::npos)
+//					filename_ = filename.substr(0, last) + "/JPEGImages/" +
+//								content<string>(cur);
+//			}
+//		}
+//		else if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("size"))) {
+//			xmlNodePtr cur2 = cur->xmlChildrenNode;
 			
-			while (cur2 != NULL) {
-				if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("width")))
-					width_ = content<int>(cur2);
-				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("height")))
-					height_ = content<int>(cur2);
-				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("depth")))
-					depth_ = content<int>(cur2);
+//			while (cur2 != NULL) {
+//				if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("width")))
+//					width_ = content<int>(cur2);
+//				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("height")))
+//					height_ = content<int>(cur2);
+//				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("depth")))
+//					depth_ = content<int>(cur2);
 				
-				cur2 = cur2->next;
-			}
-		}
-		else if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("object"))) {
-			objects_.push_back(Object());
+//				cur2 = cur2->next;
+//			}
+//		}
+//		else if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("object"))) {
+//			objects_.push_back(Object());
 			
-			xmlNodePtr cur2 = cur->xmlChildrenNode;
+//			xmlNodePtr cur2 = cur->xmlChildrenNode;
 			
-			while (cur2 != NULL) {
-				if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("name"))) {
-					const string * iter =
-						find(Names, Names + 20, content<string>(cur2));
+//			while (cur2 != NULL) {
+//				if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("name"))) {
+//					const string * iter =
+//						find(Names, Names + 20, content<string>(cur2));
 					
-					if (iter != Names + 20)
-						objects_.back().setName(static_cast<Object::Name>(iter - Names));
-				}
-				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("pose"))) {
-					const string * iter =
-						find(Poses, Poses + 4, content<string>(cur2));
+//					if (iter != Names + 20)
+//						objects_.back().setName(static_cast<Object::Name>(iter - Names));
+//				}
+//				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("pose"))) {
+//					const string * iter =
+//						find(Poses, Poses + 4, content<string>(cur2));
 					
-					if (iter != Poses + 4)
-						objects_.back().setPose(static_cast<Object::Pose>(iter - Poses));
-				}
-				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("truncated"))) {
-					objects_.back().setTruncated(content<bool>(cur2));
-				}
-				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("difficult"))) {
-					objects_.back().setDifficult(content<bool>(cur2));
-				}
-				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("bndbox"))) {
-					Rectangle bndbox;
+//					if (iter != Poses + 4)
+//						objects_.back().setPose(static_cast<Object::Pose>(iter - Poses));
+//				}
+//				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("truncated"))) {
+//					objects_.back().setTruncated(content<bool>(cur2));
+//				}
+//				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("difficult"))) {
+//					objects_.back().setDifficult(content<bool>(cur2));
+//				}
+//				else if (!xmlStrcmp(cur2->name, reinterpret_cast<const xmlChar *>("bndbox"))) {
+//					Rectangle bndbox;
 					
-					xmlNodePtr cur3 = cur2->xmlChildrenNode;
+//					xmlNodePtr cur3 = cur2->xmlChildrenNode;
 					
-					while (cur3 != NULL) {
-						if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("xmin")))
-							bndbox.setX(content<int>(cur3));
-						else if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("ymin")))
-							bndbox.setY(content<int>(cur3));
-						else if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("xmax")))
-							bndbox.setWidth(content<int>(cur3));
-						else if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("ymax")))
-							bndbox.setHeight(content<int>(cur3));
+//					while (cur3 != NULL) {
+//						if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("xmin")))
+//							bndbox.setX(content<int>(cur3));
+//						else if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("ymin")))
+//							bndbox.setY(content<int>(cur3));
+//						else if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("xmax")))
+//							bndbox.setWidth(content<int>(cur3));
+//						else if (!xmlStrcmp(cur3->name, reinterpret_cast<const xmlChar *>("ymax")))
+//							bndbox.setHeight(content<int>(cur3));
 						
-						cur3 = cur3->next;
-					}
+//						cur3 = cur3->next;
+//					}
 					
-					// Only set the bounding box if all values have been assigned
-					if (bndbox.x() && bndbox.y() && bndbox.width() && bndbox.height()) {
-						bndbox.setX(bndbox.x() - 1);
-						bndbox.setY(bndbox.y() - 1);
-						bndbox.setWidth(bndbox.width() - bndbox.x());
-						bndbox.setHeight(bndbox.height() - bndbox.y());
-						objects_.back().setBndbox(bndbox);
-					}
-				}
+//					// Only set the bounding box if all values have been assigned
+//					if (bndbox.x() && bndbox.y() && bndbox.width() && bndbox.height()) {
+//						bndbox.setX(bndbox.x() - 1);
+//						bndbox.setY(bndbox.y() - 1);
+//						bndbox.setWidth(bndbox.width() - bndbox.x());
+//						bndbox.setHeight(bndbox.height() - bndbox.y());
+//						objects_.back().setBndbox(bndbox);
+//					}
+//				}
 				
-				cur2 = cur2->next;
-			}
-		}
+//				cur2 = cur2->next;
+//			}
+//		}
 		
-		cur = cur->next;
-	}
+//		cur = cur->next;
+//	}
 	
-	xmlFreeDoc(doc);
-}
- */
+//	xmlFreeDoc(doc);
+//}
+
 
 
 

@@ -412,6 +412,22 @@ public:
 
         Mixture mixture( models);
 
+//        ifstream in("tmp2.txt");
+
+//        if (!in.is_open()) {
+//            cerr << "Cannot open model file\n" << endl;
+//            return;
+//        }
+
+//        Mixture mixture;
+//        in >> mixture;
+////        mixture.train_ = false;//allow quentin's code
+
+//        if (mixture.empty()) {
+//            cerr << "Invalid model file\n" << endl;
+//            return;
+//        }
+
         int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 20;
         double C = 0.002, J = 2;
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
@@ -437,7 +453,15 @@ public:
                                               13*2,
                                               7*2,
                                               chairSize.first*2-1, chairSize.second*2-1, chairSize.third*2-1);
-        }
+        } else if( sceneName == "/home/ubuntu/3DDataset/3DDPM/chair.pcd"){
+
+            //            Rectangle chairBox0(Eigen::Vector3i(round((minChair.z-minScene.z)/sceneResolution)-5,
+            //                               round((minChair.y-minScene.y)/sceneResolution)-7,
+            //                               round((minChair.x-minScene.x)/sceneResolution)-7),
+            //                                 chairSize.first*2-1, chairSize.second*2-1, chairSize.third*2-1, sceneResolution);
+                        root2x = pyramid.levels()[0].block(0, 0, 0,
+                                                          chairSize.first, chairSize.second, chairSize.third);
+                    }
 
 
 
@@ -448,6 +472,8 @@ public:
         cout<<"test::initializeParts root2x.depths() = "<< root2x.depths() <<endl;
         cout<<"test::initializeParts root2x.rows() = "<< root2x.rows() <<endl;
         cout<<"test::initializeParts root2x.cols() = "<< root2x.cols() <<endl;
+
+
 
 //        cout<<"test::initializeParts chairBox = "<< chairBox <<endl;
 //        cout<<"test::initializeParts chairBox.origin()(0)*2 = "<< chairBox.origin()(0)*2 <<endl;
@@ -554,7 +580,7 @@ public:
                         ////////////
 
                         //TODO !!!!!
-                        if (score > threshold) {
+                        if (score >= threshold) {
 
                                 Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
                                                        (y+offy)/*- pad.y()*/,
@@ -684,11 +710,42 @@ public:
 
         cout<<"test model root norm : "<<sqrt(GSHOTPyramid::TensorMap(mixture.models()[0].parts()[0].filter).squaredNorm())<<endl;
 
-
+        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
+                                                    chairBox.height()/2*2,
+                                                    chairBox.width()/2*2);//in lvl 0
 
         int interval = 1;
         float threshold=0.0, overlap=0.5;
         GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
+        GSHOTPyramid::Level root2x, root3x;
+
+        if( sceneName == "/home/ubuntu/3DDataset/3DDPM/smallScene1.pcd"){
+            root2x = pyramid.levels()[0].block(chairBox.origin()(0)*2-sceneBox.origin()(0),
+                                              chairBox.origin()(1)*2-sceneBox.origin()(1),
+                                              chairBox.origin()(2)*2-sceneBox.origin()(2),
+                                              chairSize.first*2, chairSize.second*2, chairSize.third*2);
+        } else if( sceneName == "/home/ubuntu/3DDataset/3DDPM/smallScene2.pcd"){
+
+            root2x = pyramid.levels()[1].block(0, 13, 7,
+            chairSize.first, chairSize.second, chairSize.third);
+        }
+        GSHOTPyramid pyramid3(chairCloud, Eigen::Vector3i( 3,3,3), 1);
+        root3x = pyramid3.levels()[1];
+
+
+
+//        Tensor3DF convolution = root2x.chi2Convolve(root2x);
+
+//        cout<<"test root2x : "<<GSHOTPyramid::TensorMap(root2x)() - GSHOTPyramid::TensorMap(root2x)()<<endl;
+
+//        cout<<"test chi2Convolution score : "<<convolution()<<endl;
+
+
+//        mixture.models()[0].parts()[0].filter = root3x;
+
+
+        cout<<"mixture.models()[0].parts()[0].filter.max() : "<<GSHOTPyramid::TensorMap(mixture.models()[0].parts()[0].filter).max()<<endl;
 
 //        viewer.addPC(pyramid.keypoints_[0], 1, Eigen::Vector3i(100, 100, 100));
 //        viewer.addPC(pyramid.keypoints_[1], 1, Eigen::Vector3i(255, 255, 255));
@@ -820,7 +877,6 @@ int main(){
     test.testTest();
 
 //    test.testTrainSVM();
-
 
 
 
