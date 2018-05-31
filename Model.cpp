@@ -1,10 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-// Implementation of the papers "Exact Acceleration of Linear Object Detectors", 12th European
-// Conference on Computer Vision, 2012 and "Deformable Part Models with Individual Part Scaling",
-// 24th British Machine Vision Conference, 2013.
-//
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //
@@ -129,6 +125,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
 
 
     GSHOTPyramid::Level root = parts_[0].filter;
+
     GSHOTPyramid::Level root2x( 2*root.depths()-1, 2*root.rows()-1, 2*root.cols()-1);
     GSHOTPyramid::Cell nullCell;
     nullCell.setZero( GSHOTPyramid::DescriptorSize);
@@ -169,9 +166,10 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
         }
     }
 
+
+
     // Compute the energy of each cell
     Tensor3DF energy(root2x.depths(), root2x.rows(), root2x.cols());
-    cout<<"Model::initializeParts root2x.depths() "<<root2x.depths() <<endl;
 
     for (int z = 0; z < root2x.depths(); ++z) {
         for (int y = 0; y < root2x.rows(); ++y) {
@@ -187,6 +185,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
     // Assign each part greedily to the region of maximum energy
     parts_.resize(nbParts + 1);
 
+
     for (int i = 0; i < nbParts; ++i) {
         double maxEnergy = 0.0;
         int argX = 0;
@@ -195,6 +194,8 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
 
         cout<<"Model::initializeParts energy.depths() "<<energy.depths() <<endl;
         cout<<"Model::initializeParts partSize.first "<<partSize.first <<endl;
+        cout<<"Model::initializeParts partSize.second "<<partSize.second <<endl;
+        cout<<"Model::initializeParts partSize.third "<<partSize.third <<endl;
 
         for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
             for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
@@ -701,24 +702,12 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     }
 	
     sample.bias_ = 1.0;
-
-    ofstream out2("chairModelScene2.txt");
-
-    out2 << (sample);
 }
 
-void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, bool sumConvolve,
-					 vector<vector<Positions> > * positions,
+void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
+                     vector<vector<Positions> > * positions,
                      vector<vector<Tensor3DF> > * convolutions) const
 {
-
-
-//    cout<<"Model::convolve ..." <<endl;
-//    cout<<"Model::convolve pyramid.size() : "<<pyramid.levels().size()<<endl;
-//    cout<<"Model::convolve scores.size() : "<<scores.size()<<endl;
-
-
-//    cout<<"Model:: parts_.size() : "<<parts_.size()<<" / parts_[0].filter.size() : "<<parts_[0].filter.size()<<endl;
 
 	// Invalid parameters
     if (empty() || pyramid.empty() /*||*/
@@ -745,7 +734,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 	const int nbLevels = static_cast<int>(pyramid.levels().size());
 	
 	// Convolve the pyramid with all the filters
-    vector<vector<Tensor3DF> > tmpConvolutions;//
+    vector<vector<Tensor3DF> > tmpConvolutions;
 	
 	if (convolutions) {
 		for (int i = 0; i < nbFilters; ++i) {
@@ -763,38 +752,19 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 	else {
 		tmpConvolutions.resize(nbFilters);
 		
-//        if( sumConvolve){
-            cout<<"Model::sumConvolve ..."<<endl;
 
 //#pragma omp parallel for
-            for (int i = 0; i < nbFilters; ++i){
+        for (int i = 0; i < nbFilters; ++i){
 
-                pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
-                cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
-                   << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
-                cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
-                cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
+            pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
+            cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
+               << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
+            cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
+            cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
 
-            }
-//        } else{
-//            cout<<"Model::convolve ..."<<endl;
+        }
 
-////#pragma omp parallel for
-//            for (int i = 0; i < nbFilters; ++i){
-
-//                pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
-//                cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
-//                   << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
-//                cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
-//                cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
-
-//            }
-//        }
-		
         convolutions = &tmpConvolutions;
-        cout<<"Model::convolutions[model0][lvl0].last() : "<< (*convolutions)[0][0].last() << endl;
-        cout<<"Model::convolutions[model0][lvl1].last() : "<< (*convolutions)[0][1].last() << endl;
-
 	}
 	
     // Resize the positions
@@ -816,33 +786,20 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 	
     // For each root level in reverse order
     for (int lvl = nbLevels - 1; lvl >= interval; --lvl) {
-        cout<<"Model::convolve0 (*convolutions)[0][0].isZero() : "<<(*convolutions)[0][0].isZero()<<endl;
-        cout<<"Model::convolve0 (*convolutions)[0][1].isZero() : "<<(*convolutions)[0][1].isZero()<<endl;
+
         // For each part
         for (int i = 0; i < nbParts; ++i) {
-            cout<<"Model::conv 1 depth = "<<(*convolutions)[i + 1][1].depths()<<endl;
-            cout<<"Model::conv 1 rows "<<(*convolutions)[i + 1][1].rows()<<endl;
-            cout<<"Model::conv 1 cols "<<(*convolutions)[i + 1][1].cols()<<endl;
             // Transform the part one octave below
-            //TODO !!!!!!!!!!!!
-            cout<<"Model::DT3D (*convolutions)[i + 1][0].isZero() : "<<(*convolutions)[i + 1][0].isZero()<<endl;
-            cout<<"Model::DT3D (*convolutions)[i + 1][1].isZero() : "<<(*convolutions)[i + 1][1].isZero()<<endl;
+
             DT3D((*convolutions)[i + 1][lvl - interval], parts_[i + 1], tmp1, tmp2,
                  positions ? &(*positions)[i][lvl - interval] : 0);
 
-            cout<<"Model::convolve1 (*convolutions)[i + 1][0].isZero() : "<<(*convolutions)[i + 1][0].isZero()<<endl;
-            cout<<"Model::convolve1 (*convolutions)[i + 1][1].isZero() : "<<(*convolutions)[i + 1][1].isZero()<<endl;
-			
             if (positions){
-                cout<<"Model::convolve set positions to zero after DT3D"<<endl;
                 (*positions)[i][lvl] = Positions((*convolutions)[0][lvl].depths(),
                                                  (*convolutions)[0][lvl].rows(),
                                                  (*convolutions)[0][lvl].cols());
                 (*positions)[i][lvl]().setConstant( Position::Zero());
             }
-
-//            cout<<"Model::convolve score part "<<i+1<<" : "<<(*convolutions)[i + 1][lvl].
-//                  block(-3+ parts_[i + 1].offset(0),9+ parts_[i + 1].offset(1),4+ parts_[i + 1].offset(2),1,2,2)()<<endl;
 
             // Add the distance transforms of the part one octave below
             for (int z = 0; z < (*convolutions)[0][lvl].depths(); ++z) {//lvl=1
@@ -853,28 +810,18 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
                         const int yr = 2 * y /*- pad.y()*/ + parts_[i + 1].offset(1);
                         const int xr = 2 * x /*- pad.x()*/ + parts_[i + 1].offset(2);
 
-//                        cout<<"Model::convolve zr : "<<zr<<" / (*convolutions)[i + 1][lvl - interval].depths() : "
-//                           <<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
-//                        cout<<"Model::convolve yr : "<<yr<<" / (*convolutions)[i + 1][lvl - interval].rows() : "
-//                           <<(*convolutions)[i + 1][lvl - interval].rows()<<endl;
-//                        cout<<"Model::convolve xr : "<<xr<<" / (*convolutions)[i + 1][lvl - interval].cols() : "
-//                           <<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
-
                         if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
                             (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&//lvl - interval 0
                             (yr < (*convolutions)[i + 1][lvl - interval].rows()) &&
                             (zr < (*convolutions)[i + 1][lvl - interval].depths())) {
-//                            cout<<"Model::convolve adding the scores of the parts to the score of the root"<<endl;
+
                             (*convolutions)[0][lvl]()(z, y, x) += (*convolutions)[i + 1][lvl - interval]()(zr, yr, xr);
 
                             if (positions){
-//                                cout<<"Model::convolve positions are set !!!!!!!"<<endl;
-
                                 (*positions)[i][lvl]()(z, y, x) << (*positions)[i][lvl - interval]()(zr, yr, xr)(0),
                                                                  (*positions)[i][lvl - interval]()(zr, yr, xr)(1),
                                                                  (*positions)[i][lvl - interval]()(zr, yr, xr)(2),
                                                                  lvl - interval;
-
                             }
                         }
                         else {
@@ -892,17 +839,8 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
             if (positions)
                 (*positions)[i][lvl - interval] = Positions();
 
-            cout<<"Model::convolve2 (*convolutions)[i + 1][0].isZero() : "<<(*convolutions)[i + 1][0].isZero()<<endl;
-            cout<<"Model::convolve2 (*convolutions)[i + 1][1].isZero() : "<<(*convolutions)[i + 1][1].isZero()<<endl;
         }
     }
-	
-//    scores = (*convolutions)[0];
-
-
-    cout<<"Model::convolve3 (*convolutions)[0][0].isZero() : "<<(*convolutions)[0][0].isZero()<<endl;
-    cout<<"Model::convolve3 (*convolutions)[0][1].isZero() : "<<(*convolutions)[0][1].isZero()<<endl;
-
 
     scores.swap((*convolutions)[0]);
 	
@@ -912,9 +850,6 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
             for (int j = 0; j < nbParts; ++j)
                 (*positions)[j][i] = Positions();
         }
-    cout<<"Model::convolve score[0].isZero() : "<<scores[0].isZero()<<endl;
-    cout<<"Model::convolve score[1].isZero() : "<<scores[1].isZero()<<endl;
-
 
     // Add the bias if necessary
 //    if (bias_) {
@@ -927,19 +862,11 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores, b
 //        }
 //    }
 
-
-//    cout<<"Model::convolve done"<<endl;
-
 }
 
 double Model::dot(const Model & sample) const
 {
-    double norm = max( this->norm(), sample.norm());
-
-//    cout<<"Model::dot ..."<< endl;
     double d = bias_ * sample.bias_;
-
-
 
     if (parts_.size() != sample.parts_.size()){
         cout<<"Model::dot bug1"<< endl;
@@ -965,12 +892,7 @@ double Model::dot(const Model & sample) const
 //            for (int y = 0; y < parts_[i].filter.rows(); ++y){
 //                for (int x = 0; x < parts_[i].filter.cols(); ++x){
 //                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
-////                        cout<<"Model::dot parts_[i].filter()(z, y, x)(j) = "<<parts_[i].filter()(z, y, x)(j)<<endl;
-////                        cout<<"Model::dot sample.parts_[i].filter()(z, y, x)(j) = "<<sample.parts_[i].filter()(z, y, x)(j)<<endl;
-
 //                        d += parts_[i].filter()(z, y, x)(j) * sample.parts_[i].filter()(z, y, x)(j);
-////                d += GSHOTPyramid::TensorMap(parts_[i].filter).row(z, y).dot(
-////                            GSHOTPyramid::TensorMap(sample.parts_[i].filter).row(z, y));
 //                    }
 //                }
 //            }
@@ -983,12 +905,10 @@ double Model::dot(const Model & sample) const
         }
     }
 	
-//    d /= norm * norm;
 	return d;
 }
 
 double Model::norm() const{
-//    cout<<"Model::norm ..."<< endl;
 
     if( parts_.size() < 1){
         return 0.0;
@@ -998,14 +918,11 @@ double Model::norm() const{
         for (int i = 1; i < parts_.size(); ++i) {
             n += GSHOTPyramid::TensorMap(parts_[i].filter).squaredNorm();
 
-            //TODO
-//            n += 10 * parts_[i].deformation.squaredNorm();
+
             for(int j = 0; j < parts_[i].deformation.size(); ++j){
-                n += /*10 * */parts_[i].deformation(j) * parts_[i].deformation(j);
+                n += parts_[i].deformation(j) * parts_[i].deformation(j);
             }
         }
-    //    std::cout << "Model::norm sqrt = "<<sqrt(n) << std::endl;
-
         return sqrt(n);
     }
 }
@@ -1070,41 +987,6 @@ Model & Model::operator*=(double a)
 	return *this;
 }
 
-
-
-//TODO
-Model Model::flip() const
-{
-	Model model;
-	
-//	if (!empty()) {
-//		model.parts_.resize(parts_.size());
-		
-//		// Flip the root
-//        model.parts_[0].filter = GSHOTPyramid::Flip(parts_[0].filter);
-//		model.parts_[0].offset = parts_[0].offset;
-//		model.parts_[0].deformation = parts_[0].deformation;
-		
-//		// Flip the parts
-//		for (int i = 1; i < parts_.size(); ++i) {
-//            model.parts_[i].filter = GSHOTPyramid::Flip(parts_[i].filter);
-//			model.parts_[i].offset(0) = 2 * static_cast<int>(parts_[0].filter.cols()) -
-//										static_cast<int>(parts_[i].filter.cols()) -
-//										parts_[i].offset(0);
-//			model.parts_[i].offset(1) = parts_[i].offset(1);
-//			model.parts_[i].offset(2) = parts_[i].offset(2);
-//			model.parts_[i].deformation = parts_[i].deformation;
-//			model.parts_[i].deformation(1) = -model.parts_[i].deformation(1);
-//		}
-//	}
-	
-//	model.bias_ = bias_;
-	
-	return model;
-}
-
-
-
 template <typename Scalar>
 static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * v, Scalar * y,
                  int * m, const Scalar * t, int incx, int incy, int incm)
@@ -1152,8 +1034,6 @@ static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * 
         }
     }
     else if (y) {
-        cout<<"dt1d no m ..."<<endl;
-
         for (int i = 0, k = 0; i < n; ++i) {
             while (z[k + 1] < 2 * i)
                 ++k;
@@ -1162,8 +1042,6 @@ static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * 
         }
     }
     else {
-        cout<<"dt1d no y ..."<<endl;
-
         for (int i = 0, k = 0; i < n; ++i) {
             while (z[k + 1] < 2 * i)
                 ++k;
@@ -1173,14 +1051,9 @@ static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * 
     }
 }
 
-//TODO !!!!!!!!!!
 void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor3DF & tmp2,
                  Positions * positions)
 {
-    cout<<"Model::DT3D ..."<<endl;
-    cout<<"Model::DT3D part offset : "<<part.offset<<endl;
-    cout<<"Model::DT3D part deformation : "<<part.deformation<<endl;
-
     // Nothing to do if the matrix is empty
     if (!tensor.size())
         return;
@@ -1191,20 +1064,13 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 
     if (positions){
         (*positions)().resize(depths, rows, cols);
-        cout<<"Model::DT3D positions resized"<<endl;
     }
 
     tmp1().resize(depths, rows, cols);
     tmp2().resize(depths, rows, cols);
 
-//    cout<<"Model::DT3D depths : "<<depths<<endl;
-//    cout<<"Model::DT3D rows : "<<rows<<endl;
-//    cout<<"Model::DT3D cols : "<<cols<<endl;
-
-
     // Temporary vectors
     int maxi = max(depths,max(rows, cols));
-//    int maxi2 = maxi * maxi;
     vector<GSHOTPyramid::Scalar> distance(maxi + 1);
     vector<int> index(maxi + 1);
     vector<GSHOTPyramid::Scalar> t(maxi);
@@ -1221,44 +1087,19 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                                  part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
                                  positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
                                  &t[0], 1, 1, 4);
-    cout<<"Model::DT3D 1..."<<endl;
 
-//    for (int z = 0; z < depths; ++z)
-//        for (int y = 0; y < rows; ++y)
-//            for (int x = 0; x < cols; ++x){
-
-//                cout<<"Model::DT3D (*positions)()(z, y, x) :"<<(*positions)()(z, y, x)(0)<<" / "<<depths
-//                <<"; "<<(*positions)()(z, y, x)(1)<<" / "<<rows
-//                <<"; "<<(*positions)()(z, y, x)(2)<<" / "<<cols<<endl;
-
-//            }
-
-
-//    ofstream out("tmp.txt");
-
-//    out << (tmp1());
-//    ofstream out2("tmp2.txt");
-
-//    out2 << (tensor());
     for (int y = 1; y < rows; ++y)
         t[y] = 1 / (part.deformation(2) * y);
 
     // Filter the columns back to the original matrix
     for (int z = 0; z < depths; ++z)
         for (int x = 0; x < cols; ++x){
-//            cout<<"Model::DT3D x : "<<x<<endl;
-//            cout<<"Model::DT3D z : "<<z<<endl;
-//            cout<<"Model::DT3D tmp1.size() : "<<tmp1.size()<<endl;
-//            cout<<"Model::DT3D tmp2.size() : "<<tmp2.size()<<endl;
-//            cout<<"Model::DT3D positions.size() : "<<positions->size()<<endl;
-//            cout<<"Model::DT3D pos max : "<<x + z*cols*rows + rows*cols<<endl;
             dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), part.deformation(3),
                                  &distance[0], &index[0],
                                  tmp2().data() + x + z*cols*rows,
                                  positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
                                  cols, cols, 4 * cols);
         }
-    cout<<"Model::DT3D 2..."<<endl;
 
     for (int z = 1; z < depths; ++z)
         t[z] = 1 / (part.deformation(4) * z);
@@ -1271,7 +1112,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                                  tensor().data() + x + y*cols,//or 0
                                  positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
                                  cols * rows, cols * rows, 4 * cols * rows);
-    cout<<"Model::DT3D 3..."<<endl;
 
 //  //   Re-index the best x positions now that the best y changed
     // Re-index the best z positions now that the best x and y changed
@@ -1280,8 +1120,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
             for (int y = 0; y < rows; ++y)
                 for (int x = 0; x < cols; ++x)
                     tmp2()(z, y, x) = (*positions)()(z, y, x)(0);
-
-        cout<<"Model::DT3D tmp2.depths():"<<tmp2.depths()<<endl;
 
         for (int z = 0; z < depths; ++z)
             for (int y = 0; y < rows; ++y)
@@ -1293,68 +1131,7 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 
     }
 
-
-    cout<<"Model::DT3D done"<<endl;
-
 }
-
-//void Model::DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
-//                 Positions * positions)
-//{
-//    // Nothing to do if the matrix is empty
-//    if (!matrix.size())
-//        return;
-	
-//    const int rows = static_cast<int>(matrix.rows());
-//    const int cols = static_cast<int>(matrix.cols());
-	
-//    if (positions)
-//        positions->resize(rows, cols);
-	
-//    tmp.resize(rows, cols);
-	
-//    // Temporary vectors
-//    vector<GSHOTPyramid::Scalar> z(max(rows, cols) + 1);
-//    vector<int> v(max(rows, cols) + 1);
-//    vector<GSHOTPyramid::Scalar> t(max(rows, cols));
-	
-//    t[0] = numeric_limits<GSHOTPyramid::Scalar>::infinity();
-	
-//    for (int x = 1; x < cols; ++x)
-//        t[x] = 1 / (part.deformation(0) * x);
-	
-//    // Filter the rows in tmp
-//    for (int y = 0; y < rows; ++y)
-//        dt1d<GSHOTPyramid::Scalar>(matrix.row(y).data(), cols, part.deformation(0),
-//                                 part.deformation(1), &z[0], &v[0], tmp.row(y).data(),
-//                                 positions ? positions->row(y).data()->data() : 0, &t[0], 1, 1, 3);
-	
-//    for (int y = 1; y < rows; ++y)
-//        t[y] = 1 / (part.deformation(2) * y);
-	
-//    // Filter the columns back to the original matrix
-//    for (int x = 0; x < cols; ++x)
-//        dt1d<GSHOTPyramid::Scalar>(tmp.data() + x, rows, part.deformation(2), part.deformation(3),
-//                                 &z[0], &v[0],
-//#ifndef FFLD_MODEL_3D
-//                                 matrix.data() + x,
-//#else
-//                                 0,
-//#endif
-//                                 positions ? ((positions->data() + x)->data() + 1) : 0, &t[0], cols,
-//                                 cols, 3 * cols);
-	
-//    // Re-index the best x positions now that the best y changed
-//    if (positions) {
-//        for (int y = 0; y < rows; ++y)
-//            for (int x = 0; x < cols; ++x)
-//                tmp(y, x) = (*positions)(y, x)(0);
-		
-//        for (int y = 0; y < rows; ++y)
-//            for (int x = 0; x < cols; ++x)
-//                (*positions)(y, x)(0) = tmp((*positions)(y, x)(1), x);
-//    }
-//}
 
 ostream & FFLD::operator<<(ostream & os, const Model & model)
 {
@@ -1409,21 +1186,15 @@ istream & FFLD::operator>>(istream & is, Model & model)
 	vector<Model::Part> parts(nbParts);
 
     for (int i = 0; i < nbParts; ++i) {
-        int depths, rows, cols, nbFeatures;
-        cerr<<"Model::operator>> part : "<<i<<endl;
-		
+        int depths, rows, cols, nbFeatures;		
         is >> depths >> rows >> cols >> nbFeatures;
-        if (!is) cerr<<"Model::operator>> test1"<<endl;
         is >> parts[i].offset(0) >> parts[i].offset(1)
            >> parts[i].offset(2) >> parts[i].offset(3);
-        if (!is) cerr<<"Model::operator>> test2"<<endl;
         is >> parts[i].deformation(0) >> parts[i].deformation(1)
            >> parts[i].deformation(2) >> parts[i].deformation(3) >> parts[i].deformation(4)
            >> parts[i].deformation(5) >> parts[i].deformation(6) >> parts[i].deformation(7);
-        if (!is) cerr<<"Model::operator>> test3"<<endl;
 		
         if (!is || (nbFeatures > GSHOTPyramid::DescriptorSize)) {
-            cerr<<"Model::operator>> failed 2"<<endl;
             if(!is)cerr<<"Model::operator>> failed 2: stream is empty"<<endl;
             else cerr<<"Model::operator>> failed 2: nbFeatures: "<<nbFeatures<<" > DescriptorSize:"<<GSHOTPyramid::DescriptorSize<<endl;
             model = Model();

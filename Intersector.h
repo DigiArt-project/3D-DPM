@@ -1,10 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-// Implementation of the papers "Exact Acceleration of Linear Object Detectors", 12th European
-// Conference on Computer Vision, 2012 and "Deformable Part Models with Individual Part Scaling",
-// 24th British Machine Vision Conference, 2013.
-//
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //
@@ -54,27 +50,18 @@ public:
 
         const float left = std::max(reference_.left() * reference_.resolution(), rect.left() * rect.resolution());
         const float right = std::min(reference_.right() * reference_.resolution(), rect.right() * rect.resolution());
-//        std::cout<<"Inter:: reference_.left() * reference_.resolution() = "<<reference_.left() /** reference_.resolution()*/
-//                <<" / rect.left() * rect.resolution() = "<<rect.left() /** rect.resolution()*/<<std::endl;
-//        std::cout<<"Inter:: reference_.right() * reference_.resolution() = "<<reference_.right() /** reference_.resolution()*/
-//                <<" / rect.right() * rect.resolution() = "<<rect.right() /** rect.resolution()*/<<std::endl;
-//        std::cout<<"Inter:: reference_.resolution() = "<<reference_.resolution()
-//                <<" / rect.resolution() = "<<rect.resolution()<<std::endl;
-//        std::cout<<"Inter:: left = "<<left<<" / right = "<<right<<std::endl;
 
         if (right < left)
             return false;
 
         const float top = std::max(reference_.top() * reference_.resolution(), rect.top() * rect.resolution());
         const float bottom = std::min(reference_.bottom() * reference_.resolution(), rect.bottom() * rect.resolution());
-//        std::cout<<"Inter:: top = "<<top<<" / bottom = "<<bottom<<std::endl;
 
         if (bottom < top)
             return false;
 
         const float front = std::max(reference_.front() * reference_.resolution(), rect.front() * rect.resolution());
         const float back = std::min(reference_.back() * reference_.resolution(), rect.back() * rect.resolution());
-//        std::cout<<"Inter:: front = "<<front<<" / back = "<<back<<std::endl;
 
         if (back < front)
             return false;
@@ -93,10 +80,6 @@ public:
         else {
             const float referenceVolume = reference_.volume();
             const float unionVolume = referenceVolume + cubeVolume - intersectionVolume;
-//            std::cout<<"Inter:: referenceVolume = "<<referenceVolume<<std::endl;
-//            std::cout<<"Inter:: cubeVolume = "<<cubeVolume<<std::endl;
-//            std::cout<<"Inter:: intersectionVolume = "<<intersectionVolume<<std::endl;
-//            std::cout<<"Inter:: intersectionVolume / unionVolume = "<<intersectionVolume / unionVolume<<std::endl;
             if (intersectionVolume >= unionVolume * threshold_) {
                 if (score)
                     *score = intersectionVolume / unionVolume;

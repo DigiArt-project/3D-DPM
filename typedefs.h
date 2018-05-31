@@ -1,9 +1,5 @@
-//
-//  typedefs.h
-//
-//  Created by Lirone Samoun
-//
-//
+// Written by Fisichella Thomas
+// Date 25/05/2018
 
 #ifndef typedefs_h
 #define typedefs_h

@@ -1,3 +1,6 @@
+// Written by Fisichella Thomas
+// Date 25/05/2018
+
 #include "Mixture.h"
 #include "Intersector.h"
 #include "Object.h"
@@ -117,9 +120,6 @@ public:
 //                              sceneResolution*(originScene(1)+sceneSize.second),
 //                              sceneResolution*(originScene(0)+sceneSize.first)), "kjbij");
 
-
-
-
         Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
         // Define a translation of 2.5 meters on the x axis.
@@ -188,10 +188,6 @@ public:
         model.parts()[0].filter = pyramid.levels()[0].block( chairBox.origin()(0), chairBox.origin()(1), chairBox.origin()(2),
                                                              chairSize.first, chairSize.second, chairSize.third);
         model.parts()[1].filter = pyramid.levels()[0].block( 2, 0, 6, chairPartSize.first, chairPartSize.second, chairPartSize.third);
-
-        ofstream out2("chairModel.txt");
-
-        out2 << (model);
     }
 
     void testNegLatSearch(){
@@ -519,7 +515,7 @@ public:
         vector<Mixture::Indices> argmaxes;
         vector<vector<vector<Model::Positions> > > positions;
 
-        mixture.computeEnergyScores( pyramid, scores, argmaxes, &positions);
+        mixture.computeScores( pyramid, scores, argmaxes, &positions);
 
         // Cache the size of the models
         vector<Model::triple<int, int, int> > sizes(mixture.models().size());
@@ -701,7 +697,6 @@ public:
 
         Mixture mixture;
         in >> mixture;
-//        mixture.train_ = false;//allow quentin's code
 
         if (mixture.empty()) {
             cerr << "Invalid model file\n" << endl;
@@ -733,15 +728,9 @@ public:
         GSHOTPyramid pyramid3(chairCloud, Eigen::Vector3i( 3,3,3), 1);
         root3x = pyramid3.levels()[1];
 
-
-
 //        Tensor3DF convolution = root2x.chi2Convolve(root2x);
-
 //        cout<<"test root2x : "<<GSHOTPyramid::TensorMap(root2x)() - GSHOTPyramid::TensorMap(root2x)()<<endl;
-
 //        cout<<"test chi2Convolution score : "<<convolution()<<endl;
-
-
 //        mixture.models()[0].parts()[0].filter = root3x;
 
 
@@ -756,7 +745,7 @@ public:
         Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
         Scene scene( originScene, sceneBox.depth(), sceneBox.height(), sceneBox.width(), sceneName, {obj});
 
-        detect(mixture, /*0, image.width(), image.height()*/interval, pyramid, threshold, overlap, /*file, */out,
+        detect(mixture, interval, pyramid, threshold, overlap, out,
                images, detections, &scene, Object::CHAIR);
 
         Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
@@ -826,8 +815,6 @@ public:
         mixture.trainSVM(positives, negatives, C, J);
         mixture.trainSVM(positives, negatives, C, J);
 
-//        ofstream out("trainSVM.txt");
-
         cout << (mixture) << endl;
 
         Tensor3DF convolution = p1.convolve(mixture.models()[0].parts()[0].filter);
@@ -878,87 +865,11 @@ int main(){
 
 //    test.testTrainSVM();
 
-
-
     int end = getMilliCount();
 
     cout << "Time : " << end-start << endl;
 
-
     test.viewer.show();
-
-
-
 
     return 0;
 }
-
-
-
-
-
-
-
-//void testTrainSVM(){
-
-//        Model::triple<int, int, int> rootSize( sceneSize.first/4,
-//                                           sceneSize.second/4,
-//                                               sceneSize.third/4);
-//        Model::triple<int, int, int> partSize( sceneSize.first/6,
-//                                               sceneSize.second/6,
-//                                               sceneSize.third/6);
-//        Rectangle sceneRec( Eigen::Vector3i(1, 1, 1), rootSize.first, rootSize.second, rootSize.third, resolution);
-//        Rectangle sceneRec2( Eigen::Vector3i(3, 5, 4), rootSize.first, rootSize.second, rootSize.third, resolution);
-////        Rectangle sceneRec3( Eigen::Vector3i(2, 2, 2), rootSize.third*0.75, rootSize.second*2, rootSize.first);
-
-//        cout<<"test::sceneRec : "<< sceneRec <<endl;
-//        cout<<"test::sceneRec2 : "<< sceneRec2 <<endl;
-//        cout<<"test::rootSize : "<<rootSize.first<<" "<<rootSize.second<<" "<<rootSize.third<<endl;
-//        cout<<"test::partSize : "<<partSize.first<<" "<<partSize.second<<" "<<partSize.third<<endl;
-
-//        vector<pair<Model, int> >  positives, negatives;
-//        Model modelScene( rootSize, 1, partSize);
-//        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3));
-
-//        modelScene.parts()[0].filter = pyramid.levels()[0].block( 1, 1, 1, rootSize.first, rootSize.second, rootSize.third);
-//        modelScene.parts()[1].filter = pyramid.levels()[0].block( 2, 2, 1, partSize.first, partSize.second, partSize.third);
-
-//        positives.push_back(pair<Model, int>(modelScene, 0));
-
-//        modelScene.parts()[0].filter = pyramid.levels()[0].block( 5, 5, 5, rootSize.first, rootSize.second, rootSize.third);
-//        modelScene.parts()[1].filter = pyramid.levels()[0].block( 5, 5, 5, partSize.first, partSize.second, partSize.third);
-
-//        negatives.push_back(pair<Model, int>(modelScene, 0));
-
-
-//        Model model( rootSize, 1, partSize);
-//        std::vector<Model> models = { model};
-
-//        Mixture mixture( models);
-
-//        double C = 0.002;
-//        double J = 2.0;
-//        mixture.trainSVM(positives, negatives, C, J);
-
-//        ofstream out("tmp.txt");
-
-//        out << (mixture);
-
-//        ////////////
-
-//        modelScene.parts()[0].filter = pyramid.levels()[0].block( 5, 1, 1, rootSize.first, rootSize.second, rootSize.third);
-//        modelScene.parts()[1].filter = pyramid.levels()[0].block( 5, 2, 1, partSize.first, partSize.second, partSize.third);
-
-//        positives[0] = pair<Model, int>(modelScene, 0);
-
-//        modelScene.parts()[0].filter = pyramid.levels()[0].block( 0, 0, 5, rootSize.first, rootSize.second, rootSize.third);
-//        modelScene.parts()[1].filter = pyramid.levels()[0].block( 1, 1, 5, partSize.first, partSize.second, partSize.third);
-
-//        negatives[0] = pair<Model, int>(modelScene, 0);
-
-//        mixture.trainSVM(positives, negatives, C, J);
-
-//        ofstream out2("tmp2.txt");
-
-//        out2 << (mixture);
-//}

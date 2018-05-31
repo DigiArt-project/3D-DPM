@@ -1,3 +1,6 @@
+// Written by Fisichella Thomas
+// Date 25/05/2018
+
 
 #include "Mixture.h"
 

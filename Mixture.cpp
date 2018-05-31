@@ -1,10 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-// Implementation of the papers "Exact Acceleration of Linear Object Detectors", 12th European
-// Conference on Computer Vision, 2012 and "Deformable Part Models with Individual Part Scaling",
-// 24th British Machine Vision Conference, 2013.
-//
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //
@@ -32,25 +28,15 @@ using namespace Eigen;
 using namespace FFLD;
 using namespace std;
 
-Mixture::Mixture() : cached_(false), zero_(true), train_(true)
+Mixture::Mixture() : cached_(false), zero_(true)
 {
 }
 
-Mixture::Mixture(const vector<Model> & models) : models_(models), cached_(false), zero_(true), train_(true)
-{
-    cout<<"Mix::contructor zero_ is true"<<endl;
-    for(int i=0;i<models_.size(); ++i){
-        for(int j=0;j<models_[i].parts().size(); ++j){
-            cout<<"Mix::contructor models_["<<i<<"].parts_["<<j<<"].filter.size() : "<< models_[i].parts()[j].filter.size() <<endl;
-            cout<<"Mix::contructor models_["<<i<<"].parts_["<<j<<"].filter.isZero() : "
-               << GSHOTPyramid::TensorMap( models_[i].parts()[j].filter).isZero() << endl;
-        }
-    }
-
-}
+Mixture::Mixture(const vector<Model> & models) : models_(models), cached_(false), zero_(true)
+{}
 
 Mixture::Mixture(int nbComponents, const vector<Scene> & scenes, Object::Name name) :
-cached_(false), zero_(true), train_(true)
+cached_(false), zero_(true)
 {
 	// Create an empty mixture if any of the given parameters is invalid
 	if ((nbComponents <= 0) || scenes.empty()) {
@@ -74,7 +60,6 @@ cached_(false), zero_(true), train_(true)
 		models_[2 * i    ] = Model(sizes[i]);
 		models_[2 * i + 1] = Model(sizes[i]);
 	}
-    cout<<"models2_ size = "<<models_.size()<<endl;
 }
 
 bool Mixture::empty() const
@@ -142,31 +127,18 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 	if (!models_[0].empty() && models_[0].parts()[0].filter.size() &&
         !models_[0].parts()[0].filter()(0, 0, 0).isZero()){
         zero_ = false;
-        cout << "Mix:: set zero_ to false" << endl;
     }
 
 	double loss = numeric_limits<double>::infinity();
 
-//    ofstream out("tmp.txt", std::ofstream::trunc);
 	for (int relabel = 0; relabel < nbRelabel; ++relabel) {
         cout<<"Mix::train relabel : "<< relabel <<endl;
-
-//        for(int i=0;i<models_.size(); ++i){
-//            for(int j=0;j<models_[i].parts().size(); ++j){
-//                cout<<"Mix::train loop begin models_["<<i<<"].parts_["<<j<<"].filter.size() : "<< models_[i].parts()[j].filter.size() <<endl;
-//            }
-//        }
 
 		// Sample all the positives
 		vector<pair<Model, int> > positives;
 		
         posLatentSearch(scenes, name, pad, interval, overlap, positives);
         cout << "Mix::train found "<<positives.size() << " positives" << endl;
-        if(positives.size() > 0) cout << "Mix::train positives isZero = " << GSHOTPyramid::TensorMap(positives[0].first.parts()[0].filter).isZero() << endl;
-
-        // Left-right clustering at the first iteration
-//        if (zero_)
-//            Cluster(static_cast<int>(models_.size()), positives);
 
         // Cache of hard negative samples of maximum size maxNegatives
         vector<pair<Model, int> > negatives;
@@ -175,6 +147,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
         double prevLoss = -numeric_limits<double>::infinity();
 		
         for (int datamine = 0; datamine < nbDatamine; ++datamine) {
+            ////// TODO not sure if this part works
             // Remove easy samples (keep hard ones)
             int j = 0;
             cout<<"Mix::train datamine : "<<datamine<<endl;
@@ -186,35 +159,19 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
             negatives.resize(j);
 
-            //TODO
             // Sample new hard negatives
             negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
 
+            //////
             // Stop if there are no new hard negatives
             if (datamine && (negatives.size() == j)){
                 cout<<"Mix::train stop because no new hard negatives"<<endl;
-
                 break;
             }
 
 
             const int maxIterations =
                 min(max(10.0 * sqrt(static_cast<double>(positives.size())), 100.0), 1000.0);
-
-
-//            for(int i=0; i<positives[0].first.parts().size(); ++i){
-//                bool hasNegValue=false;
-//                for (int z = 0; z < positives[0].first.parts()[i].filter.depths(); ++z) {
-//                    for (int y = 0; y < positives[0].first.parts()[i].filter.rows(); ++y) {
-//                        for (int x = 0; x < positives[0].first.parts()[i].filter.cols(); ++x) {
-//                            for (int j = 0; j < 352; ++j) {
-//                                if( positives[0].first.parts()[i].filter()(z, y, x)(j) < 0) hasNegValue = true;
-//                            }
-//                        }
-//                    }
-//                }
-//                if(hasNegValue) cout<<"Mix::train positive part "<<i<<" hasNegValue" << endl;
-//            }
 
             loss = trainSVM(positives, negatives, C, J, maxIterations);
 
@@ -250,20 +207,18 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 	return loss;
 }
 
-void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize/*, GSHOTPyramid::Level root2x*/)
+void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize)
 {
     for (int i = 0; i < models_.size(); ++i) {
-        models_[i].initializeParts(nbParts, partSize/*, root2x*/);
-//		models_[i + 1] = models_[i].flip();
+        models_[i].initializeParts(nbParts, partSize);
 	}
 	
 	// The filters definitely changed
-	filterCache_.clear();
 	cached_ = false;
 	zero_ = false;
 }
 
-void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
+void Mixture::computeScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                                   vector<Indices> & argmaxes,
                                   vector<vector<vector<Model::Positions> > > * positions) const
 {
@@ -273,7 +228,6 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
 
     // Resize the scores and argmaxes
     scores.resize(nbLevels);
-//    cout<<"computeEnergyScores:: scores size : "<< scores.size()<<endl;
     argmaxes.resize(nbLevels);
 
     if (empty() || pyramid.empty()) {
@@ -293,17 +247,10 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
     // Convolve with all the models
     vector<vector<Tensor3DF> > convolutions;//[mod][lvl]
     convolve(pyramid, convolutions, positions);
-    if(convolutions[0][0].size() == 0) {
-        cout<<"Mixture::convolutions[model0][lvl0] is empty" << endl;
-    } else{
-        cout<<"Mixture::convolutions[model0][lvl0].last() : "<< convolutions[0][0].last() << endl;
-    }
-    cout<<"Mixture::convolutions[model0][lvl1].last() : "<< convolutions[0][1].last() << endl;
-
 
     // In case of error
     if (convolutions.empty()) {
-        cout << "Mix::computeEnergyScores::convolutions.empty()" << endl;
+        cout << "Mix::computeScores::convolutions.empty()" << endl;
         scores.clear();
         argmaxes.clear();
 
@@ -326,7 +273,7 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
             cols = std::min(cols, static_cast<int>(convolutions[i][lvl].cols()));
             depths = std::min(depths, static_cast<int>(convolutions[i][lvl].depths()));
         }
-        cout << "Mix::computeEnergyScores convolutions is zero = "
+        cout << "Mix::computeScores convolutions is zero = "
              <<convolutions[0][lvl].isZero() << endl;
 
         scores[lvl]().resize(depths, rows, cols);//convolution score of the best model at x, y, z
@@ -340,10 +287,6 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
                     for (int i = 1; i < nbModels; ++i){
                         if (convolutions[i][lvl]()(z, y, x) > convolutions[argmax][lvl]()(z, y, x))
                             argmax = i;
-
-//                        cout << "Mix::computeEnergyScores argmax = " << argmax << endl;
-//                        cout << "Mix::computeEnergyScores convolutions["<<i<<"]["<<lvl<<"]()(z, y, x) = " << convolutions[i][lvl]()(z, y, x) << endl;
-//                        cout << "Mix::computeEnergyScores convolutions["<<argmax<<"]["<<lvl<<"]()(z, y, x) = " << convolutions[argmax][lvl]()(z, y, x) << endl;
                     }
 
                     scores[lvl]()(z, y, x) = convolutions[argmax][lvl]()(z, y, x);
@@ -351,119 +294,8 @@ void Mixture::computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF
                 }
             }
         }
-        cout << "Mix::computeEnergyScores scores["<<lvl<<"] is zero = "<<scores[lvl].isZero() << endl;
+        cout << "Mix::computeScores scores["<<lvl<<"] is zero = "<<scores[lvl].isZero() << endl;
     }
-}
-
-//void Mixture::convolve(const HOGPyramid & pyramid, vector<HOGPyramid::Matrix> & scores,
-//					   vector<Indices> & argmaxes,
-//					   vector<vector<vector<Model::Positions> > > * positions) const
-//{
-//	if (empty() || pyramid.empty()) {
-//		scores.clear();
-//		argmaxes.clear();
-		
-//		if (positions)
-//			positions->clear();
-		
-//		return;
-//	}
-	
-//	const int nbModels = static_cast<int>(models_.size());
-//	const int nbLevels = static_cast<int>(pyramid.levels().size());
-	
-//	// Convolve with all the models
-//	vector<vector<HOGPyramid::Matrix> > convolutions;
-	
-//	convolve(pyramid, convolutions, positions);
-	
-//	// In case of error
-//	if (convolutions.empty()) {
-//		scores.clear();
-//		argmaxes.clear();
-		
-//		if (positions)
-//			positions->clear();
-		
-//		return;
-//	}
-	
-//	// Resize the scores and argmaxes
-//	scores.resize(nbLevels);
-//	argmaxes.resize(nbLevels);
-	
-//#pragma omp parallel for
-//	for (int z = 0; z < nbLevels; ++z) {
-//		int rows = static_cast<int>(convolutions[0][z].rows());
-//		int cols = static_cast<int>(convolutions[0][z].cols());
-		
-//		for (int i = 1; i < nbModels; ++i) {
-//			rows = min(rows, static_cast<int>(convolutions[i][z].rows()));
-//			cols = min(cols, static_cast<int>(convolutions[i][z].cols()));
-//		}
-		
-//		scores[z].resize(rows, cols);
-//		argmaxes[z].resize(rows, cols);
-		
-//		for (int y = 0; y < rows; ++y) {
-//			for (int x = 0; x < cols; ++x) {
-//				int argmax = 0;
-				
-//				for (int i = 1; i < nbModels; ++i)
-//					if (convolutions[i][z](y, x) > convolutions[argmax][z](y, x))
-//						argmax = i;
-				
-//				scores[z](y, x) = convolutions[argmax][z](y, x);
-//				argmaxes[z](y, x) = argmax;
-//			}
-//		}
-//	}
-//}
-
-void Mixture::cacheFilters() const
-{
-//	// Count the number of filters
-//	int nbFilters = 0;
-	
-//	for (int i = 0; i < models_.size(); ++i)
-//		nbFilters += models_[i].parts().size();
-	
-//	// Transform all the filters
-//	filterCache_.resize(nbFilters);
-	
-//	for (int i = 0, j = 0; i < models_.size(); ++i) {
-//#pragma omp parallel for
-//		for (int k = 0; k < models_[i].parts().size(); ++k)
-//			Patchwork::TransformFilter(models_[i].parts()[k].filter, filterCache_[j + k]);
-		
-//		j += models_[i].parts().size();
-//	}
-	
-//	cached_ = true;
-}
-
-static inline void clipBndBox(Rectangle & bndbox, const Scene & scene, double alpha = 0.0)
-{
-    //TODO COMPRENDRE A QUOI CA SERT
-	// Compromise between clamping the bounding box to the image and penalizing bounding boxes
-	// extending outside the image
-    if (bndbox.left() < scene.origin()(0))
-        bndbox.setLeft(scene.origin()(0));
-
-    if (bndbox.top() < scene.origin()(1))
-        bndbox.setTop(scene.origin()(1));
-
-    if (bndbox.front() < scene.origin()(2))
-        bndbox.setFront(scene.origin()(2));
-
-    if (bndbox.right() >= scene.width())
-        bndbox.setRight(scene.width() - 1);
-
-    if (bndbox.bottom() >= scene.height())
-        bndbox.setBottom(scene.height() - 1);
-
-    if (bndbox.back() >= scene.depth())
-        bndbox.setBack(scene.depth() - 1);
 }
 
 void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
@@ -516,9 +348,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         vector<vector<vector<Model::Positions> > > positions;//positions[nbModels][nbLvl][nbPart]
 		
         if (!zero_){
-            //only remaines score for the last octave !!!!!!!
-            computeEnergyScores(pyramid, scores, argmaxes, &positions);
-
+            //only remaines score for the last octave
+            computeScores(pyramid, scores, argmaxes, &positions);
         }
 
 
@@ -569,13 +400,6 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                     depths = pyramid.levels()[lvl].depths() - static_cast<int>(maxSize().first*scale) + 1;
                     rows = pyramid.levels()[lvl].rows() - static_cast<int>(maxSize().second*scale) + 1;
                     cols = pyramid.levels()[lvl].cols() - static_cast<int>(maxSize().third*scale)+ 1;
-                    cout << "Mix:: depths =  maxSize().first  = " << maxSize().first*scale << endl;
-                    cout << "Mix:: depths =  maxSize().first  = " << static_cast<int>(maxSize().third*scale) << endl;
-                    cout << "Mix:: rows = maxSize().second  = " << maxSize().second*scale << endl;
-                    cout << "Mix:: cols = maxSize().third  = " << int(maxSize().third*scale) << endl;
-//                    depths = pyramid.levels()[lvl].depths();
-//                    rows = pyramid.levels()[lvl].rows();
-//                    cols = pyramid.levels()[lvl].cols();
                     cout << "Mix::posLatentSearch depths scene = " << depths << endl;
                     cout << "Mix::posLatentSearch rows scene = " << rows << endl;
                     cout << "Mix::posLatentSearch cols scene = " << cols << endl;
@@ -597,26 +421,15 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             if (zero_) {
                                 for (int k = 0; k < models_.size(); ++k) {
                                     // The bounding box of the model at this position
-                                    //TODO
-
                                     Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
                                                            (y+offy)/*- pad.y()*/,
                                                            (x+offx)/* - pad.x()*/);
-                                    /////TODO prob !!!!!!
                                     int w = models_[k].rootSize().third /** scale*/;
                                     int h = models_[k].rootSize().second /** scale*/;
                                     int d = models_[k].rootSize().first /** scale*/;
 
                                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
-//                                    cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
-//                                    cout << "Mix::posLatentSearch search box left / right = "
-//                                         << bndbox.left()*bndbox.resolution() << " / " << bndbox.right()*bndbox.resolution()<< endl;
-                                    //bndbox.setX( topology[ min(0, x - pad.x())].x)
 
-
-                                    // Trade-off between clipping and penalizing
-                                    //No use in 3D
-                                    //clipBndBox(bndbox, scenes[i], 0.5);
 
                                     double inter = 0.0;
 
@@ -632,7 +445,6 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             }
                             // Just take the model with the best score
                             else {
-                                //TODO
                                 // The bounding box of the model at this position
                                 Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
                                                        (y+offy)/*- pad.y()*/,
@@ -642,28 +454,16 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 int d = models_[model].rootSize().first /** scale*/;
 
                                 Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
-//                                cout << "Mix::posLatentSearch search box = " << bndbox<< endl;
-//                                cout << "Mix::posLatentSearch coord = "
-//                                     << z +offz << " " << y+offy << " " << x +offx << " " << pyramid.resolutions()[lvl] << endl;
-//                                cout << "Mix::posLatentSearch search box left / right = "
-//                                     << bndbox.left()*bndbox.resolution() << " / " << bndbox.right()*bndbox.resolution()<< endl;
 
-                                //No use in 3D
-                                //clipBndBox(bndbox, scenes[i]);
                                 double inter = 0.0;
 
                                 if(intersector(bndbox, &inter)){
                                     if (inter > intersection) {
                                         intersection = inter;
                                     }
-                                    cout << "Mix::posLatentSearch intersector True, scores = " << scores[lvl]()(z, y, x) <<" / "<< maxScore<< endl;
-
-                                    cout << "Mix::posLatentSearch intersection = " << intersection <<" / "<< maxInter<< endl;
+//                                    cout << "Mix::posLatentSearch intersector True, scores = " << scores[lvl]()(z, y, x) <<" / "<< maxScore<< endl;
+//                                    cout << "Mix::posLatentSearch intersection = " << intersection <<" / "<< maxInter<< endl;
                                 }
-
-//                                cout << "Mix::posLatentSearch intersector bndbox : " << scenes[i].objects()[j].bndbox() << endl;
-//                                cout << "Mix::posLatentSearch rectangle bndbox : " << bndbox << endl;
-//                                cout << "Mix::posLatentSearch intersector score / maxInter : " << intersection << " / " <<  maxInter << endl;
                             }
 
 
@@ -778,7 +578,7 @@ cout<<"Mix::negLatentSearch test2"<<endl;
 
         if (!zero_){
             cout << "Mix::NegLatentSearch computeEnergyScores ..." << endl;
-            computeEnergyScores(pyramid, scores, argmaxes, &positions);
+            computeScores(pyramid, scores, argmaxes, &positions);
         }
         cout<<"Mix::negLatentSearch test3"<<endl;
 
@@ -926,11 +726,7 @@ public:
 				
 				if (g)
 					gradients[positives_[i].second] -= positives_[i].first;
-            } /*else{
-                cout << "Loss:: positiveScore not taken into account : " << posMargins[i] << endl;
-                if (g)
-                    gradients[positives_[i].second] -= positives_[i].first;
-            }*/
+            }
 		}
 		
 
@@ -968,7 +764,6 @@ public:
 				gradients[i] *= C_;
 
 			const double norm = models_[i].norm();
-//            std::cout << "LOSS::() norm = "<<norm<<" / maxNorm = "<<maxNorm << std::endl;
 
 			if (norm > maxNorm) {
 				maxNorm = norm;
@@ -1069,8 +864,6 @@ public:
 			}
 			
 			x[j] = models[i].bias();
-//            cout<<"From Model bias : "<< models[i].bias() <<endl;
-//            cout<<"From Model x["<<j<<"] : "<< x[j] <<endl;
 			++j;
 		}
 	}
@@ -1089,14 +882,8 @@ double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 					  const vector<pair<Model, int> > & negatives, double C, double J,
 					  int maxIterations)
 {
-    cout << "Mix::trainSVM ..." << endl;
 
 	detail::Loss loss(models_, positives, negatives, C, J, maxIterations);
-
-    cout << "Mix::trainSVM model norm = " << models_[0].norm() << endl;
-    if(positives.size() > 0) cout << "Mix::trainSVM positives[0] norm = " << positives[0].first.norm() << endl;
-    else cout << "Mix::trainSVM no positives" << endl;
-
 
     double epsilon = 0.001;
     LBFGS lbfgs(&loss, epsilon, maxIterations, 20, 20);
@@ -1106,15 +893,10 @@ double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 	VectorXd x(loss.dim());
 	
 	detail::Loss::FromModels(models_, x.data());
-    cout << "Mix::trainSVM x.data() norm = " << x.norm() << endl;
 
 	const double l = lbfgs(x.data());
-    cout << "Mix::trainSVM x.data() norm after training = " << x.norm() << endl;
 
 	detail::Loss::ToModels(x.data(), models_);
-    cout << "Mix::trainSVM x.data() norm after training2 = " << x.norm() << endl;
-
-    cout << "Mix::trainSVM model norm after training = " << models_[0].norm() << endl;
 
 	return l;
 }
@@ -1123,7 +905,6 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
                        vector<vector<Tensor3DF> > & scores,//[model.size][model.part.size]
                        vector<vector<vector<Model::Positions> > > * positions) const//[model.size][model.part.size][pyramid.lvl.size]
 {
-//    cout<<"Mix::convolve ..."<<endl;
 
 	if (empty() || pyramid.empty()) {
         if (empty()) cout<<"Mix::convolve mixture is empty"<<endl;
@@ -1141,45 +922,20 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 	
 	// Resize the scores and positions
 	scores.resize(nbModels);
-//    cout<<"Mix::convolve scores.size() : "<< scores.size() <<endl;
 	
 	if (positions)
 		positions->resize(nbModels);
 	
 	// Transform the filters if needed
 
-//    if( train_){
-        bool sumConvolve = false;
 //#pragma omp parallel for
-        for (int i = 0; i < nbModels; ++i){
-    //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
+    for (int i = 0; i < nbModels; ++i){
+        models_[i].convolve(pyramid, scores[i], positions ? &(*positions)[i] : 0);
+    }
 
-            models_[i].convolve(pyramid, scores[i], sumConvolve, positions ? &(*positions)[i] : 0/*, &convolutions*/);
-    //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
-            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
-
-        }
-//    } else{
-//        bool sumConvolve = true;
-////#pragma omp parallel for
-//        for (int i = 0; i < nbModels; ++i){
-//    //        vector<vector<Tensor3DF> > convolutions(models_[i].parts().size());
-
-//            models_[i].convolve(pyramid, scores[i], sumConvolve, positions ? &(*positions)[i] : 0/*, &convolutions*/);
-//    //        cout<<"Mix::model["<<i<<"].convolve(pyramid, ...) done"<<endl;
-//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].size = "<<scores[i][0].size()<<endl;
-//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][0].isZero() = "<<scores[i][0].isZero()<<endl;
-//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].size = "<<scores[i][1].size()<<endl;
-//            cout<<"Mix::convolve for each models_ : scores["<<i<<"][1].isZero() = "<<scores[i][1].isZero()<<endl;
-
-//        }
-//    }
 }
 
-//TODO
+//TODO not used ...
 std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
 											 Object::Name name)
 {
@@ -1253,66 +1009,6 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 	return sizes;
 }
 
-void Mixture::Cluster(int nbComponents, vector<pair<Model, int> > & samples)
-{
-	// Early return in case the filters or the dataset are empty
-	if ((nbComponents <= 0) || samples.empty())
-		return;
-	
-	// For each model
-	for (int i = nbComponents - 1; i >= 0; --i) {
-		// Indices of the positives
-		vector<int> permutation;
-		
-		// For each positive
-		for (int j = 0; j < samples.size(); ++j)
-			if (samples[j].second / 2 == i)
-				permutation.push_back(j);
-		
-		// Next model if this one has no associated positives
-		if (permutation.empty())
-			continue;
-		
-		// Score of the best split so far
-		double best = 0.0;
-		
-		// Do 1000 clustering trials
-		for (int j = 0; j < 1000; ++j) {
-			random_shuffle(permutation.begin(), permutation.end());
-			
-			vector<bool> assignment(permutation.size(), false);
-			Model left = samples[permutation[0]].first;
-			
-			for (int k = 1; k < permutation.size(); ++k) {
-				const Model & positive = samples[permutation[k]].first;
-				
-				if (positive.dot(left) > positive.dot(left.flip())) {
-					left += positive;
-				}
-				else {
-					left += positive.flip();
-					assignment[k] = true;
-				}
-			}
-			
-			left *= 1.0 / permutation.size();
-			
-			const Model right = left.flip();
-			double dots = 0.0;
-			
-			for (int k = 0; k < permutation.size(); ++k)
-				dots += samples[permutation[k]].first.dot(assignment[k] ? right : left);
-			
-			if (dots > best) {
-				for (int k = 0; k < permutation.size(); ++k)
-					samples[permutation[k]].second = 2 * i + assignment[k];
-				
-				best = dots;
-			}
-		}
-	}
-}
-
 ostream & FFLD::operator<<(ostream & os, const Mixture & mixture)
 {
 	// Save the number of models (mixture components)
@@ -1348,7 +1044,6 @@ istream & FFLD::operator>>(istream & is, Mixture & mixture)
 			return is;
 		}
 	}
-//    mixture.models() = models;
     mixture.models().swap(models);
 	
 	return is;

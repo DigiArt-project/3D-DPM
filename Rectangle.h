@@ -1,10 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-// Implementation of the papers "Exact Acceleration of Linear Object Detectors", 12th European
-// Conference on Computer Vision, 2012 and "Deformable Part Models with Individual Part Scaling",
-// 24th British Machine Vision Conference, 2013.
-//
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //
@@ -72,7 +68,7 @@ public:
 	/// Sets the height of the rectangle to the given @p height.
     void setHeight(int height);
     
-    //Return the depth of the rectangle
+    /// Returns the depth of the rectangle
     int depth() const ;
     /// Sets the depth of the rectangle to the given @p depth.
     void setDepth(int depth);
@@ -103,32 +99,8 @@ public:
     void setBack(int back);
     void setFront(int front);
     
-
-//    Eigen::Vector3i topFrontLeft() const;
-//    Eigen::Vector3i topFrontRight() const;
-//    Eigen::Vector3i topBackLeft() const;
-//    Eigen::Vector3i topBackRight() const;
-    
-//    Eigen::Vector3i bottomFrontLeft() const;
-//    Eigen::Vector3i bottomFrontRight() const;
-//    Eigen::Vector3i bottomBackLeft() const;
-//    Eigen::Vector3i bottomBackRight() const;
-    
-//    void setTopFrontLeft(Eigen::Vector3f pt);
-//    void settopFrontRight(Eigen::Vector3f pt);
-//    void setTopBackLeft(Eigen::Vector3f pt);
-//    void setTopBackRight(Eigen::Vector3f pt);
-    
-//    void bottomFrontLeft(Eigen::Vector3f pt);
-//    void bottomFrontRight(Eigen::Vector3f pt);
-//    void bottomBackLeft(Eigen::Vector3f pt);
-//    void bottomBackRight(Eigen::Vector3f pt);
-    
-//    void toString() const;
-    
     Rectangle changeToPclCoordinateSystem() const;
 
-	
 private:
 
     Eigen::Vector3i origin_;

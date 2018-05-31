@@ -1,3 +1,6 @@
+// Written by Fisichella Thomas
+// Date 25/05/2018
+
 #include "Mixture.h"
 #include "Intersector.h"
 #include "Object.h"
@@ -77,9 +80,9 @@ public:
 
     void train(string positiveFolder, string negativeFolder){
 
-        int nbParts = 4;
+        int nbParts = 5;
         double C = 0.002, J = 2;
-        int interval = 1, nbIterations = 3, nbDatamine = 1, maxNegSample = 20;
+        int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 20;
         Model::triple<int, int, int> chairSize(8,10,6);//5,6,4in lvl 1
         Model::triple<int, int, int> chairPartSize(8,10,6);//in lvl 0
         Model model( chairSize, 0);
@@ -189,11 +192,8 @@ public:
                       nbDatamine, maxNegSample, C, J);
 
         //TODO include initializeParts in train()
-        mixture.initializeParts( nbParts, chairPartSize/*, root2x*/);
+        mixture.initializeParts( nbParts, chairPartSize);
 
-//        for(int i=0; i < nbParts; ++i){
-//            cout<<"test::initializeParts offset["<<i+1<<"] = "<< mixture.models()[0].parts()[i+1].offset <<endl;
-//        }
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
                       nbIterations, nbDatamine, maxNegSample, C, J);
@@ -211,7 +211,7 @@ public:
         vector<Mixture::Indices> argmaxes;
         vector<vector<vector<Model::Positions> > > positions;
 
-        mixture.computeEnergyScores( pyramid, scores, argmaxes, &positions);
+        mixture.computeScores( pyramid, scores, argmaxes, &positions);
 
         // Cache the size of the models
         vector<Model::triple<int, int, int> > sizes(mixture.models().size());
@@ -222,7 +222,6 @@ public:
 
         // For each scale
         for (int lvl = 0; lvl < scores.size(); ++lvl) {
-//            const double scale = pow(2.0, static_cast<double>(lvl) / pyramid.interval() + 2);
             const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
             int offz = floor(scene->origin()(0)*scale);
             int offy = floor(scene->origin()(1)*scale);
@@ -312,7 +311,7 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 5;
+        int nb = 4;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -397,7 +396,6 @@ public:
 
         Mixture mixture;
         in >> mixture;
-        mixture.train_ = false;//allow quentin's code
 
         if (mixture.empty()) {
             cerr << "Invalid model file\n" << endl;
@@ -633,9 +631,8 @@ int main(){
     test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
                "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
-//    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene3.pcd");
+    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene4.pcd");
 
-    //1 block over 2 is black, why ????
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
 
     // testSceneMiddle_compress.pcd
@@ -646,46 +643,46 @@ int main(){
 
     cout << "Time : " << end-start << endl;
 
-    ifstream in("tableModel4parts1pos.txt");
+//    ifstream in("tableModel4parts1pos.txt");
 
-    if (!in.is_open()) {
-        cerr << "Cannot open model file\n" << endl;
-    }
+//    if (!in.is_open()) {
+//        cerr << "Cannot open model file\n" << endl;
+//    }
 
-    Mixture mixTable;
-    in >> mixTable;
+//    Mixture mixTable;
+//    in >> mixTable;
 
-    if (mixTable.empty()) {
-        cerr << "Invalid model file\n" << endl;
-    }
+//    if (mixTable.empty()) {
+//        cerr << "Invalid model file\n" << endl;
+//    }
 
-    ifstream in2("chairModel4parts1pos.txt");
+//    ifstream in2("chairModel4parts1pos.txt");
 
-    if (!in2.is_open()) {
-        cerr << "Cannot open model file\n" << endl;
-    }
+//    if (!in2.is_open()) {
+//        cerr << "Cannot open model file\n" << endl;
+//    }
 
-    Mixture mixChair;
-    in2 >> mixChair;
+//    Mixture mixChair;
+//    in2 >> mixChair;
 
-    if (mixChair.empty()) {
-        cerr << "Invalid model file\n" << endl;
-    }
+//    if (mixChair.empty()) {
+//        cerr << "Invalid model file\n" << endl;
+//    }
 
-    cout<<"Chair dot Table = " << mixChair.models()[0].dot(mixTable.models()[0]) << endl;
-    cout<<"Table dot Chair = " << mixTable.models()[0].dot(mixChair.models()[0]) << endl;
-    cout<<"Table dot Table = " << mixTable.models()[0].dot(mixTable.models()[0]) << endl;
-    cout<<"Chair dot Chair = " << mixChair.models()[0].dot(mixChair.models()[0]) << endl;
+//    cout<<"Chair dot Table = " << mixChair.models()[0].dot(mixTable.models()[0]) << endl;
+//    cout<<"Table dot Chair = " << mixTable.models()[0].dot(mixChair.models()[0]) << endl;
+//    cout<<"Table dot Table = " << mixTable.models()[0].dot(mixTable.models()[0]) << endl;
+//    cout<<"Chair dot Chair = " << mixChair.models()[0].dot(mixChair.models()[0]) << endl;
 
-    cout<<"Chair norm = " << mixChair.models()[0].norm() << endl;
-    cout<<"Table norm = " << mixTable.models()[0].norm() << endl;
+//    cout<<"Chair norm = " << mixChair.models()[0].norm() << endl;
+//    cout<<"Table norm = " << mixTable.models()[0].norm() << endl;
 
-    cout<<"Part 0 agglo : " << endl;
+//    cout<<"Part 0 agglo : " << endl;
 
-    cout<<"Chair dot Table = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
-    cout<<"Table dot Chair = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
-    cout<<"Table dot Table = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
-    cout<<"Chair dot Chair = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
+//    cout<<"Chair dot Table = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
+//    cout<<"Table dot Chair = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
+//    cout<<"Table dot Table = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
+//    cout<<"Chair dot Chair = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
 
 
 //    Mat img( GSHOTPyramid::DescriptorSize, GSHOTPyramid::DescriptorSize, CV_8UC3, cv::Scalar(0,0,0));

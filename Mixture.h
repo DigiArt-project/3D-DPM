@@ -1,10 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-// Implementation of the papers "Exact Acceleration of Linear Object Detectors", 12th European
-// Conference on Computer Vision, 2012 and "Deformable Part Models with Individual Part Scaling",
-// 24th British Machine Vision Conference, 2013.
-//
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //
@@ -23,7 +19,6 @@
 #define FFLD_MIXTURE_H
 
 #include "Model.h"
-#include "Patchwork.h"
 #include "Scene.h"
 #include "viewer.h"
 
@@ -35,7 +30,6 @@ class Mixture
 {
 public:
 	/// Type of a matrix of indices.
-//	typedef Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Indices;
     typedef Tensor3DI Indices;
 
 	/// Constructs an empty mixture. An empty mixture has no model.
@@ -99,15 +93,10 @@ public:
 	/// @param[out] positions Positions of each part of each model for each pyramid level
 	/// (<tt>models x parts x levels</tt>).
     ///     //Replace convolve
-    void computeEnergyScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
+    void computeScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                              vector<Indices> & argmaxes,
                              vector<vector<vector<Model::Positions> > > * positions) const;
-//    void convolve(const HOGPyramid & pyramid, std::vector<HOGPyramid::Matrix> & scores,
-//                  std::vector<Indices> & argmaxes,
-//                  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
-	
-	/// Caches the transformed version of the models' filters.
-	void cacheFilters() const;
+
 	
 //private:
     // Extracts all the positives
@@ -136,15 +125,11 @@ public:
 														 const std::vector<Scene> & scenes,
 														 Object::Name name);
 	
-	// Attempts to split samples into a left facing cluster and a right facing cluster
-	static void Cluster(int nbComponents, std::vector<std::pair<Model, int> > & samples);
-	
+
 	std::vector<Model> models_;
 	
-	mutable std::vector<Patchwork::Filter> filterCache_; // Cache of transformed filters
 	mutable bool cached_; // Whether the current filters have been cached
 	mutable bool zero_; // Whether the current filters are zero
-    mutable bool train_;
 };
 
 /// Serializes a mixture to a stream.

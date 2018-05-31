@@ -1,22 +1,12 @@
+// Written by Fisichella Thomas
+// Date 25/05/2018
+
 #ifndef TENSOR3D_H
 #define TENSOR3D_H
 //EIGEN
 #include <Eigen/Core>
 #include <unsupported/Eigen/CXX11/Tensor>
 
-//PCL
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/kdtree/impl/kdtree_flann.hpp>
-#include <pcl/features/board.h>
-#include <pcl/filters/uniform_sampling.h>
-#include <pcl/features/normal_3d_omp.h>
-#include <pcl/features/shot_omp.h>
-#include <pcl/common/common_headers.h>
-#include <pcl/io/pcd_io.h>
-#include<pcl/io/ply_io.h>
 #include <vector>
 
 //Other
@@ -24,8 +14,7 @@
 #include <boost/filesystem.hpp>
 #include "emd_hat.hpp"
 
-//Subsection = interval ?
-//Padding ?
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -124,12 +113,8 @@ public:
 
         res().setConstant( 0);
 
-
+// Uncomment if you want to normalize the convolution score
 //        Type filterMean = filter.sum() / Scalar(filter.size());
-
-//        for(int i=0; i<2; ++i){
-//            cout<<"tensor3D::convolve filterMean("<<i<<") = "<<filterMean(i)<<endl;
-//        }
 
 //#pragma omp parallel for num_threads(omp_get_max_threads())
         for (int z = 0; z < res.depths(); ++z) {
@@ -163,26 +148,11 @@ public:
 //                                aux += normTensor.matrix().dot(normFilter.matrix()) * normTensor.matrix().dot(normFilter.matrix());
                                 res()(z, y, x) += normTensor.matrix().dot(normFilter.matrix());
 
-//                                    cout<<"tensor3D::convolve res()(z, y, x) = "<<res()(z, y, x)<<endl;
-//                                    cout<<"tensor3D::convolve normTensor = "<<normTensor<<endl;
-
-//                                cout<<"tensor3D::conv tensor(z+dz, y+dy, x+dx).matrix() : "<<endl
-//                                   <<tensor(z+dz, y+dy, x+dx).matrix().transpose()<<endl;
-//                                cout<<"tensor3D::conv filter()(dz, dy, dx).matrix() : "<<endl
-//                                   <<filter()(dz, dy, dx).matrix().transpose()<<endl;
-//                                cout<<"tensor3D::conv dot product : "<<endl
-//                                   <<tensor(z+dz, y+dy, x+dx).matrix().dot(filter()(dz, dy, dx).matrix())<<endl;
                             }
                         }
                     }
 
 //                    res()(z, y, x) /= /*sqrt*/(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
-//                    cout<<"tensor3D::convolve squaredNormTensor.matrix().sum() = "<<squaredNormTensor.matrix().sum()<<endl;
-//                    cout<<"tensor3D::convolve squaredNormFilter.matrix().sum() = "<<squaredNormFilter.matrix().sum()<<endl;
-
-//                    cout<<"tensor3D::convolve res()(z, y, x) = "<<squaredNormTensor.matrix().dot(squaredNormFilter.matrix())<<endl;
-
-
                 }
             }
         }
@@ -190,9 +160,9 @@ public:
     }
 
     //Level
-    Tensor3D<Scalar> chi2Convolve( Tensor3D< Type> filter) const{
-        cout<<"tensor3D::chi2Convolve ..."<<endl;
-
+    /// You should change the sign of the maxScore variable in Mixture::PosLatenSearch()
+    /// if you use this function.
+    Tensor3D<Scalar> khi2Convolve( Tensor3D< Type> filter) const{
         Tensor3D<Scalar> res( depths() - filter.depths() + 1,
                               rows() - filter.rows() + 1,
                               cols() - filter.cols() + 1);
@@ -209,32 +179,28 @@ public:
                         for (int dy = 0; dy < filter.rows(); ++dy) {
                             for (int dx = 0; dx < filter.cols(); ++dx) {
 
-                                Type candidate = tensor(z+dz, y+dy, x+dx);
-                                for (int j = 0; j < 352; ++j) {
-                                    Scalar denominator = (abs(filter()(dz, dy, dx)(j)) + abs(candidate(j)));
-                                    if( denominator != 0){
-                                        res()(z, y, x) += (filter()(dz, dy, dx)(j) - candidate(j)) * (filter()(dz, dy, dx)(j) - candidate(j))
-                                                / denominator;
-                                    }
-//                                    cout<<"tensor3D::chi2Convolve res = "<<(filter()(dz, dy, dx)(j) - filter()(dz, dy, dx)(j)) * (filter()(dz, dy, dx)(j) - filter()(dz, dy, dx)(j))<<endl;
-
-
-                                }
-
 //                                Type candidate = tensor(z+dz, y+dy, x+dx);
-//                                Type numerator = (filter()(dz, dy, dx) - candidate) * (filter()(dz, dy, dx) - candidate);
-//                                Type denominator = abs(filter()(dz, dy, dx)) + abs(candidate);
 //                                for (int j = 0; j < 352; ++j) {
-//                                    if( denominator(j) != 0){
-//                                        res()(z, y, x) += numerator(j)/* / denominator(j)*/;
+//                                    Scalar denominator = (abs(filter()(dz, dy, dx)(j)) + abs(candidate(j)));
+//                                    if( denominator != 0){
+//                                        res()(z, y, x) += (filter()(dz, dy, dx)(j) - candidate(j)) * (filter()(dz, dy, dx)(j) - candidate(j))
+//                                                / denominator;
 //                                    }
 //                                }
+
+                                Type candidate = tensor(z+dz, y+dy, x+dx);
+                                Type numerator = (filter()(dz, dy, dx) - candidate) * (filter()(dz, dy, dx) - candidate);
+                                Type denominator = abs(filter()(dz, dy, dx)) + abs(candidate);
+                                for (int j = 0; j < 352; ++j) {
+                                    if( denominator(j) != 0){
+                                        res()(z, y, x) += numerator(j) / denominator(j);
+                                    }
+                                }
 
                             }
                         }
                     }
 
-//                    cout<<"tensor3D::chi2Convolve res = "<<res()(z, y, x)<<endl;
                 }
             }
         }
@@ -244,7 +210,6 @@ public:
 
     //Level
     Tensor3D<Scalar> EMD( Tensor3D< Type> filter) const{
-        cout<<"tensor3D::convolve ..."<<endl;
 
         Tensor3D<Scalar> res( depths() - filter.depths() + 1,
                               rows() - filter.rows() + 1,
@@ -253,7 +218,6 @@ public:
         res().setConstant( 0);
 
         // Ground metric definition (certainly highly optimizable)
-
         vector<double> desc_filter(352);
 
         std::vector<std::vector<double> > cost_mat;
@@ -294,7 +258,6 @@ public:
         if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
             cerr<<"agglomerateBlock:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
                <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
-//            exit(0);
             p = min(z+p, depths()) - z;
             q = min(y+q, rows()) - y;
             r = min(x+r, cols()) - x;
@@ -310,22 +273,6 @@ public:
             }
         }
         for(int j = 0; j < 352; ++j) res()(0,0,0)(j) /= p*q*r;
-
-//        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
-//        for(int j = 1; j < 352; ++j){
-//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
-//            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
-//        }
-//        if( maxi != 0){
-//            for(int j = 0; j < 352; ++j){
-//                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= p*q*r;
-//            }
-//        }
-//        if( mini != 0){
-//            for(int j = 0; j < 352; ++j){
-//                if( res()(0,0,0)(j) < 0) res()(0,0,0)(j) /= -mini;
-//            }
-//        }
         return res;
     }
 
@@ -343,38 +290,7 @@ public:
             }
         }
         for(int j = 0; j < 352; ++j) res()(0,0,0)(j) /= depths()*rows()*cols();
-//        Scalar maxi = res()(0,0,0)(0), mini = res()(0,0,0)(0);
-//        for(int j = 1; j < 352; ++j){
-//            if(maxi < res()(0,0,0)(j)) maxi = res()(0,0,0)(j);
-//            if( mini > res()(0,0,0)(j)) mini = res()(0,0,0)(j);
-//        }
-//        if( maxi != 0){
-//            for(int j = 0; j < 352; ++j){
-//                /*if( res()(0,0,0)(j) > 0)*/ res()(0,0,0)(j) /= depths()*rows()*cols();
-//            }
-//        }
-//        if( mini != 0){
-//            for(int j = 0; j < 352; ++j){
-//                if( res()(0,0,0)(j) < 0) res()(0,0,0)(j) /= -mini;
-//            }
-//        }
         return res;
-    }
-
-    //Tensor3DF
-    Tensor3D< Type> agglomerate( int size) const{
-        Tensor3D< Type> t(1,1,size);
-        t().setConstant( 0);
-        for (int z = 0; z < depths(); ++z) {
-            for (int y = 0; y < rows(); ++y) {
-//#pragma omp parallel for num_threads(omp_get_max_threads())
-                for (int x = 0; x < cols(); ++x) {
-                    t()(0,0,x%size) += tensor(z, y, x);
-                }
-            }
-        }
-//        t()(0,0,0) = t()(0,0,0) / (cols() * rows() * depths());
-        return t;
     }
 
     //Level
@@ -455,30 +371,6 @@ public:
         return t;
     }
 
-//    //return a block of size (p, q, r) from point (z, y, x)
-//    const Tensor3D< Type> block(int z, int y, int x, int p, int q, int r) const{
-//        Tensor3D< Type> t(p, q, r);
-//#pragma omp parallel for
-//        for (int i = 0; i < p; ++i) {
-//            for (int j = 0; j < q; ++j) {
-//                for (int k = 0; k < r; ++k) {
-//                    t()(i,j,k) = tensor(z+i, y+j, x+k);
-//                }
-//            }
-//        }
-//        return t;
-//    }
-
-
-
-//    Eigen::Map< Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> > block(int z, int y, int x, int p, int q, int r){
-////        Type* pointer = tensor.data() ;/*+ x + y * cols() + z * rows() * cols();*/
-////        return Eigen::TensorMap< Eigen::Tensor<Type, 3, Eigen::RowMajor> >(pointer, p, q, r);
-//        Type* pointer = tensor.data();
-
-//    }
-
-    //row d'une matrice --> renvoie ligne de la matrice
     Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> row( int z, int y) const{
         Eigen::Matrix<Type, 1, Eigen::Dynamic, Eigen::RowMajor> res(tensor.dimension(2));
         for (int x = 0; x < tensor.dimension(2); ++x) {
@@ -503,9 +395,8 @@ public:
         return res;
     }
 
-    //TODO
     Type sum() const{
-                    Type res(0);
+                    Type res = 0;
                     for (int i = 0; i < depths(); ++i) {
                         for (int j = 0; j < rows(); ++j) {
                             for (int k = 0; k < cols(); ++k) {

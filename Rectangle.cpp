@@ -1,10 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-// Implementation of the papers "Exact Acceleration of Linear Object Detectors", 12th European
-// Conference on Computer Vision, 2012 and "Deformable Part Models with Individual Part Scaling",
-// 24th British Machine Vision Conference, 2013.
-//
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //
@@ -140,62 +136,38 @@ void Rectangle::setResolution( float resolution)
 
 void Rectangle::setLeft(int left)
 {
-//    if( left > 0 && left < right()){
-        origin_(2) = left;
-        setWidth( right() - left);
-//    } else{
-//        cerr << "Try to set wrong Rectangle parameter : setLeft()" << endl;
-//    }
+    origin_(2) = left;
+    setWidth( right() - left);
 }
 
 void Rectangle::setRight(int right)
 {
-//    if( right > left()){
-        diagonal_(2) = right;
-        setWidth( right - left());
-//    } else{
-//        cerr << "Try to set wrong Rectangle parameter : setRight()" << endl;
-//    }
+    diagonal_(2) = right;
+    setWidth( right - left());
 }
 
 void Rectangle::setBottom(int bottom)
 {
-//    if( bottom > top()){
-        diagonal_(1) = bottom;
-        setHeight( top() - bottom);
-//    } else{
-//        cerr << "Try to set wrong Rectangle parameter : setBottom()" << endl;
-//    }
+    diagonal_(1) = bottom;
+    setHeight( top() - bottom);
 }
 
 void Rectangle::setTop(int top)
 {
-//    if( top > 0 && top < bottom()){
-        origin_(1) = top;
-        setHeight( top - bottom());
-//    } else{
-//        cerr << "Try to set wrong Rectangle parameter : setTop()" << endl;
-//    }
+    origin_(1) = top;
+    setHeight( top - bottom());
 }
 
 void Rectangle::setBack(int back)
 {
-//    if( back > front()){
-        diagonal_(0) = back;
-        setDepth( front() - back);
-//    } else{
-//        cerr << "Try to set wrong Rectangle parameter : setBack()" << endl;
-//    }
+    diagonal_(0) = back;
+    setDepth( front() - back);
 }
 
 void Rectangle::setFront(int front)
 {
-//    if( front > 0 && front < back()){
-        origin_(0) = front;
-        setDepth( front - back());
-//    } else{
-//        cerr << "Try to set wrong Rectangle parameter : setFront()" << endl;
-//    }
+    origin_(0) = front;
+    setDepth( front - back());
 }
 
 
@@ -215,40 +187,13 @@ float Rectangle::volume() const
     return (width()-1) * (height()-1) * (depth()-1) * resolution() * resolution() * resolution();
 }
 
-//Eigen::Vector3f substractValue(Eigen::Vector3f refPoint, Eigen::Vector3f valueToSubstract){
-//    Eigen::Vector3f newPointValue(refPoint.x() - valueToSubstract.x(), refPoint.y() - valueToSubstract.y(),refPoint.z() - valueToSubstract.z());
-//    return newPointValue;
-//}
 
 Rectangle Rectangle::changeToPclCoordinateSystem() const{
     Eigen::Vector3i pclOrigin( diagonal()(0), diagonal()(1), origin()(2));
     Rectangle rec( pclOrigin, depth(), height(), width(), resolution());
     rec.setDiagonal(Eigen::Vector3i( origin()(0), origin()(1), diagonal()(2)));
     return rec;
-//    this->topFrontLeft_ = substractValue(this->topFrontLeft(),Eigen::Vector3f(0,-this->height(),0));
-//    this->topFrontRight_ = substractValue(this->topFrontRight(),Eigen::Vector3f(0,-this->height(),0));
-//    this->bottomFrontLeft_ = substractValue(this->bottomFrontLeft(),Eigen::Vector3f(0,this->height(),0));
-//    this->bottomFrontRight_ = substractValue(this->bottomFrontRight(),Eigen::Vector3f(0,this->height(),0));
-//    this->topBackLeft_ = substractValue(this->topBackLeft(),Eigen::Vector3f(0,-this->height(),2 * this->depth()));
-//    this->topBackRight_ = substractValue(this->topBackRight(),Eigen::Vector3f(0,-this->height(),2 * this->depth()));
-//    this->bottomBackLeft_ = substractValue(this->bottomBackLeft(),Eigen::Vector3f(0,this->height(),2 * this->depth()));
-//    this->bottomBackRight_ = substractValue(this->bottomBackRight(),Eigen::Vector3f(0,this->height(),2 * this->depth()));
 }
-
-//void Rectangle::toString() const{
-    
-//    int xmax = x_ + this->width();
-//    int ymax = y_ + this->height();
-//    int zmax = z_ + this->depth();
-    
-//    std::cout<<"Cube specifications :"<<std::endl<<std::endl;
-//    std::cout<<"(xmin,ymin,zmin) : "<< "(" << x_ << "," << y_ << "," << z_  << ")" <<std::endl;
-//    std::cout<<"(xmax,ymax,zmax) : "<< "(" << xmax << "," << ymax << "," << zmax  << ")" <<std::endl;
-//    std::cout<<"Width : "<<this->width()<<std::endl;
-//    std::cout<<"Heigth : "<<this->height()<<std::endl;
-//    std::cout<<"Depth : "<<this->depth()<<std::endl;
-//    std::cout<<"Volume : "<<this->volume() <<std::endl;
-//}
 
 ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)
 {

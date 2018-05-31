@@ -1,10 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-// Implementation of the papers "Exact Acceleration of Linear Object Detectors", 12th European
-// Conference on Computer Vision, 2012 and "Deformable Part Models with Individual Part Scaling",
-// 24th British Machine Vision Conference, 2013.
-//
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //
@@ -123,7 +119,7 @@ public:
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
 	/// @note The model stay unmodified if any of the parameter is invalid.
 	/// @note The parts are always initialized at twice the root resolution.
-    void initializeParts(int nbParts, Model::triple<int, int, int> partSize/*, GSHOTPyramid::Level root2x*/);
+    void initializeParts(int nbParts, Model::triple<int, int, int> partSize);
 	
 	/// Initializes a training sample with fixed latent variables from a specified position in
 	/// a pyramid of features.
@@ -144,7 +140,7 @@ public:
 	/// @param[out] scores Scores for each pyramid level.
 	/// @param[out] positions Positions of each part and each pyramid level.
 	/// @param[in] Precomputed convolutions of each part and each pyramid level.
-    void convolve(const GSHOTPyramid & pyramid, std::vector<Tensor3DF> & scores, bool sumConvolve,
+    void convolve(const GSHOTPyramid & pyramid, std::vector<Tensor3DF> & scores,
                   std::vector<std::vector<Positions> > * positions = 0,
                   std::vector<std::vector<Tensor3DF> > * convolutions = 0) const;
 	
@@ -173,17 +169,11 @@ public:
 	/// @note Do not use with models, only with fixed samples.
 	Model & operator*=(double a);
 	
-	/// Returns the flipped version (horizontally) of a model or a fixed sample.
-	Model flip() const;
-
-	
     /// Computes an in-place 3D quadratic distance transform.
 	/// @param[in,out] matrix Matrix to tranform in-place.
 	/// @param[in] part Part from which to read the deformation cost and offset.
-	/// @param tmp Temporary matrix.
+    /// @param tmp Temporary tensors.
 	/// @param[out] positions Optimal position of each part for each root location.
-//    static void DT2D(GSHOTPyramid::Matrix & matrix, const Part & part, GSHOTPyramid::Matrix & tmp,
-//					 Positions * positions = 0);
     static void DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor3DF & tmp2,
                      Positions * positions = 0);
 	

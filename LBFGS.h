@@ -7,8 +7,8 @@
 // it will then restart the optimization starting from the current solution).
 // Its robustness enables it to minimize non-smooth functions, such as the hinge loss.
 //
-// Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-// Written by Charles Dubout <charles.dubout@idiap.ch>
+// Written by Fisichella Thomas
+// Date 25/05/2018
 //
 // This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
 //

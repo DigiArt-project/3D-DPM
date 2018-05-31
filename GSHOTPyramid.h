@@ -1,3 +1,6 @@
+// Written by Fisichella Thomas
+// Date 25/05/2018
+
 #ifndef FFLD_GSHOTPYRAMID_H
 #define FFLD_GSHOTPYRAMID_H
 
@@ -28,8 +31,6 @@
 #include <boost/filesystem.hpp>
 
 
-//Subsection = interval ?
-//Padding ?
 //#ifdef _OPENMP
 //#include <omp.h>
 //#endif
@@ -42,7 +43,7 @@ namespace FFLD
         public:
         /** DEFINITION OF TYPES **/
         
-        /// Number of HOG features (guaranteed to be even). Fixed at compile time for both ease of use
+        /// Number of SHOT features (guaranteed to be even). Fixed at compile time for both ease of use
         /// and optimal performance.
         static const int DescriptorSize = 352;
         typedef float Scalar;
@@ -57,9 +58,7 @@ namespace FFLD
         /// Type of a pyramid level (matrix of cells).
         typedef Tensor3D<Cell> Level;
         
-        
-        void test() const;
-        
+                
         /** CONSTRUCTORS **/
         
         /// Constructs an empty pyramid. An empty pyramid has no level.
@@ -88,7 +87,7 @@ namespace FFLD
                      float starting_resolution, float starting_kp_grid_reso, float descr_rad);
         
         // Destructor
-        ~GSHOTPyramid();
+//        ~GSHOTPyramid();
 
         /** GETTERS AND SETTER **/
         
@@ -105,22 +104,6 @@ namespace FFLD
         const std::vector<Level> & levels() const;
 
         const std::vector<float> & resolutions() const;
-//        //Get keypoints at a given level
-//        Eigen::Vector3i getLayerTopology(int i);
-//        pcl::PointCloud<DescriptorType> get_descriptors_layer(unsigned int);
-//        pcl::PointCloud<PointType> get_keypoints_layer(unsigned int);
-//        int get_octaves();
-//        int get_sub_between_octaves();
-//        int get_height();
-//        float get_original_resolution();
-//        float get_layer_resolution (int i);
-        
-//        //Type accessors
-//        static const char* get_descriptor_type();
-//        static const char* get_point_type();
-        
-//        // Pyramid informations
-//        void toString();
         
         /** OTHERS **/
     
@@ -132,26 +115,20 @@ namespace FFLD
 
         void sumConvolve(const Level & filter, vector<Tensor3DF >& convolutions) const;
 
-        
-        /// Returns the flipped version (horizontally) of a level.
-//        static GSHOTPyramid::Level Flip(const GSHOTPyramid::Level & level);
-        
-        /// Maps a pyramid level to a simple matrix (useful to apply standard matrix operations to it).
-        /// @note The size of the matrix will be rows x (cols * NbFeatures).
-//        static Tensor3DF TensorMap(Level & level);
-        
         /// Maps a const pyramid level to a simple const matrix (useful to apply standard matrix
         /// operations to it).
         /// @note The size of the matrix will be rows x (cols * NbFeatures).
+        /// Should be moved in another class
         static Tensor3DF TensorMap(Level level);
         
+        /// Return the mean resolution of the cloud
         static double computeCloudResolution (PointCloudConstPtr cloud);
         
 //        private:
         
-        std::vector<float> minMaxScaler(std::vector<float> data, float max, float min);
+        std::vector<float> minMaxScaler(std::vector<float> data);
 
-        // Method for computing feature spaces. Will have different implementations depending on the descriptor used.
+        // Method for computing feature spaces. May have different implementations depending on the descriptor used.
         DescriptorsPtr
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
         
@@ -159,14 +136,8 @@ namespace FFLD
         /*static */PointCloudPtr
         compute_keypoints(float grid_reso, PointType min, PointType max, int index);
         
-//        // Container of the different descriptor layers from 0 (original resolution) to n (lowest resolution, last octave)
-//        std::vector<typename pcl::PointCloud<DescriptorType>::Ptr >* _descriptors;
-        
-
-        
-        static void Convolve(const Level & level, const Level & filter, Tensor3DF & convolution);
         // Computes the 2D convolution of a pyramid level with a filter
-        static void Convolve(const Tensor3DF & x, const Tensor3DF & y, Tensor3DF & z);
+        static void Convolve(const Level & level, const Level & filter, Tensor3DF & convolution);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
         std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;//number of points at [lvl]
@@ -179,13 +150,12 @@ namespace FFLD
 
         std::vector<float> resolutions_;
 
-        //TODO: I don't think we need it
+        //TODO: Can be removed
         // The corresponding positions of the descriptors in the space for each level
         std::vector<PointCloudPtr > keypoints_;
     };
 
     //Read point cloud from a path
-
     int readPointCloud(std::string object_path, PointCloudPtr point_cloud);
     
     /// Serializes a pyramid to a stream.
