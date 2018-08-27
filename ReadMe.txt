@@ -9,7 +9,7 @@ DPM 3D :
 
 How it works :
 
-In order to deal with non- of 3D point clouds, the scene is uniformly discretized at a specified resolution (in GSHOTPyramid).
+In order to deal with non-uniform sparsity of 3D point clouds, the scene is uniformly discretized at a specified resolution (in GSHOTPyramid).
 Training :
 	For all the Scene given, the Mixture identify and extract the positives and negatives Model samples.
 	Then, it feed them to the Structural Latent SVM which use the LBFGS algorithm to create the Model that 
@@ -46,7 +46,7 @@ TODO :
 
 - Sort source and header files in "src" and "include"
 - Normalize the SVM score using Platt's sclaing method.
-- Fix the parts positions regarding the root (or the inverse). Sometimes, the parts are outside the root bounding box. 
+- Fix the parts positions regarding the root (or the opposite). Sometimes, the parts are outside the root bounding box. 
 - Allow more interval and more octave in the pyramid (only tested and designed for 1 interval and 2 octaves).
 This imply that currently, the size of the objects during training and testing has to be approximately the same.
 - Test the algorithm on real datasets (see SceneNN dataset)
