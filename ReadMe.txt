@@ -42,6 +42,7 @@ like its bounding box.
 - createscene.cpp : File used to artificially create scenes from different point clouds.
 
 
+
 TODO :
 
 - Sort source and header files in "src" and "include"
@@ -56,6 +57,8 @@ This imply that currently, the size of the objects during training and testing h
 - Compute uneccessary scores during training.
 - Let the user set the epsillon value used in Mixture.
 - Check TODO comments in the code
+- problem assigning score of dt3d to root offset => error in the detection score due to the parts
+- use hard negative example
 
 
 Infos :

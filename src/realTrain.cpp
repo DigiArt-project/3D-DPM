@@ -73,18 +73,18 @@ public:
     Test()
     {
 
-        sceneResolution = 0.09/2.0;
+        sceneResolution = 0.05;//0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
     }
 
     void train(string positiveFolder, string negativeFolder){
 
-        int nbParts = 5;
+        int nbParts = 3;
         double C = 0.002, J = 2;
         int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 20;
-        Model::triple<int, int, int> chairSize(8,10,6);//5,6,4in lvl 1
-        Model::triple<int, int, int> chairPartSize(8,10,6);//in lvl 0
+        Model::triple<int, int, int> chairSize(8,10,6);//8,10,6 in lvl 1
+        Model::triple<int, int, int> chairPartSize(8,10,6);//8,10,6 in lvl 0
         Model model( chairSize, 0);
         std::vector<Model> models = { model};
 
@@ -137,7 +137,7 @@ public:
             Vector3i originChair = Vector3i(floor(min.z/sceneResolution/2.0),
                                    floor(min.y/sceneResolution/2.0),
                                    floor(min.x/sceneResolution/2.0));
-            Model::triple<int, int, int> sceneSize( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);//5,6,4);
+            Model::triple<int, int, int> sceneSize = chairSize;//( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);
 
             cout << "scene min : " << min << endl;
 
@@ -174,7 +174,7 @@ public:
             Vector3i originBox = Vector3i(floor(min.z/sceneResolution/2.0),
                                    floor(min.y/sceneResolution/2.0),
                                    floor(min.x/sceneResolution/2.0));
-            Model::triple<int, int, int> sceneSize( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);//5,6,4);
+            Model::triple<int, int, int> sceneSize = chairSize;//( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);
 
             cout << "scene min : " << min << endl;
 
@@ -210,6 +210,7 @@ public:
         vector<Tensor3DF> scores;
         vector<Mixture::Indices> argmaxes;
         vector<vector<vector<Model::Positions> > > positions;
+        int nb = 4;
 
         mixture.computeScores( pyramid, scores, argmaxes, &positions);
 
@@ -311,7 +312,6 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        int nb = 4;
         if (detections.size() > nb) {
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
@@ -379,7 +379,7 @@ public:
                           mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
             viewer.displayCubeLine(box,
                                    Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-                    Vector3i(0,255,0));
+                    Vector3i(255,0,0));
         }
     }
 
@@ -421,7 +421,7 @@ public:
 //          transform.translation() << -minTmp.x, -minTmp.y, -minTmp.z;
 
           // The same rotation matrix as before; theta radians around Z axis
-//          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));
+//          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));//bigScene
 //          transform.rotate (Eigen::AngleAxisf (/*-2**/1.57, Eigen::Vector3f::UnitY()));//for smallScene3
 //          transform.rotate (Eigen::AngleAxisf (1.57, Eigen::Vector3f::UnitZ()));
 
@@ -638,7 +638,7 @@ int main(){
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
 
     // testSceneMiddle_compress.pcd
-    // smallScene2.pcd
+    // smallScene4.pcd
     // scene_2.ply
 
     int end = getMilliCount();

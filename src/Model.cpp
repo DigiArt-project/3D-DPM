@@ -135,7 +135,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
     float xd = 0.5;
     float yd = 0.5;
     float zd = 0.5;
-    for (int z = 0; z < root.depths()-1; ++z) {
+    for (int z = 0; z < root.depths()-1; ++z) {//TODO remove -1 ?
         int zf = z+1;
         for (int y = 0; y < root.rows()-1; ++y) {
             int yf = y+1;
@@ -987,76 +987,93 @@ Model & Model::operator*=(double a)
 	return *this;
 }
 
+// y = EDT result
+// m = positions
+// z = distance
+// off = offset used to shift the weight grid to the right location of the part disregard to the root location p
 template <typename Scalar>
-static void dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * v, Scalar * y,
-                 int * m, const Scalar * t, int incx, int incy, int incm)
+static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * v, Scalar * y,
+                 int * m, const Scalar * t, int incf, int incy, int incm, int off = 0)
 {
-    assert(x && (y || m));
+    assert(f && (y || m));
     assert(n > 0);
     assert(a < 0);
     assert(z && v);
     assert(t);
-    assert(incx && incy && (m ? incm : true));
+    assert(incf && incy && (m ? incm : true));
 
-    z[0] =-numeric_limits<Scalar>::infinity();
-    z[1] = numeric_limits<Scalar>::infinity();
-    v[0] = 0;
+    z[0] =-numeric_limits<Scalar>::infinity();  //Locations of boundaries between parabolas
+    z[1] = numeric_limits<Scalar>::infinity();  //Locations of boundaries between parabolas
+    v[0] = 0;                                   //Locations of parabolas in lower envelope
 
-    // Use a lookup table to replace the division by (a * (i - v[k]))
-    int k = 0;
-    Scalar xvk = x[0];
+    // Use a lookup table to replace the division by (a * (q - v[k]))
+    int k = 0;                                  //Index of rightmost parabola in lower envelope
+    Scalar fvk = f[0];
 
-    for (int i = 1; i < n;) {
-        const Scalar s = (x[i * incx] - xvk) * t[i - v[k]] + (i + v[k]) - b / a;
+    for (int q = 1; q < n;) {
+//        const Scalar s = (x[q * incx] - xvk) * t[q - v[k]] + (q + v[k]) - b / a;
+        // result good only if b = 0
+        const Scalar s = (f[q * incf] - fvk) * t[q - v[k]] / 2.0 + (q*q - v[k]*v[k]) / (2*(q - v[k])) - off;
+//        const Scalar s = (x[q * incx] - xvk) * t[q - v[k]] + (q + v[k]) - off;
 
         if (s <= z[k]) {
             --k;
-            xvk = x[v[k] * incx];
+            fvk = f[v[k] * incf];
         }
         else {
             ++k;
-            v[k] = i;
+            v[k] = q;
             z[k] = s;
-            xvk = x[i * incx];
-            ++i;
+            z[k + 1] = numeric_limits<Scalar>::infinity();
+            fvk = f[q * incf];
+            ++q;
         }
     }
 
     z[k + 1] = numeric_limits<Scalar>::infinity();
 
     if (y && m) {
-        for (int i = 0, k = 0; i < n; ++i) {
-            while (z[k + 1] < 2 * i)
+        for (int q = 0, k = 0; q < n; ++q) {
+            while (z[k + 1] </* 2 **/ q)
                 ++k;
 
-            y[i * incy] = x[v[k] * incx] + (a * (i - v[k]) + b) * (i - v[k]);
-            m[i * incm] = v[k];
+//            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
+//            m[q * incm] = v[k];
+            y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
+            m[q * incm] = v[k] ;
         }
     }
     else if (y) {
-        for (int i = 0, k = 0; i < n; ++i) {
-            while (z[k + 1] < 2 * i)
+        for (int q = 0, k = 0; q < n; ++q) {
+            while (z[k + 1] </* 2 **/ q)
                 ++k;
 
-            y[i * incy] = x[v[k] * incx] + (a * (i - v[k]) + b) * (i - v[k]);
+//            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
+            y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
+
         }
     }
     else {
-        for (int i = 0, k = 0; i < n; ++i) {
-            while (z[k + 1] < 2 * i)
+        for (int q = 0, k = 0; q < n; ++q) {
+            while (z[k + 1] < /*2 **/ q)
                 ++k;
 
-            m[i * incm] = v[k];
+//            m[q * incm] = v[k];
+            m[q * incm] = v[k] ;
         }
     }
 }
 
+//TODO init tmp1 and 2 in the function and allow b != 0
+// Tensor = convolution score of the parts in the scene
 void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor3DF & tmp2,
                  Positions * positions)
 {
     // Nothing to do if the matrix is empty
     if (!tensor.size())
         return;
+
+    cout<<"Model::DT3D offsets : "<<part.offset<<endl;
 
     const int depths = static_cast<int>(tensor.depths());
     const int rows = static_cast<int>(tensor.rows());
@@ -1077,41 +1094,68 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 
     t[0] = numeric_limits<GSHOTPyramid::Scalar>::infinity();
 
-    for (int x = 1; x < cols; ++x)
+    for (int x = 1; x < cols; ++x){
+//        t[x] = 1 / (part.deformation(0) * x);
         t[x] = 1 / (part.deformation(0) * x);
+    }
+    //dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * v, Scalar * y,
+    //int * m, const Scalar * t, int incx, int incy, int incm)
 
     // Filter the rows in tmp
-    for (int z = 0; z < depths; ++z)
-        for (int y = 0; y < rows; ++y)
+    for (int z = 0; z < depths; ++z){
+        for (int y = 0; y < rows; ++y){
+//            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
+//                                 part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
+//                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
+//                                 &t[0], 1, 1, 4);
             dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
-                                 part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
+                                 0, &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
                                  positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
-                                 &t[0], 1, 1, 4);
+                                 &t[0], 1, 1, 4, part.offset[2]);
+        }
+    }
 
-    for (int y = 1; y < rows; ++y)
+    for (int y = 1; y < rows; ++y){
+//        t[y] = 1 / (part.deformation(2) * y);
         t[y] = 1 / (part.deformation(2) * y);
+    }
 
     // Filter the columns back to the original matrix
-    for (int z = 0; z < depths; ++z)
+    for (int z = 0; z < depths; ++z){
         for (int x = 0; x < cols; ++x){
-            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), part.deformation(3),
+//            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), part.deformation(3),
+//                                 &distance[0], &index[0],
+//                                 tmp2().data() + x + z*cols*rows,
+//                                 positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
+//                                 cols, cols, 4 * cols);
+            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), 0,
                                  &distance[0], &index[0],
                                  tmp2().data() + x + z*cols*rows,
                                  positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
-                                 cols, cols, 4 * cols);
+                                 cols, cols, 4 * cols, part.offset[1]);
         }
+    }
 
-    for (int z = 1; z < depths; ++z)
+    for (int z = 1; z < depths; ++z){
+//        t[z] = 1 / (part.deformation(4) * z);
         t[z] = 1 / (part.deformation(4) * z);
+    }
 
     // Filter the columns back to the original matrix
-    for (int y = 0; y < rows; ++y)
-        for (int x = 0; x < cols; ++x)
-            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), part.deformation(5),
+    for (int y = 0; y < rows; ++y){
+        for (int x = 0; x < cols; ++x){
+//            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), part.deformation(5),
+//                                 &distance[0], &index[0],
+//                                 tensor().data() + x + y*cols,//or 0
+//                                 positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
+//                                 cols * rows, cols * rows, 4 * cols * rows);
+            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), 0,
                                  &distance[0], &index[0],
                                  tensor().data() + x + y*cols,//or 0
                                  positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
-                                 cols * rows, cols * rows, 4 * cols * rows);
+                                 cols * rows, cols * rows, 4 * cols * rows, part.offset[0]);
+        }
+    }
 
 //  //   Re-index the best x positions now that the best y changed
     // Re-index the best z positions now that the best x and y changed

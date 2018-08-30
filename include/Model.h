@@ -71,7 +71,7 @@ public:
 	struct Part
 	{
         GSHOTPyramid::Level filter;
-		Position offset;			///< Part offset (dx dy dz) relative to the root.
+        Position offset;			///< Part offset (dz dy dx) relative to the root.
 		Deformation deformation;	///< Deformation cost (dx^2 dx dy^2 dy dz^2 dz).
 		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	};
