@@ -82,7 +82,7 @@ public:
 
         int nbParts = 3;
         double C = 0.002, J = 2;
-        int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 20;
+        int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 2000;
         Model::triple<int, int, int> chairSize(8,10,6);//8,10,6 in lvl 1
         Model::triple<int, int, int> chairPartSize(8,10,6);//8,10,6 in lvl 0
         Model model( chairSize, 0);
@@ -105,7 +105,8 @@ public:
         if ((dir = opendir (negativeFolder.c_str())) != NULL) {
           while ((ent = readdir (dir)) != NULL) {
               if( string(ent->d_name).compare(".") != 0 && string(ent->d_name).compare("..") != 0)
-                negativeListFiles.push_back( negativeFolder + ent->d_name);
+//                  if( string(ent->d_name).find(".ply") != std::string::npos)
+                    negativeListFiles.push_back( negativeFolder + ent->d_name);
 //            printf ("%s\n", (folder + ent->d_name).c_str());
           }
           closedir (dir);
@@ -631,7 +632,8 @@ int main(){
 
 
     test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
-               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
+               "/media/ubuntu/DATA/3DDataset/ModelNet10_normalized/table/full/");
+//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
     test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene4.pcd");
 

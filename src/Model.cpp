@@ -840,6 +840,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                 (*positions)[i][lvl - interval] = Positions();
 
         }
+        (*convolutions)[0][lvl] *= 1.0/nbFilters;
     }
 
     scores.swap((*convolutions)[0]);
@@ -993,7 +994,7 @@ Model & Model::operator*=(double a)
 // off = offset used to shift the weight grid to the right location of the part disregard to the root location p
 template <typename Scalar>
 static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * v, Scalar * y,
-                 int * m, const Scalar * t, int incf, int incy, int incm, int off = 0)
+                 int * m, const Scalar * t, int incf, int incy, int incm, int off = 0, int weightSize = 10)
 {
     assert(f && (y || m));
     assert(n > 0);
@@ -1002,6 +1003,10 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
     assert(t);
     assert(incf && incy && (m ? incm : true));
 
+
+    int start = std::max(0, off - weightSize);
+    int end = std::min(n, off + weightSize);
+
     z[0] =-numeric_limits<Scalar>::infinity();  //Locations of boundaries between parabolas
     z[1] = numeric_limits<Scalar>::infinity();  //Locations of boundaries between parabolas
     v[0] = 0;                                   //Locations of parabolas in lower envelope
@@ -1009,6 +1014,8 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
     // Use a lookup table to replace the division by (a * (q - v[k]))
     int k = 0;                                  //Index of rightmost parabola in lower envelope
     Scalar fvk = f[0];
+
+
 
     for (int q = 1; q < n;) {
 //        const Scalar s = (x[q * incx] - xvk) * t[q - v[k]] + (q + v[k]) - b / a;
@@ -1032,6 +1039,7 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
     }
 
     z[k + 1] = numeric_limits<Scalar>::infinity();
+    cout<<"Model::DT1D k max : "<<k+1<<endl;
 
     if (y && m) {
         for (int q = 0, k = 0; q < n; ++q) {
@@ -1040,7 +1048,10 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
 
 //            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
 //            m[q * incm] = v[k];
-            y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
+            if(q>start && q<end)
+                y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
+            else
+                y[q * incy] = f[v[k] * incf];
             m[q * incm] = v[k] ;
         }
     }
@@ -1050,8 +1061,10 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
                 ++k;
 
 //            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
-            y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
-
+            if(q>start && q<end)
+                y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
+            else
+                y[q * incy] = f[v[k] * incf];
         }
     }
     else {
@@ -1113,12 +1126,12 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 //                                 part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
 //                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
 //                                 &t[0], 1, 1, 4);
-            //TODO use weight cols instead of cols and start the dt1d q from min(0,offset-weightCols/2) instead of 1
+            //TODO use weight cols instead of cols and start the dt1d q from max(0,offset-weightCols/2) instead of 1
             // replace weightCols by offset + weightCols/2
-            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, weightCols, part.deformation(0),
+            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
                                  0, &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
                                  positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
-                                 &t[0], 1, 1, 4, part.offset[2]);
+                                 &t[0], 1, 1, 4, part.offset[2], weightCols);
         }
     }
 
@@ -1139,7 +1152,7 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                                  &distance[0], &index[0],
                                  tmp2().data() + x + z*cols*rows,
                                  positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
-                                 cols, cols, 4 * cols, part.offset[1]);
+                                 cols, cols, 4 * cols, part.offset[1], weightRows);
         }
     }
 
@@ -1160,7 +1173,7 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                                  &distance[0], &index[0],
                                  tensor().data() + x + y*cols,//or 0
                                  positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
-                                 cols * rows, cols * rows, 4 * cols * rows, part.offset[0]);
+                                 cols * rows, cols * rows, 4 * cols * rows, part.offset[0], weightDepths);
         }
     }
 

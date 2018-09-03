@@ -729,11 +729,11 @@ public:
 
         vector<double> posMargins(positives_.size());
 		
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < positives_.size(); ++i)
 			posMargins[i] = models_[positives_[i].second].dot(positives_[i].first);
 		
-#pragma omp parallel for
+// Never use #pragma omp parallel for HERE
 		for (int i = 0; i < positives_.size(); ++i) {
 			if (posMargins[i] < 1.0) {
 				loss += 1.0 - posMargins[i];
@@ -756,11 +756,11 @@ public:
 
 		vector<double> negMargins(negatives_.size());
 		
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < negatives_.size(); ++i)
 			negMargins[i] = models_[negatives_[i].second].dot(negatives_[i].first);
 		
-#pragma omp parallel for
+//#pragma omp parallel for
 		for (int i = 0; i < negatives_.size(); ++i) {
 			if (negMargins[i] > -1.0) {
 				loss += 1.0 + negMargins[i];

@@ -13,6 +13,7 @@
 #include "typedefs.h"
 #include <boost/filesystem.hpp>
 #include "emd_hat.hpp"
+#include <math.h>
 
 
 //#ifdef _OPENMP
@@ -305,6 +306,20 @@ public:
                     for (int j = 0; j < 352; ++j) {
                         res += tensor(z, y, x)(j) * sample()(z, y, x)(j);
                     }
+                }
+            }
+        }
+        return res;
+    }
+
+    //Level
+    Tensor3D< Scalar> operator*=( const Scalar& coef) const{
+        Tensor3D< Scalar> res = *this;
+//#pragma omp parallel for
+        for (int z = 0; z < depths(); ++z) {
+            for (int y = 0; y < rows(); ++y) {
+                for (int x = 0; x < cols(); ++x) {
+                    res()(z, y, x) *= coef;
                 }
             }
         }
