@@ -151,10 +151,23 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             // Remove easy samples (keep hard ones)
             int j = 0;
             cout<<"Mix::train datamine : "<<datamine<<endl;
-            for (int i = 0; i < negatives.size(); ++i)
-                if ((negatives[i].first.parts()[0].deformation(4) =
-                     models_[negatives[i].second].dot(negatives[i].first)) > -1.01)
-                    negatives[j++] = negatives[i];
+
+
+//            for (int i = 0; i < negatives.size(); ++i)
+//                if ((negatives[i].first.parts()[0].deformation(4) =
+//                    models_[negatives[i].second].dot(negatives[i].first)) > -1.01)
+//                        negatives[j++] = negatives[i];
+            for (int i = 0; i < negatives.size(); ++i){
+                negatives[i].first.parts()[0].deformation(4) =
+                                     models_[negatives[i].second].dot(negatives[i].first);
+                cout<<"Mix::train negatives[i].first.parts()[0].deformation(4) : "<<
+                   negatives[i].first.parts()[0].deformation(4)<<endl;
+                if (negatives[i].first.parts()[0].deformation(4) > -1.01){
+                    cout<<"Mix::train add hard negative : "<< j << " / " << i <<
+                       " / " << negatives.size() << endl;
+                            negatives[j++] = negatives[i];
+                }
+            }
             cout<<"Mix::train j : "<<j<<endl;
 
             negatives.resize(j);
@@ -621,7 +634,7 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                             models_[argmax].initializeSample(pyramid, z, y, x, lvl, sample,
                                                              zero_ ? 0 : &positions[argmax]);
                             if (!sample.empty()) {
-                                cout<<"Mix::negLatentSearch test4"<<endl;
+//                                cout<<"Mix::negLatentSearch test4"<<endl;
 
                                 //TODO
                                 // Store all the information about the sample in the offset and
@@ -646,7 +659,7 @@ cout<<"Mix::negLatentSearch test2"<<endl;
 
                                 // Make sure not to put the same sample twice
                                 if ((j >= nbCached) || !(negatives[j].first == sample)) {
-                                    cout<<"Mix::negLatentSearch test5"<<endl;
+//                                    cout<<"Mix::negLatentSearch test5"<<endl;
 
                                     negatives.push_back(make_pair(sample, argmax));
 
@@ -716,10 +729,11 @@ public:
 
         vector<double> posMargins(positives_.size());
 		
-//#pragma omp parallel for
+#pragma omp parallel for
 		for (int i = 0; i < positives_.size(); ++i)
 			posMargins[i] = models_[positives_[i].second].dot(positives_[i].first);
 		
+#pragma omp parallel for
 		for (int i = 0; i < positives_.size(); ++i) {
 			if (posMargins[i] < 1.0) {
 				loss += 1.0 - posMargins[i];
@@ -742,10 +756,11 @@ public:
 
 		vector<double> negMargins(negatives_.size());
 		
-//#pragma omp parallel for
+#pragma omp parallel for
 		for (int i = 0; i < negatives_.size(); ++i)
 			negMargins[i] = models_[negatives_[i].second].dot(negatives_[i].first);
 		
+#pragma omp parallel for
 		for (int i = 0; i < negatives_.size(); ++i) {
 			if (negMargins[i] > -1.0) {
 				loss += 1.0 + negMargins[i];

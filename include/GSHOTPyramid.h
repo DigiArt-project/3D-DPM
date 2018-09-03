@@ -27,13 +27,8 @@
 //Other
 #include "typedefs.h"
 #include "tensor3d.h"
-#include <omp.h>
 #include <boost/filesystem.hpp>
 
-
-//#ifdef _OPENMP
-//#include <omp.h>
-//#endif
 
 
 namespace FFLD

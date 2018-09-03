@@ -564,7 +564,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
 void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, int lvl, Model & sample,
 							 const vector<vector<Positions> > * positions) const
 {
-    cout << "initializeSample ..." << endl;
+//    cout << "initializeSample ..." << endl;
     // All the constants relative to the model and the pyramid
     const int nbFilters = static_cast<int>(parts_.size());
     const int nbParts = nbFilters - 1;
@@ -573,7 +573,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     const int nbLevels = static_cast<int>(pyramid.levels().size());
     const float resolution = 1 / pow(2.0, static_cast<double>(lvl) / interval);
 	
-    cout << "initializeSample pyramid.levels()["<<lvl<<"].cols() = " << pyramid.levels()[lvl].cols() << endl;
+//    cout << "initializeSample pyramid.levels()["<<lvl<<"].cols() = " << pyramid.levels()[lvl].cols() << endl;
 
     // Invalid parameters
     if (empty() || (x < 0) || (y < 0) || (z < 0) || (lvl >= nbLevels) ||
@@ -599,7 +599,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     // Resize the sample to have the same number of filters as the model
     sample.parts_.resize(nbFilters);
 	
-    cout << "initializeSample coord = " << z<<" / "<<y<<" / "<<x <<" / "<< lvl<< endl;
+//    cout << "initializeSample coord = " << z<<" / "<<y<<" / "<<x <<" / "<< lvl<< endl;
 
     // Extract the root filter
 
@@ -615,8 +615,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
 
-
-	
+//TODO parallelize
     for (int i = 0; i < nbParts; ++i) {
         // Position of the part
         if ((lvl >= (*positions)[i].size()) || (x >= (*positions)[i][lvl].cols()) ||
@@ -651,14 +650,14 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
             return;
         }
 		
-        cout<<"Model::InitiSample filter part isZero = "<<GSHOTPyramid::TensorMap(level).isZero()<<endl;
-        cout<<"Model::InitiSample filter part block isZero = "<<GSHOTPyramid::TensorMap(
-                  level.block(position(0),
-                                position(1),
-                                position(2),
-                                partSize().first,
-                                partSize().second,
-                                partSize().third)).isZero()<<endl;
+//        cout<<"Model::InitiSample filter part isZero = "<<GSHOTPyramid::TensorMap(level).isZero()<<endl;
+//        cout<<"Model::InitiSample filter part block isZero = "<<GSHOTPyramid::TensorMap(
+//                  level.block(position(0),
+//                                position(1),
+//                                position(2),
+//                                partSize().first,
+//                                partSize().second,
+//                                partSize().third)).isZero()<<endl;
 
         // Extract the part filter
         sample.parts_[i + 1].filter = level.block(position(0), position(1), position(2), partSize().first,
@@ -667,7 +666,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
         // Set the part offset to the position
         sample.parts_[i + 1].offset = position;
 
-        cout<<"Model::InitiSample filter part position = "<<position<<endl;
+//        cout<<"Model::InitiSample filter part position = "<<position<<endl;
 
 		
         //TODO!!!!
@@ -757,10 +756,10 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
         for (int i = 0; i < nbFilters; ++i){
 
             pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
-            cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
-               << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
-            cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
-            cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
+//            cout<<"Model::convolve pyramid convolution results of size : "<< tmpConvolutions.size()
+//               << " / " << tmpConvolutions[i].size() << " / " << tmpConvolutions[i][0].size()<<endl;
+//            cout<<"Model::convolve tmpConvolutions["<<i<<"][0].isZero() : "<< tmpConvolutions[i][0].isZero()<<endl;
+//            cout<<"Model::convolve tmpConvolutions["<<i<<"][1].isZero() : "<< tmpConvolutions[i][1].isZero()<<endl;
 
         }
 
@@ -818,10 +817,11 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                             (*convolutions)[0][lvl]()(z, y, x) += (*convolutions)[i + 1][lvl - interval]()(zr, yr, xr);
 
                             if (positions){
-                                (*positions)[i][lvl]()(z, y, x) << (*positions)[i][lvl - interval]()(zr, yr, xr)(0),
-                                                                 (*positions)[i][lvl - interval]()(zr, yr, xr)(1),
-                                                                 (*positions)[i][lvl - interval]()(zr, yr, xr)(2),
-                                                                 lvl - interval;
+                                (*positions)[i][lvl]()(z, y, x) <<
+                                    (*positions)[i][lvl - interval]()(zr, yr, xr)(0) - parts_[i + 1].offset(0),
+                                    (*positions)[i][lvl - interval]()(zr, yr, xr)(1) - parts_[i + 1].offset(1),
+                                    (*positions)[i][lvl - interval]()(zr, yr, xr)(2) - parts_[i + 1].offset(2),
+                                    lvl - interval;
                             }
                         }
                         else {
@@ -1013,7 +1013,8 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
     for (int q = 1; q < n;) {
 //        const Scalar s = (x[q * incx] - xvk) * t[q - v[k]] + (q + v[k]) - b / a;
         // result good only if b = 0
-        const Scalar s = (f[q * incf] - fvk) * t[q - v[k]] / 2.0 + (q*q - v[k]*v[k]) / (2*(q - v[k])) - off;
+        const Scalar s = (f[q * incf] - fvk) * t[q - v[k]] / 2.0 + (q*q - v[k]*v[k]) / (2*(q - v[k])) - off
+                - b * (q - v[k]) / a;
 //        const Scalar s = (x[q * incx] - xvk) * t[q - v[k]] + (q + v[k]) - off;
 
         if (s <= z[k]) {
@@ -1079,6 +1080,10 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
     const int rows = static_cast<int>(tensor.rows());
     const int cols = static_cast<int>(tensor.cols());
 
+    const int weightDepths = depths;
+    const int weightRows = rows;
+    const int weightCols = cols;
+
     if (positions){
         (*positions)().resize(depths, rows, cols);
     }
@@ -1108,7 +1113,9 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 //                                 part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
 //                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
 //                                 &t[0], 1, 1, 4);
-            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
+            //TODO use weight cols instead of cols and start the dt1d q from min(0,offset-weightCols/2) instead of 1
+            // replace weightCols by offset + weightCols/2
+            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, weightCols, part.deformation(0),
                                  0, &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
                                  positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
                                  &t[0], 1, 1, 4, part.offset[2]);

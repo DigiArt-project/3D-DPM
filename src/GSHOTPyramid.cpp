@@ -44,8 +44,9 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     min.y = floor(minTmp.y/starting_resolution)*starting_resolution;
     min.z = floor(minTmp.z/starting_resolution)*starting_resolution;
 
-//#pragma omp parallel for i
+#pragma omp parallel for
     for (int i = 0; i < interval_; ++i) {
+#pragma omp parallel for
         for (int j = 0; j < nbOctave; ++j) {
             int index = i + j * interval_;
             resolution = starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
@@ -62,7 +63,6 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
             Level level( topology[index](0), topology[index](1), topology[index](2));
             int kpt = 0;
-//#pragma omp parallel for
             for (int z = 0; z < level.depths(); ++z){
                 for (int y = 0; y < level.rows(); ++y){
                     for (int x = 0; x < level.cols(); ++x){
@@ -202,9 +202,11 @@ GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, i
     PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
     
 
-//#pragma omp parallel for num_threads(omp_get_max_threads())
+#pragma omp parallel for
     for(int z=0;z<pt_nb_z;++z){
+#pragma omp parallel for
         for(int y=0;y<pt_nb_y;++y){
+#pragma omp parallel for
             for(int x=0;x<pt_nb_x;++x){
                 PointType p = PointType();
                 p.x = min.x + x*grid_reso;
@@ -240,7 +242,7 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     cout<<"GSHOT:: descriptors size = "<<descriptors->size()<<endl;
     cout<<"GSHOT:: keypoints size = "<<keypoints->size()<<endl;
 
-
+#pragma omp parallel for
     for (size_t i = 0; i < descriptors->size(); ++i){
         std::vector<float> data_tmp(DescriptorSize);
 

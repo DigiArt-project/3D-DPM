@@ -176,7 +176,7 @@ public:
                                    floor(min.x/sceneResolution/2.0));
             Model::triple<int, int, int> sceneSize = chairSize;//( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);
 
-            cout << "scene min : " << min << endl;
+            cout << "negative scene min : " << min << endl;
 
             Rectangle box(originBox , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution*2);
 
@@ -460,7 +460,7 @@ public:
         viewer.displayCubeLine(sceneRect);
         Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
                 mixture.models()[0].parts()[0].offset(1),
-                mixture.models()[0].parts()[0].offset(2)),
+                mixture.models()[0].parts()[0].offset(2)-20),
                       mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
                       mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
         viewer.displayCubeLine(rootBox,
@@ -468,12 +468,12 @@ public:
                 Vector3i(255,255,0));
         for(int i=1;i<mixture.models()[0].parts().size();++i){
             Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
-                    mixture.models()[0].parts()[i].offset(2)),
+                    mixture.models()[0].parts()[i].offset(2)-40),
                           mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
                           mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
             viewer.displayCubeLine(partBox,
                                    Eigen::Vector3f(0,0,0),
-                    Vector3i(255,0,0));
+                    Vector3i(100,0,0));
         }
 
     }
@@ -630,8 +630,8 @@ int main(){
     int start = getMilliCount();
 
 
-//    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
-//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
+    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
+               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
     test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene4.pcd");
 

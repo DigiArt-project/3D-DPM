@@ -45,7 +45,6 @@ like its bounding box.
 
 TODO :
 
-- Sort source and header files in "src" and "include"
 - Normalize the SVM score using Platt's sclaing method.
 - Fix the parts positions regarding the root (or the opposite). Sometimes, the parts are outside the root bounding box. 
 - Allow more interval and more octave in the pyramid (only tested and designed for 1 interval and 2 octaves).
@@ -53,12 +52,20 @@ This imply that currently, the size of the objects during training and testing h
 - Test the algorithm on real datasets (see SceneNN dataset)
 - Allow the project to have more than one Model in the Mixture.
 - Set the starting_resolution of the GSHOTPyramid constructor from the test file (for coherent results).
-- Use OpenMP.
 - Compute uneccessary scores during training.
 - Let the user set the epsillon value used in Mixture.
 - Check TODO comments in the code
+
 - problem assigning score of dt3d to root offset => error in the detection score due to the parts
+	Maybe t[x] should have an infinite value beyond the weight filter size ?
+	Check distance Mahalanobis instead of L2 distance
+- initPart ???
 - use hard negative example
+- use big dataset for tries
+- Use EMD or main direction of the shot in root filter to make the filter invariant to the rotation (see picture)
+- Doesnt work if object is not entirely in the scene
+- maxNegSample has an impact on the detection score but looks normal
+
 
 
 Infos :
