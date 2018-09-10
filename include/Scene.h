@@ -48,7 +48,7 @@ public:
 		  const std::vector<Object> & objects);
 	
 	/// Constructs a scene and tries to load the scene from the xml file with the given @p filename.
-	explicit Scene(const std::string & filename);
+    explicit Scene(const std::string & filename, const float resolution);
 	
 	/// Returns whether the scene is empty. An empty scene has an empty image and no object.
 	bool empty() const;

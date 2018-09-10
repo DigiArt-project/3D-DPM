@@ -105,6 +105,7 @@ private:
 
     Eigen::Vector3i origin_;
     Eigen::Vector3i diagonal_;
+    Eigen::Quaternion quaternion_;
     int width_;
     int height_;
     int depth_;

@@ -781,14 +781,23 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
     Tensor3DF tmp2;
 
 
-
+    float sum = 0.0;
 	
     // For each root level in reverse order
     for (int lvl = nbLevels - 1; lvl >= interval; --lvl) {
 
+        if((*convolutions)[0][lvl - interval].size() > 0){
+            stringstream name;
+            name << "conv" << 0 << ".txt";
+            ofstream out(name.str().c_str());
+            out << (*convolutions)[0][lvl]();
+        }
         // For each part
         for (int i = 0; i < nbParts; ++i) {
             // Transform the part one octave below
+
+            sum = (*convolutions)[i+1][lvl - interval].sum();
+            cout<<"Model::conv sum for part "<<i+1<<" before DT3D : "<<sum<<endl;
 
             DT3D((*convolutions)[i + 1][lvl - interval], parts_[i + 1], tmp1, tmp2,
                  positions ? &(*positions)[i][lvl - interval] : 0);
@@ -798,6 +807,16 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                                                  (*convolutions)[0][lvl].rows(),
                                                  (*convolutions)[0][lvl].cols());
                 (*positions)[i][lvl]().setConstant( Position::Zero());
+            }
+
+            sum = (*convolutions)[i+1][lvl - interval].sum();
+            cout<<"Model::conv sum for part "<<i+1<<" after DT3D : "<<sum<<endl;
+
+            if((*convolutions)[i+1][lvl - interval].size() > 0){
+                stringstream name;
+                name << "conv" << i+1 << ".txt";
+                ofstream out(name.str().c_str());
+                out << (*convolutions)[i+1][lvl - interval]();
             }
 
             // Add the distance transforms of the part one octave below
@@ -840,17 +859,21 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                 (*positions)[i][lvl - interval] = Positions();
 
         }
-        (*convolutions)[0][lvl] *= 1.0/nbFilters;
+
     }
 
     scores.swap((*convolutions)[0]);
-	
-        for (int i = 0; i < interval; ++i) {
-            scores[i] = Tensor3DF();
 
-            for (int j = 0; j < nbParts; ++j)
-                (*positions)[j][i] = Positions();
-        }
+    for (int i = 0; i < interval; ++i) {
+        scores[i] = Tensor3DF();
+
+        for (int j = 0; j < nbParts; ++j)
+            (*positions)[j][i] = Positions();
+    }
+
+    float den = 1.0/nbFilters;
+    cout<<"Model::conv den : "<<den<<" / nbFilters : "<<nbFilters<<endl;
+//    scores[1] *= den;
 
     // Add the bias if necessary
 //    if (bias_) {
@@ -1039,7 +1062,7 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
     }
 
     z[k + 1] = numeric_limits<Scalar>::infinity();
-    cout<<"Model::DT1D k max : "<<k+1<<endl;
+//    cout<<"Model::DT1D k max : "<<k+1<<endl;
 
     if (y && m) {
         for (int q = 0, k = 0; q < n; ++q) {
@@ -1048,10 +1071,10 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
 
 //            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
 //            m[q * incm] = v[k];
-            if(q>start && q<end)
+            if(q >= start && q <= end)
                 y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
             else
-                y[q * incy] = f[v[k] * incf];
+                y[q * incy] = 0;//f[v[k] * incf];
             m[q * incm] = v[k] ;
         }
     }
@@ -1061,10 +1084,10 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
                 ++k;
 
 //            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
-            if(q>start && q<end)
+            if(q >= start && q <= end)
                 y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
             else
-                y[q * incy] = f[v[k] * incf];
+                y[q * incy] = 0;//f[v[k] * incf];
         }
     }
     else {
@@ -1093,9 +1116,25 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
     const int rows = static_cast<int>(tensor.rows());
     const int cols = static_cast<int>(tensor.cols());
 
-    const int weightDepths = depths;
-    const int weightRows = rows;
-    const int weightCols = cols;
+    Tensor3DF copy(depths, rows, cols);
+    for (int z = 0; z < depths; ++z){
+        for (int y = 0; y < rows; ++y){
+            for (int x = 0; x < cols; ++x){
+                copy()(z, y, x) = tensor()(z, y, x);
+            }
+        }
+    }
+
+    cout<<"Model::DT3D begin max : "<<copy.max()<<endl;
+    cout<<"Model::DT3D begin min : "<<copy.min()<<endl;
+
+
+    const int weightDepths = 5;
+    const int weightRows   = 5;
+    const int weightCols   = 5;
+//    const int weightDepths = depths;
+//    const int weightRows   = rows;
+//    const int weightCols   = cols;
 
     if (positions){
         (*positions)().resize(depths, rows, cols);
@@ -1126,14 +1165,13 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 //                                 part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
 //                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
 //                                 &t[0], 1, 1, 4);
-            //TODO use weight cols instead of cols and start the dt1d q from max(0,offset-weightCols/2) instead of 1
-            // replace weightCols by offset + weightCols/2
             dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
                                  0, &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
                                  positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
                                  &t[0], 1, 1, 4, part.offset[2], weightCols);
         }
     }
+
 
     for (int y = 1; y < rows; ++y){
 //        t[y] = 1 / (part.deformation(2) * y);
@@ -1194,6 +1232,10 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                 }
 
     }
+
+    cout<<"Model::DT3D end max : "<<tensor.max()<<endl;
+    cout<<"Model::DT3D end min : "<<tensor.min()<<endl;
+
 
 }
 

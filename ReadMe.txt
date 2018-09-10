@@ -60,12 +60,15 @@ This imply that currently, the size of the objects during training and testing h
 	Maybe t[x] should have an infinite value beyond the weight filter size ?
 	Check distance Mahalanobis instead of L2 distance
 - initPart ???
-- use hard negative example
+- use hard negative example : correct Model.dot() and negative example deformation
+	pk score > -1 ???
 - use big dataset for tries
 - Use EMD or main direction of the shot in root filter to make the filter invariant to the rotation (see picture)
 - Doesnt work if object is not entirely in the scene
 - maxNegSample has an impact on the detection score but looks normal
-
+- score not correct
+- GSHOT radius to adapt
+- normalize score in model (//    scores[1] *= den;)
 
 
 Infos :

@@ -261,9 +261,9 @@ public:
         if(z+p>depths() || y+q>rows() || x+r>cols() || z < 0 || y < 0 || x < 0){
             cerr<<"agglomerateBlock:: Try to access : "<<z+p<<" / "<<y+q<<" / "<<x+r<<" on matrix size : "
                <<depths()<<" / "<<rows()<<" / "<<cols()<<endl;
-            p = min(z+p, depths()) - z;
-            q = min(y+q, rows()) - y;
-            r = min(x+r, cols()) - x;
+            p = std::min(z+p, depths()) - z;
+            q = std::min(y+q, rows()) - y;
+            r = std::min(x+r, cols()) - x;
         }
         Tensor3D< Type> res(1,1,1);
         res().setConstant( Type::Zero());
@@ -313,17 +313,15 @@ public:
     }
 
     //Level
-    Tensor3D< Scalar> operator*=( const Scalar& coef) const{
-        Tensor3D< Scalar> res = *this;
+    void operator*=( const Scalar& coef){
 //#pragma omp parallel for
         for (int z = 0; z < depths(); ++z) {
             for (int y = 0; y < rows(); ++y) {
                 for (int x = 0; x < cols(); ++x) {
-                    res()(z, y, x) *= coef;
+                    (*this)()(z, y, x) *= coef;
                 }
             }
         }
-        return res;
     }
 
     //Level
@@ -413,41 +411,56 @@ public:
     }
 
     Type sum() const{
-                    Type res = 0;
-                    for (int i = 0; i < depths(); ++i) {
-                        for (int j = 0; j < rows(); ++j) {
-                            for (int k = 0; k < cols(); ++k) {
-                                res += tensor(i, j, k);
-                            }
-                        }
-                    }
+        Type res = 0;
+        for (int i = 0; i < depths(); ++i) {
+            for (int j = 0; j < rows(); ++j) {
+                for (int k = 0; k < cols(); ++k) {
+                    res += tensor(i, j, k);
+                }
+            }
+        }
         return res;
     }
 
     Type squaredNorm() const{
-                    Type res = 0;
-                    for (int i = 0; i < depths(); ++i) {
-                        for (int j = 0; j < rows(); ++j) {
-                            for (int k = 0; k < cols(); ++k) {
-                                res += tensor(i, j, k) * tensor(i, j, k);
-                            }
-                        }
-                    }
+        Type res = 0;
+        for (int i = 0; i < depths(); ++i) {
+            for (int j = 0; j < rows(); ++j) {
+                for (int k = 0; k < cols(); ++k) {
+                    res += tensor(i, j, k) * tensor(i, j, k);
+                }
+            }
+        }
         return res;
     }
 
     Type max() const{
-                    if( tensor.size() <= 0){
-                        return 0;
-                    }
-                    Type res = tensor(0,0,0);
-                    for (int i = 0; i < depths(); ++i) {
-                        for (int j = 0; j < rows(); ++j) {
-                            for (int k = 0; k < cols(); ++k) {
-                                if( res < tensor(i, j, k)) res = tensor(i, j, k);
-                            }
-                        }
-                    }
+        if( tensor.size() <= 0){
+            return 0;
+        }
+        Type res = tensor(0,0,0);
+        for (int i = 0; i < depths(); ++i) {
+            for (int j = 0; j < rows(); ++j) {
+                for (int k = 0; k < cols(); ++k) {
+                    if( res < tensor(i, j, k)) res = tensor(i, j, k);
+                }
+            }
+        }
+        return res;
+    }
+
+    Type min() const{
+        if( tensor.size() <= 0){
+            return Type(0);
+        }
+        Type res = tensor(0,0,0);
+        for (int i = 0; i < depths(); ++i) {
+            for (int j = 0; j < rows(); ++j) {
+                for (int k = 0; k < cols(); ++k) {
+                    if( res > tensor(i, j, k)) res = tensor(i, j, k);
+                }
+            }
+        }
         return res;
     }
 
