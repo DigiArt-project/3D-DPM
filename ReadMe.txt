@@ -68,7 +68,11 @@ This imply that currently, the size of the objects during training and testing h
 - maxNegSample has an impact on the detection score but looks normal
 - score not correct
 - GSHOT radius to adapt
-- normalize score in model (//    scores[1] *= den;)
+- normalize score in model (//    scores[1] *= den;) ?
+- Update Rectangle add orientation to use obb or use aabb ? and use float values instead of int. 
+	Problem to compute obb intersection
+- Viewer use addCube instaed of addLine
+- Analogie entre DT3D et matching problem (see pictorial structure optimization problem and DPM optim prob)
 
 
 Infos :

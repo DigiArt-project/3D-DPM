@@ -679,12 +679,12 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 //        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first * 0.5) * 0.5 - pad.z()) *
 //                          scale + pad.z() - partSize().first * 0.5;
         const double scale = pow(2.0, static_cast<double>(lvl - position(3)) / interval);
-        const double xr = (x + (parts_[i + 1].offset(2) + partSize().third) /*- pad.x()*/) *
-                          scale + /*pad.x()*/ - partSize().third;
-        const double yr = (y + (parts_[i + 1].offset(1) + partSize().second) /*- pad.y()*/) *
-                          scale + /*pad.y()*/ - partSize().second;
-        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first) /*- pad.z()*/) *
-                          scale + /*pad.z()*/ - partSize().first;
+        const double xr = (x + (parts_[i + 1].offset(2) + partSize().third * 0.5) * 0.5 /*- pad.x()*/) *
+                          scale + /*pad.x()*/ - partSize().third * 0.5;
+        const double yr = (y + (parts_[i + 1].offset(1) + partSize().second * 0.5) * 0.5 /*- pad.y()*/) *
+                          scale + /*pad.y()*/ - partSize().second * 0.5;
+        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first * 0.5) * 0.5 /*- pad.z()*/) *
+                          scale + /*pad.z()*/ - partSize().first * 0.5;
         const double dx = xr - position(2)/**pyramid.resolutions()[lvl]*/;
         const double dy = yr - position(1)/**pyramid.resolutions()[lvl]*/;
         const double dz = zr - position(0)/**pyramid.resolutions()[lvl]*/;

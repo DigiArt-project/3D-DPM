@@ -80,7 +80,7 @@ public:
 
     void train(string positiveFolder, string negativeFolder){
 
-        int nbParts = 1;
+        int nbParts = 2;
         double C = 0.002, J = 2;
         int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 2000;
         Model::triple<int, int, int> chairSize(8,10,6);//8,10,6 in lvl 1
