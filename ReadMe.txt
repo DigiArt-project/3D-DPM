@@ -65,7 +65,7 @@ This imply that currently, the size of the objects during training and testing h
 - use big dataset for tries
 - Use EMD or main direction of the shot in root filter to make the filter invariant to the rotation (see picture)
 - Doesnt work if object is not entirely in the scene
-- maxNegSample has an impact on the detection score but looks normal
+- maxNegSample has no an impact on the detection score
 - score not correct
 - GSHOT radius to adapt
 - normalize score in model (//    scores[1] *= den;) ?

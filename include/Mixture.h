@@ -82,7 +82,7 @@ public:
 	/// Initializes the specidied number of parts from the root of each model.
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
-    void initializeParts(int nbParts, Model::triple<int, int, int> partSize/*, GSHOTPyramid::Level root2x*/);
+    void initializeParts(int nbParts/*, Model::triple<int, int, int> partSize*//*, GSHOTPyramid::Level root2x*/);
 	
 	/// Returns the scores of the convolutions + distance transforms of the models with a
 	/// pyramid of features (useful to compute the SVM margins).

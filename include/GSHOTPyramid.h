@@ -148,6 +148,8 @@ namespace FFLD
         //TODO: Can be removed
         // The corresponding positions of the descriptors in the space for each level
         std::vector<PointCloudPtr > keypoints_;
+
+        Eigen::Vector3i sceneOffset_;
     };
 
     //Read point cloud from a path

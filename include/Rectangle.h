@@ -101,6 +101,9 @@ public:
     
     Rectangle changeToPclCoordinateSystem() const;
 
+    /// compare volumes
+    bool operator<(const Rectangle & rect);
+
 private:
 
     Eigen::Vector3i origin_;

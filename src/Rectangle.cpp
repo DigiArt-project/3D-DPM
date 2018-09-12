@@ -195,6 +195,10 @@ Rectangle Rectangle::changeToPclCoordinateSystem() const{
     return rec;
 }
 
+bool Rectangle::operator<(const Rectangle & rect){
+    return volume() < rect.volume();
+}
+
 ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)
 {
     return os << rect.origin()(0) << ' ' << rect.origin()(1) << ' ' << rect.origin()(2)

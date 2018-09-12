@@ -78,122 +78,177 @@ public:
 
     }
 
-    void train(string positiveFolder, string negativeFolder){
+    void oldTrain(string positiveFolder, string negativeFolder){
 
-        int nbParts = 2;
+//        int nbParts = 3;
+//        double C = 0.002, J = 2;
+//        int interval = 1, nbIterations = 3, nbDatamine = 3, maxNegSample = 2000;
+//        Model::triple<int, int, int> chairSize(8,10,6);//8,10,6 in lvl 1
+//        Model::triple<int, int, int> chairPartSize(8,10,6);//8,10,6 in lvl 0
+//        Model model( chairSize, 0);
+//        std::vector<Model> models = { model};
+
+//        vector<string> positiveListFiles, negativeListFiles;
+//        DIR *dir;
+//        struct dirent *ent;
+//        if ((dir = opendir (positiveFolder.c_str())) != NULL) {
+//          while ((ent = readdir (dir)) != NULL) {
+//              if( string(ent->d_name).compare(".") != 0 && string(ent->d_name).compare("..") != 0)
+//                positiveListFiles.push_back( positiveFolder + ent->d_name);
+//    //            printf ("%s\n", (folder + ent->d_name).c_str());
+//          }
+//          closedir (dir);
+//        } else {
+//          perror ("could not open directory");
+//        }
+
+//        if ((dir = opendir (negativeFolder.c_str())) != NULL) {
+//          while ((ent = readdir (dir)) != NULL) {
+//              if( string(ent->d_name).compare(".") != 0 && string(ent->d_name).compare("..") != 0)
+//    //                  if( string(ent->d_name).find(".ply") != std::string::npos)
+//                    negativeListFiles.push_back( negativeFolder + ent->d_name);
+//    //            printf ("%s\n", (folder + ent->d_name).c_str());
+//          }
+//          closedir (dir);
+//        } else {
+//          perror ("could not open directory");
+//        }
+
+//        vector<Scene> scenes(positiveListFiles.size() + negativeListFiles.size());
+
+//        for( int i=0; i < positiveListFiles.size(); ++i){
+//            printf ("%s\n", positiveListFiles[i].c_str());
+//            PointCloudPtr cloud( new PointCloudT);
+
+//            if (readPointCloud(positiveListFiles[i], cloud) == -1) {
+//                cout<<"couldnt open ply file"<<endl;
+//            }
+
+//            PointType min;
+//            PointType max;
+//            pcl::getMinMax3D(*cloud, min, max);
+
+//            Vector3i resolution( (max.z - min.z)/sceneResolution+1,
+//                                 (max.y - min.y)/sceneResolution+1,
+//                                 (max.x - min.x)/sceneResolution+1);
+//            cout << "scene resolution : " << resolution << endl;
+//            Vector3i originScene = Vector3i(floor(min.z/sceneResolution),
+//                                   floor(min.y/sceneResolution),
+//                                   floor(min.x/sceneResolution));
+//            Vector3i originChair = Vector3i(floor(min.z/sceneResolution/2.0),
+//                                   floor(min.y/sceneResolution/2.0),
+//                                   floor(min.x/sceneResolution/2.0));
+//            Model::triple<int, int, int> sceneSize = chairSize;//( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);
+
+//            cout << "scene min : " << min << endl;
+
+
+//            Rectangle chairBox(originChair , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution*2/*resolution.sum()/3.0*/);
+
+//            cout << "chairBox : " << chairBox << endl;
+//            Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
+//            scenes[i] = Scene( originScene, chairBox.depth(), chairBox.height(), chairBox.width(),
+//                               positiveListFiles[i], {obj});
+//        }
+
+
+//        for( int i=0; i < negativeListFiles.size(); ++i){
+//            printf ("%s\n", negativeListFiles[i].c_str());
+//            PointCloudPtr cloud( new PointCloudT);
+
+//            if (readPointCloud(negativeListFiles[i], cloud) == -1) {
+//                cout<<"couldnt open ply file"<<endl;
+//            }
+
+//            PointType min;
+//            PointType max;
+//            pcl::getMinMax3D(*cloud, min, max);
+
+//            Vector3i resolution( (max.z - min.z)/sceneResolution+1,
+//                                 (max.y - min.y)/sceneResolution+1,
+//                                 (max.x - min.x)/sceneResolution+1);
+//            cout << "scene resolution : " << resolution << endl;
+
+//            Vector3i originScene = Vector3i(floor(min.z/sceneResolution),
+//                                   floor(min.y/sceneResolution),
+//                                   floor(min.x/sceneResolution));
+//            Vector3i originBox = Vector3i(floor(min.z/sceneResolution/2.0),
+//                                   floor(min.y/sceneResolution/2.0),
+//                                   floor(min.x/sceneResolution/2.0));
+//            Model::triple<int, int, int> sceneSize = chairSize;//( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);
+
+//            cout << "negative scene min : " << min << endl;
+
+//            Rectangle box(originBox , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution*2);
+
+//            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
+//            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
+//                               negativeListFiles[i], {obj});
+//        }
+
+
+//        Mixture mixture( models);
+
+//        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
+//                      nbDatamine, maxNegSample, C, J);
+
+//        //TODO include initializeParts in train()
+//        mixture.initializeParts( nbParts, chairPartSize);
+
+
+//        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
+//                      nbIterations, nbDatamine, maxNegSample, C, J);
+
+    }
+
+    void train( string dataFolder){
+
+        int nbParts = 3;
         double C = 0.002, J = 2;
-        int interval = 1, nbIterations = 1, nbDatamine = 2, maxNegSample = 2000;
-        Model::triple<int, int, int> chairSize(8,10,6);//8,10,6 in lvl 1
-        Model::triple<int, int, int> chairPartSize(8,10,6);//8,10,6 in lvl 0
-        Model model( chairSize, 0);
-        std::vector<Model> models = { model};
+        int interval = 1, nbIterations = 3, nbDatamine = 3, maxNegSample = 2000;
+        int nbComponents = 1; //nb of object poses without symetry
 
-        vector<string> positiveListFiles, negativeListFiles;
+
+        string xmlExtension = ".xml", pcExtension = ".ply";
+        vector<string> sceneList;
         DIR *dir;
         struct dirent *ent;
-        if ((dir = opendir (positiveFolder.c_str())) != NULL) {
+        if ((dir = opendir (dataFolder.c_str())) != NULL) {
           while ((ent = readdir (dir)) != NULL) {
-              if( string(ent->d_name).compare(".") != 0 && string(ent->d_name).compare("..") != 0)
-                positiveListFiles.push_back( positiveFolder + ent->d_name);
-//            printf ("%s\n", (folder + ent->d_name).c_str());
+              string fname = ent->d_name;
+              if( fname.compare(".") != 0 && fname.compare("..") != 0 && ent->d_type == DT_DIR){
+                    sceneList.push_back( fname);
+        //            printf ("%s\n", (folder + ent->d_name).c_str());
+              }
           }
           closedir (dir);
         } else {
           perror ("could not open directory");
         }
 
-        if ((dir = opendir (negativeFolder.c_str())) != NULL) {
-          while ((ent = readdir (dir)) != NULL) {
-              if( string(ent->d_name).compare(".") != 0 && string(ent->d_name).compare("..") != 0)
-//                  if( string(ent->d_name).find(".ply") != std::string::npos)
-                    negativeListFiles.push_back( negativeFolder + ent->d_name);
-//            printf ("%s\n", (folder + ent->d_name).c_str());
-          }
-          closedir (dir);
-        } else {
-          perror ("could not open directory");
+        vector<Scene> scenes( sceneList.size());
+
+        for( int i=0; i < sceneList.size(); ++i){
+            printf ("%s\n", sceneList[i].c_str());
+            string filePath = dataFolder + sceneList[i] + "/" + sceneList[i];
+            scenes[i] = Scene( filePath + xmlExtension, filePath + pcExtension, sceneResolution);
         }
 
-        vector<Scene> scenes(positiveListFiles.size() + negativeListFiles.size());
+        //////OLD
+//        Model::triple<int, int, int> chairSize(8,10,6);//8,10,6 in lvl 1
+//        Model::triple<int, int, int> chairPartSize(8,10,6);//8,10,6 in lvl 0
+//        Model model( chairSize, 0);
+//        std::vector<Model> models = { model};
+//        Mixture mixture( models);
+        //////
+        Mixture mixture( nbComponents, scenes, Object::CHAIR);
 
-        for( int i=0; i < positiveListFiles.size(); ++i){
-            printf ("%s\n", positiveListFiles[i].c_str());
-            PointCloudPtr cloud( new PointCloudT);
-
-            if (readPointCloud(positiveListFiles[i], cloud) == -1) {
-                cout<<"couldnt open ply file"<<endl;
-            }
-
-            PointType min;
-            PointType max;
-            pcl::getMinMax3D(*cloud, min, max);
-
-            Vector3i resolution( (max.z - min.z)/sceneResolution+1,
-                                 (max.y - min.y)/sceneResolution+1,
-                                 (max.x - min.x)/sceneResolution+1);
-            cout << "scene resolution : " << resolution << endl;
-            Vector3i originScene = Vector3i(floor(min.z/sceneResolution),
-                                   floor(min.y/sceneResolution),
-                                   floor(min.x/sceneResolution));
-            Vector3i originChair = Vector3i(floor(min.z/sceneResolution/2.0),
-                                   floor(min.y/sceneResolution/2.0),
-                                   floor(min.x/sceneResolution/2.0));
-            Model::triple<int, int, int> sceneSize = chairSize;//( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);
-
-            cout << "scene min : " << min << endl;
-
-
-            Rectangle chairBox(originChair , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution*2/*resolution.sum()/3.0*/);
-
-            cout << "chairBox : " << chairBox << endl;
-            Object obj(Object::CHAIR, Object::Pose::UNSPECIFIED, false, false, chairBox);
-            scenes[i] = Scene( originScene, chairBox.depth(), chairBox.height(), chairBox.width(),
-                               positiveListFiles[i], {obj});
-        }
-
-
-        for( int i=0; i < negativeListFiles.size(); ++i){
-            printf ("%s\n", negativeListFiles[i].c_str());
-            PointCloudPtr cloud( new PointCloudT);
-
-            if (readPointCloud(negativeListFiles[i], cloud) == -1) {
-                cout<<"couldnt open ply file"<<endl;
-            }
-
-            PointType min;
-            PointType max;
-            pcl::getMinMax3D(*cloud, min, max);
-
-            Vector3i resolution( (max.z - min.z)/sceneResolution+1,
-                                 (max.y - min.y)/sceneResolution+1,
-                                 (max.x - min.x)/sceneResolution+1);
-            cout << "scene resolution : " << resolution << endl;
-
-            Vector3i originScene = Vector3i(floor(min.z/sceneResolution),
-                                   floor(min.y/sceneResolution),
-                                   floor(min.x/sceneResolution));
-            Vector3i originBox = Vector3i(floor(min.z/sceneResolution/2.0),
-                                   floor(min.y/sceneResolution/2.0),
-                                   floor(min.x/sceneResolution/2.0));
-            Model::triple<int, int, int> sceneSize = chairSize;//( resolution(0)/2.0, resolution(1)/2.0, resolution(2)/2.0);
-
-            cout << "negative scene min : " << min << endl;
-
-            Rectangle box(originBox , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution*2);
-
-            Object obj(Object::BIRD, Object::Pose::UNSPECIFIED, false, false, box);
-            scenes[positiveListFiles.size() + i] = Scene( originScene, box.depth(), box.height(), box.width(),
-                               negativeListFiles[i], {obj});
-        }
-
-
-        Mixture mixture( models);
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
                       nbDatamine, maxNegSample, C, J);
 
         //TODO include initializeParts in train()
-        mixture.initializeParts( nbParts, chairPartSize);
+        mixture.initializeParts( nbParts/*, chairPartSize*/);
 
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
@@ -204,7 +259,7 @@ public:
 
     void detect(const Mixture & mixture, /*int depth, int height, int width, */int interval, const GSHOTPyramid & pyramid,
                 double threshold, double overlap,/* const string image, */ostream & out,
-                const string & images, vector<Detection> & detections, const Scene * scene = 0,
+                const string & images, vector<Detection> & detections,
                 Object::Name name = Object::CHAIR)
     {
         // Compute the scores
@@ -225,9 +280,9 @@ public:
         // For each scale
         for (int lvl = 0; lvl < scores.size(); ++lvl) {
             const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
-            int offz = floor(scene->origin()(0)*scale);
-            int offy = floor(scene->origin()(1)*scale);
-            int offx = floor(scene->origin()(2)*scale);
+            int offz = floor(pyramid.sceneOffset_(0)*scale);
+            int offy = floor(pyramid.sceneOffset_(1)*scale);
+            int offx = floor(pyramid.sceneOffset_(2)*scale);
 
             cout<<"test:: offz = "<<offz<<endl;
             cout<<"test:: offy = "<<offy<<endl;
@@ -264,14 +319,14 @@ public:
                     for (int x = 0; x < cols; ++x) {
                         const double score = scores[lvl]()(z, y, x);
 
-                        PointType p = PointType();
-                        p.z = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).z;
-                        p.y = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).y;
-                        p.x = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).x;
-                        p.r = score / maxi*255;
-                        p.g = score / maxi*255;
-                        p.b = score / maxi*255;
-                        scoreCloud->at(x + y * cols + z * rows * cols) = p;
+//                        PointType p = PointType();
+//                        p.z = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).z;
+//                        p.y = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).y;
+//                        p.x = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).x;
+//                        p.r = score / maxi*255;
+//                        p.g = score / maxi*255;
+//                        p.b = score / maxi*255;
+//                        scoreCloud->at(x + y * cols + z * rows * cols) = p;
 
                         cout<<"test:: scores = "<<score<<endl;
 
@@ -313,9 +368,9 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        if (detections.size() > nb) {
+        /*if (detections.size() > nb)*/ {
 
-            for (int i = 0; i < nb/*detections.size()*/; ++i) {
+            for (int i = 0; i < /*nb*/detections.size(); ++i) {
 
                 const int x = detections[i].x;
                 const int y = detections[i].y;
@@ -347,9 +402,9 @@ public:
 //                    const double scale = 1 / pow(2.0, static_cast<double>(lvlp) / interval);
 
 
-                    Eigen::Vector3i origin((zp+scene->origin()(0)/* + detections[i].origin()(0)*2*/)/*- pad.z()*/,
-                                           (yp+scene->origin()(1) /*+ detections[i].origin()(1)*2*/)/*- pad.y()*/,
-                                           (xp+scene->origin()(2) /*+ detections[i].origin()(2)*2*/)/* - pad.x()*/);
+                    Eigen::Vector3i origin((zp+pyramid.sceneOffset_(0)/* + detections[i].origin()(0)*2*/)/*- pad.z()*/,
+                                           (yp+pyramid.sceneOffset_(1) /*+ detections[i].origin()(1)*2*/)/*- pad.y()*/,
+                                           (xp+pyramid.sceneOffset_(2) /*+ detections[i].origin()(2)*2*/)/* - pad.x()*/);
                     int w = mixture.models()[argmax].partSize().third /** scale*/;
                     int h = mixture.models()[argmax].partSize().second /** scale*/;
                     int d = mixture.models()[argmax].partSize().first /** scale*/;
@@ -406,7 +461,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0.0, overlap=0.5;
+        float threshold=0.455, overlap=0.5;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -422,7 +477,7 @@ public:
 //          transform.translation() << -minTmp.x, -minTmp.y, -minTmp.z;
 
           // The same rotation matrix as before; theta radians around Z axis
-//          transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));//bigScene
+//          transform.rotate (Eigen::AngleAxisf (1.57, Eigen::Vector3f::UnitX()));//bigScene
 //          transform.rotate (Eigen::AngleAxisf (/*-2**/1.57, Eigen::Vector3f::UnitY()));//for smallScene3
 //          transform.rotate (Eigen::AngleAxisf (1.57, Eigen::Vector3f::UnitZ()));
 
@@ -445,10 +500,10 @@ public:
 
         ofstream out("tmpTest.txt");
         vector<Detection> detections;
-        Scene scene( originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneName, {});
+//        Scene scene( originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneName, {});
 
         detect(mixture, interval, pyramid, threshold, overlap, /*file, */out,
-               sceneName, detections, &scene, Object::CHAIR);
+               sceneName, detections, Object::CHAIR);
 
         PointCloudPtr subspace(new PointCloudT());
         pcl::UniformSampling<PointType> sampling;
@@ -631,9 +686,11 @@ int main(){
     int start = getMilliCount();
 
 
-    test.train("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
-               "/media/ubuntu/DATA/3DDataset/ModelNet10_normalized/table/full/");
-//               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
+//    test.oldTrain("/home/ubuntu/3DDataset/3DDPM/chair_normalized/",
+//               "/media/ubuntu/DATA/3DDataset/ModelNet10_normalized/table/full/");
+////               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
+
+    test.train("/media/ubuntu/DATA/3DDataset/scenenn+/");
 
     test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene4.pcd");
 
@@ -808,4 +865,5 @@ int main(){
 
     return 0;
 }
+
 

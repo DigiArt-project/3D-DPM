@@ -54,11 +54,11 @@ cached_(false), zero_(true)
     }
 	
 	// Initialize the models (with symmetry) to those sizes
-    models_.resize(2 * nbComponents);
+    models_.resize(/*2 * */nbComponents);
 	
 	for (int i = 0; i < nbComponents; ++i) {
-		models_[2 * i    ] = Model(sizes[i]);
-		models_[2 * i + 1] = Model(sizes[i]);
+        models_[/*2 **/ i    ] = Model(sizes[i]);
+//		models_[2 * i + 1] = Model(sizes[i]);
 	}
 }
 
@@ -220,10 +220,10 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 	return loss;
 }
 
-void Mixture::initializeParts(int nbParts, Model::triple<int, int, int> partSize)
+void Mixture::initializeParts(int nbParts/*, Model::triple<int, int, int> partSize*/)
 {
     for (int i = 0; i < models_.size(); ++i) {
-        models_[i].initializeParts(nbParts, partSize);
+        models_[i].initializeParts(nbParts, models_[i].rootSize());
 	}
 	
 	// The filters definitely changed
@@ -390,9 +390,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			
             for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
                 const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
-                int offz = floor(scenes[i].origin()(0)*scale);
-                int offy = floor(scenes[i].origin()(1)*scale);
-                int offx = floor(scenes[i].origin()(2)*scale);
+                int offz = floor(pyramid.sceneOffset_(0)*scale);
+                int offy = floor(pyramid.sceneOffset_(1)*scale);
+                int offx = floor(pyramid.sceneOffset_(2)*scale);
 
                 cout << "Mix::posLatentSearch scale : " << scale << endl;
                 int rows = 0;
@@ -480,7 +480,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             }
 
 
-                            if ((intersection >= maxInter) /*&& (zero_ || (scores[lvl]()(z, y, x) > maxScore))*/) {
+                            if ((intersection >= maxInter) && (zero_ || (scores[lvl]()(z, y, x) > maxScore))) {
                                 argModel = model;
                                 argX = x;
                                 argY = y;
@@ -648,9 +648,9 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                                 sample.parts()[0].deformation(2) = x;
                                 sample.parts()[0].deformation(3) = argmax;
                                 sample.parts()[0].deformation(4) = zero_ ? 0.0 : scores[lvl]()(z, y, x);
-                                sample.parts()[0].deformation(5) = 11;
-                                sample.parts()[0].deformation(6) = 12;
-                                sample.parts()[0].deformation(7) = 12;
+                                sample.parts()[0].deformation(5) = 0;
+                                sample.parts()[0].deformation(6) = 0;
+                                sample.parts()[0].deformation(7) = 0;
 
 
                                 // Look if the same sample was already sampled
@@ -950,7 +950,6 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 
 }
 
-//TODO not used ...
 std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
 											 Object::Name name)
 {
@@ -959,67 +958,83 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
         return std::vector<Model::triple<int, int, int> >();
 	
 	// Sort the aspect ratio of all the (non difficult) samples
-	vector<double> ratios;
+    vector<Rectangle> rects;
 	
 	for (int i = 0; i < scenes.size(); ++i) {
 		for (int j = 0; j < scenes[i].objects().size(); ++j) {
 			const Object & obj = scenes[i].objects()[j];
 			
 			if ((obj.name() == name) && !obj.difficult())
-				ratios.push_back(static_cast<double>(obj.bndbox().width()) / obj.bndbox().height());
+                rects.push_back( obj.bndbox());
 		}
 	}
 	
 	// Early return if there is no object
-	if (ratios.empty())
+    if (rects.empty())
         return std::vector<Model::triple<int, int, int> >();
 	
 	// Sort the aspect ratio of all the samples
-	sort(ratios.begin(), ratios.end());
+    sort(rects.begin(), rects.end());
 	
 	// For each mixture model
-	vector<double> references(nbComponents);
-	
-	for (int i = 0; i < nbComponents; ++i)
-		references[i] = ratios[(i * ratios.size()) / nbComponents];
-	
-	// Store the areas of the objects associated to each component
-	vector<vector<int> > areas(nbComponents);
-	
-	for (int i = 0; i < scenes.size(); ++i) {
-		for (int j = 0; j < scenes[i].objects().size(); ++j) {
-			const Object & obj = scenes[i].objects()[j];
-			
-			if ((obj.name() == name) && !obj.difficult()) {
-				const double r = static_cast<double>(obj.bndbox().width()) / obj.bndbox().height();
-				
-				int k = 0;
-				
-				while ((k + 1 < nbComponents) && (r >= references[k + 1]))
-					++k;
-				
-				areas[k].push_back(obj.bndbox().width() * obj.bndbox().height());
-			}
-		}
-	}
-	
-	// For each component in reverse order
+    vector<int> references(nbComponents+1);
     std::vector<Model::triple<int, int, int> > sizes(nbComponents);
+
+    for (int i = 0; i <= nbComponents; ++i){
+        references[i] = rects.size() * i / nbComponents;
+    }
 	
-	for (int i = nbComponents - 1; i >= 0; --i) {
-		if (!areas[i].empty()) {
-			sort(areas[i].begin(), areas[i].end());
+    for (int i = 0; i < nbComponents; ++i) {
+        float depth = 0, width = 0, height = 0;
+
+        for (int j = references[i]; j < references[i+1]; ++j) {
+            depth += rects[j].depth();
+            width += rects[j].width();
+            height += rects[j].height();
+        }
+
+        sizes[i].first = depth / (references[i]+references[i+1]);
+        sizes[i].second = width / (references[i]+references[i+1]);
+        sizes[i].third = height / (references[i]+references[i+1]);
+    }
+
+//	// Store the areas of the objects associated to each component
+//	vector<vector<int> > areas(nbComponents);
+	
+//	for (int i = 0; i < scenes.size(); ++i) {
+//		for (int j = 0; j < scenes[i].objects().size(); ++j) {
+//			const Object & obj = scenes[i].objects()[j];
 			
-			const int area = min(max(areas[i][(areas[i].size() * 2) / 10], 3000), 5000);
-			const double ratio = ratios[(ratios.size() * (i * 2 + 1)) / (nbComponents * 2)];
+//			if ((obj.name() == name) && !obj.difficult()) {
+//				const double r = static_cast<double>(obj.bndbox().width()) / obj.bndbox().height();
+				
+//				int k = 0;
+				
+//				while ((k + 1 < nbComponents) && (r >= references[k + 1]))
+//					++k;
+				
+//				areas[k].push_back(obj.bndbox().width() * obj.bndbox().height());
+//			}
+//		}
+//	}
+	
+//	// For each component in reverse order
+//    std::vector<Model::triple<int, int, int> > sizes(nbComponents);
+	
+//	for (int i = nbComponents - 1; i >= 0; --i) {
+//		if (!areas[i].empty()) {
+//			sort(areas[i].begin(), areas[i].end());
 			
-			sizes[i].first = sqrt(area / ratio) / 8.0 + 0.5;
-			sizes[i].second = sqrt(area * ratio) / 8.0 + 0.5;
-		}
-		else {
-			sizes[i] = sizes[i + 1];
-		}
-	}
+//			const int area = min(max(areas[i][(areas[i].size() * 2) / 10], 3000), 5000);
+//			const double ratio = ratios[(ratios.size() * (i * 2 + 1)) / (nbComponents * 2)];
+			
+//			sizes[i].first = sqrt(area / ratio) / 8.0 + 0.5;
+//			sizes[i].second = sqrt(area * ratio) / 8.0 + 0.5;
+//		}
+//		else {
+//			sizes[i] = sizes[i + 1];
+//		}
+//	}
 	
 	return sizes;
 }

@@ -44,38 +44,38 @@ public:
     /// @param[in] depth Depth of the PC.
     /// @param[in] filename Filename of the PC.
 	/// @param[in] objects List of objects present in the scene.
-    Scene(Eigen::Vector3i origin, int depth, int height, int width, const std::string & filename,
-		  const std::vector<Object> & objects);
+    Scene(const std::string & filename,
+          const std::vector<Object> & objects);
 	
 	/// Constructs a scene and tries to load the scene from the xml file with the given @p filename.
-    explicit Scene(const std::string & filename, const float resolution);
+    /*explicit*/ Scene(const std::string & xmlName, const std::string & pcFileName, const float resolution);
 	
 	/// Returns whether the scene is empty. An empty scene has an empty image and no object.
 	bool empty() const;
 	
-    /// Returns the origin of the PC.
-    Eigen::Vector3i origin() const;
+//    /// Returns the origin of the PC.
+//    Eigen::Vector3i origin() const;
 
-    /// Sets the origin of the PC.
-    void setOrigin(Eigen::Vector3i origin);
+//    /// Sets the origin of the PC.
+//    void setOrigin(Eigen::Vector3i origin);
 
-    /// Returns the width of the PC.
-	int width() const;
+//    /// Returns the width of the PC.
+//	int width() const;
 	
-    /// Sets the width of the PC.
-	void setWidth(int width);
+//    /// Sets the width of the PC.
+//	void setWidth(int width);
 	
-    /// Returns the height of the PC.
-	int height() const;
+//    /// Returns the height of the PC.
+//	int height() const;
 	
-    /// Sets the height of the PC.
-	void setHeight(int height);
+//    /// Sets the height of the PC.
+//	void setHeight(int height);
 	
-    /// Returns the depth of the PC.
-	int depth() const;
+//    /// Returns the depth of the PC.
+//	int depth() const;
 	
-    /// Sets the depth of the PC.
-	void setDepth(int depth);
+//    /// Sets the depth of the PC.
+//	void setDepth(int depth);
 	
     /// Returns the filename of the PC.
 	const std::string & filename() const;
@@ -90,11 +90,11 @@ public:
 	void setObjects(const std::vector<Object> & objects);
 	
 private:
-    Eigen::Vector3i origin_;
-	int width_;
-	int height_;
-	int depth_;
-	std::string filename_;
+//    Eigen::Vector3i origin_;
+//	int width_;
+//	int height_;
+//	int depth_;
+    std::string pcFileName_;
 	std::vector<Object> objects_;
 };
 

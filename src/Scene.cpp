@@ -26,19 +26,19 @@
 using namespace FFLD;
 using namespace std;
 
-Scene::Scene() : width_(0), height_(0), depth_(0)
+Scene::Scene()/* : width_(0), height_(0), depth_(0)*/
 {
 }
 
-Scene::Scene(Eigen::Vector3i origin, int depth, int height, int width, const string & filename,
-             const vector<Object> & objects) : origin_(origin), width_(width), height_(height), depth_(depth),
-filename_(filename), objects_(objects)
+Scene::Scene(/*Eigen::Vector3i origin, int depth, int height, int width, */const string & filename,
+             const vector<Object> & objects) : /*origin_(origin), width_(width), height_(height), depth_(depth),*/
+pcFileName_(filename), objects_(objects)
 {
 }
 
 bool Scene::empty() const
 {
-	return ((width() <= 0) || (height() <= 0) || (depth() <= 0) || filename().empty()) &&
+    return (/*(width() <= 0) || (height() <= 0) || (depth() <= 0) || */filename().empty()) &&
 		   objects().empty();
 }
 
@@ -54,7 +54,7 @@ static inline Result content(const xmlNodePtr cur)
 	return result;
 }
 
-Scene::Scene(const string & filename, const float resolution)
+Scene::Scene(const string & xmlName, const string & pcFileName, const float resolution)
 {
     const string Names[20] =
     {
@@ -68,10 +68,10 @@ Scene::Scene(const string & filename, const float resolution)
         "Frontal", "Left", "Rear", "Right"
     };
 	
-    xmlDoc * doc = xmlParseFile(filename.c_str());
+    xmlDoc * doc = xmlParseFile(xmlName.c_str());
 	
     if (doc == NULL) {
-        cerr << "Could not open " << filename << endl;
+        cerr << "Could not open " << xmlName << endl;
         return;
     }
 	
@@ -79,33 +79,44 @@ Scene::Scene(const string & filename, const float resolution)
 	
     if (cur == NULL) {
         xmlFreeDoc(doc);
-        cerr << "Could not open " << filename << endl;
+        cerr << "Could not open " << xmlName << endl;
         return;
     }
 	
     if (xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("annotation"))) {
         xmlFreeDoc(doc);
-        cerr << "Could not open " << filename << endl;
+        cerr << "Could not open " << xmlName << endl;
         return;
     }
 	
     cur = cur->xmlChildrenNode;
 	
     while (cur != NULL) {
-//        if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("label"))) {
+        if (!xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("label"))) {
 
-//            xmlChar *className;
-//            xmlChar *obboxChar;
-
-//            className = xmlGetProp(cur, "text");
-//            obboxChar = xmlGetProp(cur, "obbox");
-
-//            vector<float> obbox;
+            xmlChar *className;
+            xmlChar *obboxChar;
+            xmlChar *aabboxChar;
+            Object::Name objName;
 
 
-//            string obboxStr = (char *) obboxChar;
-//            size_t first = 0, last = 0;
-//            while ( ( (last = obboxStr.find(" ", last)) != npos)){
+            className = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("text"));
+            if( !xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("chair"))){
+                objName = Object::CHAIR;
+            } else{
+                objName = Object::BIRD;
+            }
+            obboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("obbox"));
+            aabboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("aabbox"));
+
+            vector<float> obbox;
+            vector<float> aabbox;
+            string obboxStr = (char *) obboxChar;
+            string aabboxStr = (char *) aabboxChar;
+
+
+            size_t first = 0, last = 0;
+//            while ( ( (last = obboxStr.find(" ", last)) != string::npos)){
 //                obbox.push_back( stof( obboxStr.substr( first, last - first)));
 //                ++last;
 //                first = last;
@@ -116,70 +127,93 @@ Scene::Scene(const string & filename, const float resolution)
 //                cerr<<"Xml oriented bounding box is not correct"<<endl;
 //                return;
 //            }
-//            Eigen::Vector3f boxCenter(obbox(0), obbox(1), obbox(2));
-//            Eigen::Vector3f boxSize(obbox(3), obbox(4), obbox(5));
-//            Eigen::Matrix3f orientationTransform ( Eigen::Quaternion( obbox(9), obbox(6), obbox(7), obbox(8)));
-//            Vector3i origin();
-//            Rectangle bndbox( origin, depth, row, col, resolution);
-//            Object obj( (char*)className, Object::FRONTAL, false, false, bndbox);
 
-//        }
+//            //            Eigen::Matrix3f orientationTransform ( Eigen::Quaternion( obbox[9], obbox[6], obbox[7], obbox[8]));
+//            //            Eigen::Vector3i origin();
+//            //            Rectangle bndbox( origin, depth, row, col, resolution);
+//            //            Object obj( (char*)className, Object::FRONTAL, false, false, bndbox);
+
+            first = 0, last = 0;
+            while ( ( (last = aabboxStr.find(" ", last)) != string::npos)){
+                obbox.push_back( stof( aabboxStr.substr( first, last - first)));
+                ++last;
+                first = last;
+            }
+            aabbox.push_back( stof( aabboxStr.substr( first, aabboxStr.length() - first)));
+
+            if( aabbox.size() != 6){
+                cerr<<"Xml aa bounding box is not correct"<<endl;
+                return;
+            }
+            Eigen::Vector3f boxCenter(aabbox[2], aabbox[1], aabbox[0]);
+            Eigen::Vector3f boxSize(aabbox[5], aabbox[4], aabbox[3]);
+            Eigen::Vector3i origin( floor( ( boxCenter(0) - boxSize(0)/2) / resolution),
+                                    floor( ( boxCenter(1) - boxSize(1)/2) / resolution),
+                                    floor( ( boxCenter(2) - boxSize(2)/2) / resolution));
+            Rectangle bndbox( origin, boxSize(0) / resolution, boxSize(1) / resolution, boxSize(2) / resolution,
+                              resolution);
+            Object obj( objName, Object::FRONTAL, false, false, bndbox);
+
+            objects_.push_back( obj);
+
+        }
         cur = cur->next;
     }
 	
     xmlFreeDoc(doc);
+    pcFileName_ = pcFileName;
 }
 
 
 
 
-Eigen::Vector3i Scene::origin() const{
-    return origin_;
-}
+//Eigen::Vector3i Scene::origin() const{
+//    return origin_;
+//}
 
-void Scene::setOrigin(Eigen::Vector3i origin){
-    origin_ = origin;
-}
+//void Scene::setOrigin(Eigen::Vector3i origin){
+//    origin_ = origin;
+//}
 
 
-int Scene::width() const
-{
-	return width_;
-}
+//int Scene::width() const
+//{
+//	return width_;
+//}
 
-void Scene::setWidth(int width)
-{
-	width_ = width;
-}
+//void Scene::setWidth(int width)
+//{
+//	width_ = width;
+//}
 
-int Scene::height() const
-{
-	return height_;
-}
+//int Scene::height() const
+//{
+//	return height_;
+//}
 
-void Scene::setHeight(int height)
-{
-	height_ = height;
-}
+//void Scene::setHeight(int height)
+//{
+//	height_ = height;
+//}
 
-int Scene::depth() const
-{
-	return depth_;
-}
+//int Scene::depth() const
+//{
+//	return depth_;
+//}
 
-void Scene::setDepth(int depth)
-{
-	depth_ = depth;
-}
+//void Scene::setDepth(int depth)
+//{
+//	depth_ = depth;
+//}
 
 const string & Scene::filename() const
 {
-	return filename_;
+    return pcFileName_;
 }
 
 void Scene::setFilename(const string &filename)
 {
-	filename_ = filename;
+    pcFileName_ = filename;
 }
 
 const vector<Object> & Scene::objects() const
@@ -194,8 +228,8 @@ void Scene::setObjects(const vector<Object> &objects)
 
 ostream & FFLD::operator<<(ostream & os, const Scene & scene)
 {
-    os << scene.origin()(0) << ' ' << scene.origin()(1) << ' ' << scene.origin()(2) << ' '
-       << scene.depth() << ' ' << scene.height() << ' ' << scene.width() << ' '
+    os /*<< scene.origin()(0) << ' ' << scene.origin()(1) << ' ' << scene.origin()(2) << ' '
+       << scene.depth() << ' ' << scene.height() << ' ' << scene.width() << ' '*/
 	   << scene.objects().size() << ' ' << scene.filename() << endl;
 	
 	for (int i = 0; i < scene.objects().size(); ++i)
@@ -208,7 +242,7 @@ istream & FFLD::operator>>(istream & is, Scene & scene)
 {
     int x, y, z, width, height, depth, nbObjects;
     
-    is >> z >> y >> x >> depth >> height >> width >> nbObjects;
+    is >> /*z >> y >> x >> depth >> height >> width >>*/ nbObjects;
 	is.get(); // Remove the space
 	
 	string filename;
@@ -224,7 +258,7 @@ istream & FFLD::operator>>(istream & is, Scene & scene)
 		return is;
 	}
 	
-    scene = Scene(Eigen::Vector3i(z, y, x), depth, height, width, filename, objects);
+    scene = Scene(/*Eigen::Vector3i(z, y, x), depth, height, width, */filename, objects);
 	
 	return is;
 }

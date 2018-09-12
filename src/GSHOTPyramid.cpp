@@ -40,6 +40,10 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     PointType max;
     pcl::getMinMax3D(*input, minTmp, max);
 
+    sceneOffset_ = Vector3i(floor(minTmp.z/starting_resolution),
+                            floor(minTmp.y/starting_resolution),
+                            floor(minTmp.x/starting_resolution));
+
     min.x = floor(minTmp.x/starting_resolution)*starting_resolution;
     min.y = floor(minTmp.y/starting_resolution)*starting_resolution;
     min.z = floor(minTmp.z/starting_resolution)*starting_resolution;
