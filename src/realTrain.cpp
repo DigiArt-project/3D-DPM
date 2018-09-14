@@ -9,20 +9,6 @@
 #include <cstdlib>
 #include <sys/timeb.h>
 
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/kdtree/impl/kdtree_flann.hpp>
-#include <pcl/features/board.h>
-#include <pcl/filters/uniform_sampling.h>
-#include <pcl/features/normal_3d_omp.h>
-#include <pcl/features/shot_omp.h>
-#include <pcl/common/transforms.h>
-#include <pcl/common/common_headers.h>
-#include<pcl/io/ply_io.h>
-
 #include <sys/timeb.h>
 #include <dirent.h>
 #include "opencv2/highgui/highgui.hpp"
@@ -259,7 +245,7 @@ public:
 
     void detect(const Mixture & mixture, /*int depth, int height, int width, */int interval, const GSHOTPyramid & pyramid,
                 double threshold, double overlap,/* const string image, */ostream & out,
-                const string & images, vector<Detection> & detections,
+                const string & images, vector<Detection> & detections, const Scene scene,
                 Object::Name name = Object::CHAIR)
     {
         // Compute the scores
@@ -500,10 +486,10 @@ public:
 
         ofstream out("tmpTest.txt");
         vector<Detection> detections;
-//        Scene scene( originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneName, {});
+        Scene scene( /*originScene, /*sceneSize.first, sceneSize.second, sceneSize.third,*/ sceneName, {});
 
         detect(mixture, interval, pyramid, threshold, overlap, /*file, */out,
-               sceneName, detections, Object::CHAIR);
+               sceneName, detections, scene, Object::CHAIR);
 
         PointCloudPtr subspace(new PointCloudT());
         pcl::UniformSampling<PointType> sampling;
@@ -690,9 +676,9 @@ int main(){
 //               "/media/ubuntu/DATA/3DDataset/ModelNet10_normalized/table/full/");
 ////               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
-    test.train("/media/ubuntu/DATA/3DDataset/scenenn+/");
+//    test.train("/media/ubuntu/DATA/3DDataset/scenenn+/");
 
-    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene4.pcd");
+//    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene4.pcd");
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
 
@@ -700,6 +686,57 @@ int main(){
     // testSceneMiddle_compress.pcd
     // smallScene4.pcd
     // scene_2.ply
+
+
+    PointCloudPtr cloud( new PointCloudT);
+    if (readPointCloud("/media/ubuntu/DATA/3DDataset/scenenn+/036/036.ply", cloud) == -1) {
+        cout<<"test::couldnt open pcd file"<<endl;
+    }
+
+    PointCloudPtr subspace(new PointCloudT());
+    pcl::UniformSampling<PointType> sampling;
+    sampling.setInputCloud(cloud);
+    sampling.setRadiusSearch (test.sceneResolution);
+    sampling.filter(*subspace);
+
+    test.viewer.addPC( subspace, 3);
+
+    Eigen::Vector3f boxCenter(-1.98708, -1.57594, -1.08425);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
+    Eigen::Vector3f boxSize(0.816625, 1.16516, 0.795907);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+    Eigen::Matrix4f tform;
+    tform.setIdentity ();
+    tform.topLeftCorner (3, 3) = Eigen::Matrix3f (Eigen::Quaternionf (0.256436, 0.945564, 0.198873, 0.0244773));
+
+    Eigen::Vector3i origin( floor( ( boxCenter(2) ) / test.sceneResolution),
+                            floor( ( boxCenter(1)) / test.sceneResolution),
+                            floor( ( boxCenter(0)) / test.sceneResolution));
+    // absolute bndbox positions
+    Rectangle bndbox( origin, abs( ( (boxSize(2)+pose(2)) / test.sceneResolution)),
+                      abs( ( (boxSize(1)+pose(1)) / test.sceneResolution)), abs( ( (boxSize(0)+pose(0)) / test.sceneResolution)),
+                      test.sceneResolution);
+    cout<<"bndbox : "<<bndbox<<endl;
+    test.viewer.displayCubeLine(bndbox);
+
+    PointCloudPtr cloud2( new PointCloudT (2,1,PointType()));
+    PointType p = PointType();
+    p.x = boxCenter(0);
+    p.y = boxCenter(1);
+    p.z = boxCenter(2);
+    cloud2->at(0) = p;
+    p.x = boxCenter(0)+boxSize(0)+pose(0);
+    p.y = boxCenter(1)+boxSize(1)+pose(1);
+    p.z = boxCenter(2)+boxSize(2)+pose(2);
+    cloud2->at(1) = p;
+
+    PointCloudPtr orientedCloud (new PointCloudT);
+    pcl::transformPointCloud (*cloud2, *orientedCloud, tform);
+
+    test.viewer.addPC( cloud2, 8, Eigen::Vector3i(255, 255, 0));
+    test.viewer.addPC( orientedCloud, 8, Eigen::Vector3i(0, 255, 255));
+
+
+
 
     int end = getMilliCount();
 

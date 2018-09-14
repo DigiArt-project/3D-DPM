@@ -30,8 +30,8 @@ Scene::Scene()/* : width_(0), height_(0), depth_(0)*/
 {
 }
 
-Scene::Scene(/*Eigen::Vector3i origin, int depth, int height, int width, */const string & filename,
-             const vector<Object> & objects) : /*origin_(origin), width_(width), height_(height), depth_(depth),*/
+Scene::Scene(/*Eigen::Vector3i origin, /*int depth, int height, int width, */const string & filename,
+             const vector<Object> & objects) : /*origin_(origin), /*width_(width), height_(height), depth_(depth),*/
 pcFileName_(filename), objects_(objects)
 {
 }
@@ -56,17 +56,21 @@ static inline Result content(const xmlNodePtr cur)
 
 Scene::Scene(const string & xmlName, const string & pcFileName, const float resolution)
 {
-    const string Names[20] =
-    {
-        "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow",
-        "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa",
-        "train", "tvmonitor"
-    };
-	
-    const string Poses[4] =
-    {
-        "Frontal", "Left", "Rear", "Right"
-    };
+    pcFileName_ = pcFileName;
+
+//    PointCloudPtr cloud( new PointCloudT);
+
+//    if (readPointCloud(pcFileName_, cloud) == -1) {
+//        cout<<"couldnt open point cloud file"<<endl;
+//    }
+
+//    PointType min;
+//    PointType max;
+//    pcl::getMinMax3D(*cloud, min, max);
+
+//    origin_ = Eigen::Vector3i(floor(min.z/resolution),
+//                              floor(min.y/resolution),
+//                              floor(min.x/resolution));
 	
     xmlDoc * doc = xmlParseFile(xmlName.c_str());
 	
@@ -101,10 +105,11 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
 
 
             className = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("text"));
-            if( !xmlStrcmp(cur->name, reinterpret_cast<const xmlChar *>("chair"))){
+            if( !xmlStrcmp(className, reinterpret_cast<const xmlChar *>("chair"))){
+//                cout<<"Scene:: found a chair"<<endl;
                 objName = Object::CHAIR;
             } else{
-                objName = Object::BIRD;
+                objName = Object::AEROPLANE;
             }
             obboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("obbox"));
             aabboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("aabbox"));
@@ -134,24 +139,29 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
 //            //            Object obj( (char*)className, Object::FRONTAL, false, false, bndbox);
 
             first = 0, last = 0;
-            while ( ( (last = aabboxStr.find(" ", last)) != string::npos)){
-                obbox.push_back( stof( aabboxStr.substr( first, last - first)));
+            while ( ( (last = aabboxStr.find(" ", first)) != string::npos)){
+                aabbox.push_back( stof( aabboxStr.substr( first, last - first)));
                 ++last;
                 first = last;
             }
             aabbox.push_back( stof( aabboxStr.substr( first, aabboxStr.length() - first)));
 
             if( aabbox.size() != 6){
-                cerr<<"Xml aa bounding box is not correct"<<endl;
+                cerr<<"Xml aa bounding box is not correct : "<< aabbox.size() <<endl;
                 return;
             }
             Eigen::Vector3f boxCenter(aabbox[2], aabbox[1], aabbox[0]);
             Eigen::Vector3f boxSize(aabbox[5], aabbox[4], aabbox[3]);
-            Eigen::Vector3i origin( floor( ( boxCenter(0) - boxSize(0)/2) / resolution),
-                                    floor( ( boxCenter(1) - boxSize(1)/2) / resolution),
-                                    floor( ( boxCenter(2) - boxSize(2)/2) / resolution));
-            Rectangle bndbox( origin, boxSize(0) / resolution, boxSize(1) / resolution, boxSize(2) / resolution,
+            Eigen::Vector3i origin( floor( ( boxCenter(0) - boxSize(0)/2.0) / resolution),
+                                    floor( ( boxCenter(1) - boxSize(1)/2.0) / resolution),
+                                    floor( ( boxCenter(2) - boxSize(2)/2.0) / resolution));
+            // absolute bndbox positions
+            Rectangle bndbox( origin, abs( floor( boxSize(0) / resolution)),
+                              abs( floor( boxSize(1) / resolution)), abs( floor( boxSize(2) / resolution)),
                               resolution);
+
+            cout<<"Scene:: absolute chair bndbox : "<<bndbox<<endl;
+
             Object obj( objName, Object::FRONTAL, false, false, bndbox);
 
             objects_.push_back( obj);
@@ -161,7 +171,7 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
     }
 	
     xmlFreeDoc(doc);
-    pcFileName_ = pcFileName;
+//    cout<<"Scene:: objects().size() : "<<objects().size()<<endl;
 }
 
 
@@ -229,7 +239,7 @@ void Scene::setObjects(const vector<Object> &objects)
 ostream & FFLD::operator<<(ostream & os, const Scene & scene)
 {
     os /*<< scene.origin()(0) << ' ' << scene.origin()(1) << ' ' << scene.origin()(2) << ' '
-       << scene.depth() << ' ' << scene.height() << ' ' << scene.width() << ' '*/
+       /*<< scene.depth() << ' ' << scene.height() << ' ' << scene.width() << ' '*/
 	   << scene.objects().size() << ' ' << scene.filename() << endl;
 	
 	for (int i = 0; i < scene.objects().size(); ++i)
@@ -240,9 +250,9 @@ ostream & FFLD::operator<<(ostream & os, const Scene & scene)
 
 istream & FFLD::operator>>(istream & is, Scene & scene)
 {
-    int x, y, z, width, height, depth, nbObjects;
+    int /*x, y, z, /*width, height, depth,*/ nbObjects;
     
-    is >> /*z >> y >> x >> depth >> height >> width >>*/ nbObjects;
+    is /*>> z >> y >> x /*>> depth >> height >> width*/ >> nbObjects;
 	is.get(); // Remove the space
 	
 	string filename;
@@ -258,7 +268,7 @@ istream & FFLD::operator>>(istream & is, Scene & scene)
 		return is;
 	}
 	
-    scene = Scene(/*Eigen::Vector3i(z, y, x), depth, height, width, */filename, objects);
+    scene = Scene(/*Eigen::Vector3i(z, y, x), /*depth, height, width, */filename, objects);
 	
 	return is;
 }

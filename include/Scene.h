@@ -22,6 +22,7 @@
 
 #include <string>
 #include <vector>
+//#include "typedefs.h"
 
 #include <libxml/parser.h>
 
@@ -44,7 +45,7 @@ public:
     /// @param[in] depth Depth of the PC.
     /// @param[in] filename Filename of the PC.
 	/// @param[in] objects List of objects present in the scene.
-    Scene(const std::string & filename,
+    Scene(/*const Eigen::Vector3i origin, */const std::string & filename,
           const std::vector<Object> & objects);
 	
 	/// Constructs a scene and tries to load the scene from the xml file with the given @p filename.
@@ -94,6 +95,8 @@ private:
 //	int width_;
 //	int height_;
 //	int depth_;
+//    Eigen::Vector3i origin_;
+//    Eigen::Vector3i size_;
     std::string pcFileName_;
 	std::vector<Object> objects_;
 };

@@ -40,9 +40,10 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     PointType max;
     pcl::getMinMax3D(*input, minTmp, max);
 
-    sceneOffset_ = Vector3i(floor(minTmp.z/starting_resolution),
-                            floor(minTmp.y/starting_resolution),
-                            floor(minTmp.x/starting_resolution));
+    //TODO : res/2 make it works only for interval = 1 see Mixture::posLatentSearch
+    sceneOffset_ = Vector3i(floor(minTmp.z/starting_resolution/2.0),
+                            floor(minTmp.y/starting_resolution/2.0),
+                            floor(minTmp.x/starting_resolution/2.0));
 
     min.x = floor(minTmp.x/starting_resolution)*starting_resolution;
     min.y = floor(minTmp.y/starting_resolution)*starting_resolution;
@@ -340,7 +341,7 @@ const vector<float> & GSHOTPyramid::resolutions() const{
 }
 
 //Read point cloud from a path
-int FFLD::readPointCloud(std::string object_path, PointCloudPtr point_cloud){
+/*static*/ int FFLD::readPointCloud(std::string object_path, PointCloudPtr point_cloud){
     std::string extension = boost::filesystem::extension(object_path);
     if (extension == ".pcd" || extension == ".PCD")
     {
@@ -364,6 +365,5 @@ int FFLD::readPointCloud(std::string object_path, PointCloudPtr point_cloud){
         return -1;
     }
     return 1;
-
 }
 

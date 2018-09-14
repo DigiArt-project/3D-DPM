@@ -48,27 +48,30 @@ public:
         if (score)
             *score = 0.0;
 
-        const float left = std::max(reference_.left() * reference_.resolution(), rect.left() * rect.resolution());
-        const float right = std::min(reference_.right() * reference_.resolution(), rect.right() * rect.resolution());
+        const float left = std::max(reference_.left() /** reference_.resolution()*/, rect.left() /** rect.resolution()*/);
+        const float right = std::min(reference_.right() /** reference_.resolution()*/, rect.right() /** rect.resolution()*/);
 
         if (right < left)
             return false;
 
-        const float top = std::max(reference_.top() * reference_.resolution(), rect.top() * rect.resolution());
-        const float bottom = std::min(reference_.bottom() * reference_.resolution(), rect.bottom() * rect.resolution());
+        const float top = std::max(reference_.top() /** reference_.resolution()*/, rect.top() /** rect.resolution()*/);
+        const float bottom = std::min(reference_.bottom() /** reference_.resolution()*/, rect.bottom() /** rect.resolution()*/);
 
         if (bottom < top)
             return false;
 
-        const float front = std::max(reference_.front() * reference_.resolution(), rect.front() * rect.resolution());
-        const float back = std::min(reference_.back() * reference_.resolution(), rect.back() * rect.resolution());
+        const float front = std::max(reference_.front() /** reference_.resolution()*/, rect.front() /** rect.resolution()*/);
+        const float back = std::min(reference_.back() /** reference_.resolution()*/, rect.back() /** rect.resolution()*/);
 
         if (back < front)
             return false;
         
         const float intersectionVolume = (right - left/* + 1*/) * (bottom - top/* + 1*/) * (back - front/* + 1*/);
-        const float cubeVolume = rect.volume();
+        const float cubeVolume = rect.depth() * rect.width() * rect.height();//rect.volume();
         
+        std::cout<<"intersectionVolume : "<<intersectionVolume<<std::endl;
+        std::cout<<"cubeVolume : "<<cubeVolume<<std::endl;
+
         if (felzenszwalb_) {
             if (intersectionVolume >= cubeVolume * threshold_) {
                 if (score)
@@ -78,7 +81,7 @@ public:
             }
         }
         else {
-            const float referenceVolume = reference_.volume();
+            const float referenceVolume = reference_.depth() * reference_.width() * reference_.height();//reference_.volume();
             const float unionVolume = referenceVolume + cubeVolume - intersectionVolume;
             if (intersectionVolume >= unionVolume * threshold_) {
                 if (score)

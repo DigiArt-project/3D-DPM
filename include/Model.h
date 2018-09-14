@@ -62,6 +62,12 @@ public:
             second = t2;
             third = t3;
         }
+
+        friend std::ostream & operator<<(std::ostream & os, const triple & tri){
+            os << "[" << tri.first << ";" << tri.second << ";" << tri.third << "]";
+            return os;
+        }
+
         T1 first;
         T2 second;
         T3 third;

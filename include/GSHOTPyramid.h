@@ -8,6 +8,8 @@
 #include <Eigen/Core>
 #include <unsupported/Eigen/CXX11/Tensor>
 
+#include <vector>
+
 //PCL
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -19,10 +21,10 @@
 #include <pcl/features/normal_3d_omp.h>
 #include <pcl/features/shot_omp.h>
 #include <pcl/common/common_headers.h>
+#include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
 #include<pcl/io/ply_io.h>
-#include <vector>
 
 //Other
 #include "typedefs.h"
@@ -68,7 +70,7 @@ namespace FFLD
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
         GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5,
-                     float starting_resolution = 0.05/*0.09/2.0*/, int nbOctave = 2);
+                     float starting_resolution = 0.25/*0.09/2.0*/, int nbOctave = 2);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
@@ -151,10 +153,10 @@ namespace FFLD
 
         Eigen::Vector3i sceneOffset_;
     };
-
-    //Read point cloud from a path
-    int readPointCloud(std::string object_path, PointCloudPtr point_cloud);
     
+    //Read point cloud from a path
+    /*static*/ int readPointCloud(std::string object_path, PointCloudPtr point_cloud);
+
     /// Serializes a pyramid to a stream.
     std::ostream & operator<<(std::ostream & os, const GSHOTPyramid & pyramid);
     

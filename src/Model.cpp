@@ -41,9 +41,10 @@ Model::Model(triple<int, int, int> rootSize, int nbParts, triple<int, int, int> 
 	parts_[0].deformation.setZero();
 	
 	// Create an empty model if any of the given parameters is invalid
-	if ((rootSize.first <= 0) || (rootSize.second <= 0) || (nbParts < 0) ||
-		(nbParts && ((partSize.first <= 0) || (partSize.second <= 0)))) {
-		cerr << "Attempting to create an empty model" << endl;
+    if ((rootSize.first <= 0) || (rootSize.second <= 0) || (rootSize.third <= 0) || (nbParts < 0) ||
+        ( nbParts && ((partSize.first <= 0) || (partSize.second <= 0) || (partSize.third <= 0)))) {
+        cerr << "Attempting to create an empty model : rootSize = "
+             << rootSize << " / partSize = " << partSize << " / nbParts = " << nbParts<< endl;
 		return;
 	}
 	

@@ -49,7 +49,7 @@ cached_(false), zero_(true)
 	
 	// Early return in case the root filters' sizes could not be determined
     if (sizes.size() != nbComponents){
-        cout<<"root filters sizes could not be determined"<<endl;
+        cerr<<"Root filters sizes could not be determined"<<endl;
         return;
     }
 	
@@ -58,8 +58,10 @@ cached_(false), zero_(true)
 	
 	for (int i = 0; i < nbComponents; ++i) {
         models_[/*2 **/ i    ] = Model(sizes[i]);
+        cout<<"Mixture:: model size set to : "<<sizes[i]<<endl;
 //		models_[2 * i + 1] = Model(sizes[i]);
 	}
+
 }
 
 bool Mixture::empty() const
@@ -373,7 +375,18 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             if ((scenes[i].objects()[j].name() != name) || scenes[i].objects()[j].difficult())
                 continue;
 			
-            const Intersector intersector(scenes[i].objects()[j].bndbox(), overlap);
+            Rectangle aabox(scenes[i].objects()[j].bndbox().origin() - Vector3i(pyramid.sceneOffset_(0),
+                                                                         pyramid.sceneOffset_(1),
+                                                                         pyramid.sceneOffset_(2)),
+                            scenes[i].objects()[j].bndbox().depth(),
+                            scenes[i].objects()[j].bndbox().width(),
+                            scenes[i].objects()[j].bndbox().height(),
+                            scenes[i].objects()[j].bndbox().resolution());
+
+
+            cout<<"Mix::PosLatentSearch absolute positive box : "<<scenes[i].objects()[j].bndbox()<<endl;
+            cout<<"Mix::PosLatentSearch relative positive aabbox : "<<aabox<<endl;
+            const Intersector intersector(aabox, overlap);
 			
             // The model, level, position, score, and intersection of the best example
             int argModel = -1;
@@ -443,16 +456,19 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
 
+//                                    cout<<"Mix::PosLatentSearch try box : "<<bndbox<<endl;
 
                                     double inter = 0.0;
 
                                     if (intersector(bndbox, &inter)) {
-//                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
+                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
                                         if (inter > intersection) {
-//                                            cout << "Mix::posLatentSearch intersector true" << endl;
+                                            cout << "Mix::posLatentSearch intersector true" << endl;
                                             model = k;
                                             intersection = inter;
                                         }
+                                    } else{
+                                        cout << "Mix::posLatentSearch wrong intersector score : " << inter << endl;
                                     }
                                 }
                             }
@@ -954,8 +970,10 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 											 Object::Name name)
 {
 	// Early return in case the filters or the dataset are empty
-	if ((nbComponents <= 0) || scenes.empty())
+    if ((nbComponents <= 0) || scenes.empty()){
+        cerr<<"nbComponents <= 0 or scenes.empty()"<<endl;
         return std::vector<Model::triple<int, int, int> >();
+    }
 	
 	// Sort the aspect ratio of all the (non difficult) samples
     vector<Rectangle> rects;
@@ -964,17 +982,23 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 		for (int j = 0; j < scenes[i].objects().size(); ++j) {
 			const Object & obj = scenes[i].objects()[j];
 			
-			if ((obj.name() == name) && !obj.difficult())
+            if ((obj.name() == name) /*&& !obj.difficult()*/){
                 rects.push_back( obj.bndbox());
+            } else{
+
+            }
 		}
 	}
 	
 	// Early return if there is no object
-    if (rects.empty())
+    if (rects.empty()){
+        cerr<<"rects.empty()"<<endl;
         return std::vector<Model::triple<int, int, int> >();
+    }
 	
 	// Sort the aspect ratio of all the samples
     sort(rects.begin(), rects.end());
+//    reverse(rects.begin(), rects.end());
 	
 	// For each mixture model
     vector<int> references(nbComponents+1);
@@ -982,6 +1006,10 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 
     for (int i = 0; i <= nbComponents; ++i){
         references[i] = rects.size() * i / nbComponents;
+    }
+
+    for (int i = 0; i < references.size(); ++i){
+        cout<<"Mixture::FilterSizes ref : "<<references[i]<<endl;
     }
 	
     for (int i = 0; i < nbComponents; ++i) {
@@ -992,6 +1020,10 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
             width += rects[j].width();
             height += rects[j].height();
         }
+
+        cout<<"Mixture::FilterSizes depth : "<<depth<<endl;
+        cout<<"Mixture::FilterSizes width : "<<width<<endl;
+        cout<<"Mixture::FilterSizes height : "<<height<<endl;
 
         sizes[i].first = depth / (references[i]+references[i+1]);
         sizes[i].second = width / (references[i]+references[i+1]);
