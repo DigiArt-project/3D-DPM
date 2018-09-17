@@ -1130,9 +1130,9 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
     cout<<"Model::DT3D begin min : "<<copy.min()<<endl;
 
 
-    const int weightDepths = 15;
-    const int weightRows   = 15;
-    const int weightCols   = 15;
+    const int weightDepths = 5;
+    const int weightRows   = 5;
+    const int weightCols   = 5;
 //    const int weightDepths = depths;
 //    const int weightRows   = rows;
 //    const int weightCols   = cols;

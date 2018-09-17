@@ -44,7 +44,7 @@ public:
 	/// @param[in] nbComponents Number of mixture components (without symmetry).
 	/// @param[in] scenes Scenes to use for training.
 	/// @param[in] name Name of the objects to detect.
-	Mixture(int nbComponents, const std::vector<Scene> & scenes, Object::Name name);
+    Mixture(int nbComponents, const std::vector<Scene> & scenes, Object::Name name, int interval);
 	
 	/// Returns whether the mixture is empty. An empty mixture has no model.
 	bool empty() const;
@@ -123,7 +123,7 @@ public:
 	// Computes the size of the roots of the models
     static std::vector<Model::triple<int, int, int> > FilterSizes(int nbComponents,
 														 const std::vector<Scene> & scenes,
-														 Object::Name name);
+                                                         Object::Name name, int interval);
 	
 
 	std::vector<Model> models_;

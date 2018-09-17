@@ -98,6 +98,10 @@ public:
     void setTop(int top);
     void setBack(int back);
     void setFront(int front);
+
+    Eigen::Vector3f getOriginCoordinate() const;
+    Eigen::Vector3f getDiagonalCoordinate() const;
+
     
     Rectangle changeToPclCoordinateSystem() const;
 

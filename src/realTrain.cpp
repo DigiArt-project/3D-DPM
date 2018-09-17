@@ -189,9 +189,10 @@ public:
 
     void train( string dataFolder){
 
-        int nbParts = 3;
+        int nbParts = 0;
         double C = 0.002, J = 2;
-        int interval = 1, nbIterations = 3, nbDatamine = 3, maxNegSample = 2000;
+        float boxOverlap = 0.5;
+        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 20;
         int nbComponents = 1; //nb of object poses without symetry
 
 
@@ -227,18 +228,23 @@ public:
 //        std::vector<Model> models = { model};
 //        Mixture mixture( models);
         //////
-        Mixture mixture( nbComponents, scenes, Object::CHAIR);
+        Mixture mixture( nbComponents, scenes, Object::CHAIR, interval);
 
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
-                      nbDatamine, maxNegSample, C, J);
+                      nbDatamine, maxNegSample, C, J, boxOverlap);
+
+        cout<<"test::trained Root"<<endl;
 
         //TODO include initializeParts in train()
         mixture.initializeParts( nbParts/*, chairPartSize*/);
 
+        cout<<"test::initializeParts"<<endl;
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval,
-                      nbIterations, nbDatamine, maxNegSample, C, J);
+                      nbIterations, nbDatamine, maxNegSample, C, J, boxOverlap);
+
+        cout<<"test::train finished"<<endl;
 
     }
 
@@ -354,9 +360,9 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        /*if (detections.size() > nb)*/ {
+        if (detections.size() > nb) {
 
-            for (int i = 0; i < /*nb*/detections.size(); ++i) {
+            for (int i = 0; i < nb/*detections.size()*/; ++i) {
 
                 const int x = detections[i].x;
                 const int y = detections[i].y;
@@ -497,26 +503,26 @@ public:
         sampling.setRadiusSearch (sceneResolution);
         sampling.filter(*subspace);
 
-        viewer.addPC( sceneCloud, 3);
+        viewer.addPC( subspace, 3);
 
         viewer.displayCubeLine(sceneRect);
-        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
-                mixture.models()[0].parts()[0].offset(1),
-                mixture.models()[0].parts()[0].offset(2)-20),
-                      mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
-                      mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
-        viewer.displayCubeLine(rootBox,
-                               Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-                Vector3i(255,255,0));
-        for(int i=1;i<mixture.models()[0].parts().size();++i){
-            Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
-                    mixture.models()[0].parts()[i].offset(2)-40),
-                          mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
-                          mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
-            viewer.displayCubeLine(partBox,
-                                   Eigen::Vector3f(0,0,0),
-                    Vector3i(100,0,0));
-        }
+//        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
+//                mixture.models()[0].parts()[0].offset(1),
+//                mixture.models()[0].parts()[0].offset(2)-20),
+//                      mixture.models()[0].rootSize().first, mixture.models()[0].rootSize().second,
+//                      mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
+//        viewer.displayCubeLine(rootBox,
+//                               Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+//                Vector3i(255,255,0));
+//        for(int i=1;i<mixture.models()[0].parts().size();++i){
+//            Rectangle partBox(Vector3i(mixture.models()[0].parts()[i].offset(0), mixture.models()[0].parts()[i].offset(1),
+//                    mixture.models()[0].parts()[i].offset(2)-40),
+//                          mixture.models()[0].partSize().first, mixture.models()[0].partSize().second,
+//                          mixture.models()[0].partSize().third, pyramid.resolutions()[0]);
+//            viewer.displayCubeLine(partBox,
+//                                   Eigen::Vector3f(0,0,0),
+//                    Vector3i(100,0,0));
+//        }
 
     }
 
@@ -676,9 +682,10 @@ int main(){
 //               "/media/ubuntu/DATA/3DDataset/ModelNet10_normalized/table/full/");
 ////               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
-//    test.train("/media/ubuntu/DATA/3DDataset/scenenn+/");
 
-//    test.test( "/home/ubuntu/3DDataset/3DDPM/smallScene4.pcd");
+    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+
+    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply");
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
 
@@ -688,52 +695,53 @@ int main(){
     // scene_2.ply
 
 
-    PointCloudPtr cloud( new PointCloudT);
-    if (readPointCloud("/media/ubuntu/DATA/3DDataset/scenenn+/036/036.ply", cloud) == -1) {
-        cout<<"test::couldnt open pcd file"<<endl;
-    }
+//    PointCloudPtr cloud( new PointCloudT);
+//    if (readPointCloud("/media/ubuntu/DATA/3DDataset/scenenn+/036/036.ply", cloud) == -1) {
+//        cout<<"test::couldnt open pcd file"<<endl;
+//    }
 
-    PointCloudPtr subspace(new PointCloudT());
-    pcl::UniformSampling<PointType> sampling;
-    sampling.setInputCloud(cloud);
-    sampling.setRadiusSearch (test.sceneResolution);
-    sampling.filter(*subspace);
+//    PointCloudPtr subspace(new PointCloudT());
+//    pcl::UniformSampling<PointType> sampling;
+//    sampling.setInputCloud(cloud);
+//    sampling.setRadiusSearch (test.sceneResolution);
+//    sampling.filter(*subspace);
 
-    test.viewer.addPC( subspace, 3);
+//    test.viewer.addPC( subspace, 3);
 
-    Eigen::Vector3f boxCenter(-1.98708, -1.57594, -1.08425);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
-    Eigen::Vector3f boxSize(0.816625, 1.16516, 0.795907);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-    Eigen::Matrix4f tform;
-    tform.setIdentity ();
-    tform.topLeftCorner (3, 3) = Eigen::Matrix3f (Eigen::Quaternionf (0.256436, 0.945564, 0.198873, 0.0244773));
+//    Eigen::Vector3f boxCenter(1.13802, 0.156418, -1.69328);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
+//    Eigen::Vector3f boxSize(1.79048, 0.95146, -1.13563);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+//    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+//    Eigen::Matrix4f tform;
+//    tform.setIdentity ();
+//    tform.topLeftCorner (3, 3) = Eigen::Matrix3f (Eigen::Quaternionf (0,0,0,0));
 
-    Eigen::Vector3i origin( floor( ( boxCenter(2) ) / test.sceneResolution),
-                            floor( ( boxCenter(1)) / test.sceneResolution),
-                            floor( ( boxCenter(0)) / test.sceneResolution));
-    // absolute bndbox positions
-    Rectangle bndbox( origin, abs( ( (boxSize(2)+pose(2)) / test.sceneResolution)),
-                      abs( ( (boxSize(1)+pose(1)) / test.sceneResolution)), abs( ( (boxSize(0)+pose(0)) / test.sceneResolution)),
-                      test.sceneResolution);
-    cout<<"bndbox : "<<bndbox<<endl;
-    test.viewer.displayCubeLine(bndbox);
+//    Eigen::Vector3i origin( floor( ( boxCenter(2) ) / test.sceneResolution),
+//                            floor( ( boxCenter(1)) / test.sceneResolution),
+//                            floor( ( boxCenter(0)) / test.sceneResolution));
+//    // absolute bndbox positions
+//    Rectangle bndbox( origin, -( boxCenter(2)-boxSize(2)) / test.sceneResolution,
+//                      -( boxCenter(1)-boxSize(1)+pose(1)) / test.sceneResolution,
+//            -( boxCenter(0)-boxSize(0)+pose(0)) / test.sceneResolution,
+//                      test.sceneResolution);
+//    cout<<"bndbox : "<<bndbox<<endl;
+//    test.viewer.displayCubeLine(bndbox);
 
-    PointCloudPtr cloud2( new PointCloudT (2,1,PointType()));
-    PointType p = PointType();
-    p.x = boxCenter(0);
-    p.y = boxCenter(1);
-    p.z = boxCenter(2);
-    cloud2->at(0) = p;
-    p.x = boxCenter(0)+boxSize(0)+pose(0);
-    p.y = boxCenter(1)+boxSize(1)+pose(1);
-    p.z = boxCenter(2)+boxSize(2)+pose(2);
-    cloud2->at(1) = p;
+//    PointCloudPtr cloud2( new PointCloudT (2,1,PointType()));
+//    PointType p = PointType();
+//    p.x = boxCenter(0);
+//    p.y = boxCenter(1);
+//    p.z = boxCenter(2);
+//    cloud2->at(0) = p;
+//    p.x = boxSize(0)+pose(0);
+//    p.y = boxSize(1)+pose(1);
+//    p.z = boxSize(2)+pose(2);
+//    cloud2->at(1) = p;
 
-    PointCloudPtr orientedCloud (new PointCloudT);
-    pcl::transformPointCloud (*cloud2, *orientedCloud, tform);
+//    PointCloudPtr orientedCloud (new PointCloudT);
+//    pcl::transformPointCloud (*cloud2, *orientedCloud, tform);
 
-    test.viewer.addPC( cloud2, 8, Eigen::Vector3i(255, 255, 0));
-    test.viewer.addPC( orientedCloud, 8, Eigen::Vector3i(0, 255, 255));
+//    test.viewer.addPC( cloud2, 8, Eigen::Vector3i(255, 255, 0));
+//    test.viewer.addPC( orientedCloud, 8, Eigen::Vector3i(0, 255, 255));
 
 
 

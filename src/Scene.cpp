@@ -150,17 +150,17 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
                 cerr<<"Xml aa bounding box is not correct : "<< aabbox.size() <<endl;
                 return;
             }
-            Eigen::Vector3f boxCenter(aabbox[2], aabbox[1], aabbox[0]);
-            Eigen::Vector3f boxSize(aabbox[5], aabbox[4], aabbox[3]);
-            Eigen::Vector3i origin( floor( ( boxCenter(0) - boxSize(0)/2.0) / resolution),
-                                    floor( ( boxCenter(1) - boxSize(1)/2.0) / resolution),
-                                    floor( ( boxCenter(2) - boxSize(2)/2.0) / resolution));
+            Eigen::Vector3f minPt(aabbox[2], aabbox[1], aabbox[0]);
+            Eigen::Vector3f maxPt(aabbox[5], aabbox[4], aabbox[3]);
+            Eigen::Vector3i origin( floor( minPt(0) / resolution),
+                                    floor( minPt(1) / resolution),
+                                    floor( minPt(2) / resolution));
             // absolute bndbox positions
-            Rectangle bndbox( origin, abs( floor( boxSize(0) / resolution)),
-                              abs( floor( boxSize(1) / resolution)), abs( floor( boxSize(2) / resolution)),
+            Rectangle bndbox( origin, floor( (maxPt(0)-minPt(0)) / resolution),
+                              floor( (maxPt(1)-minPt(1)) / resolution), floor( (maxPt(2)-minPt(2)) / resolution),
                               resolution);
 
-            cout<<"Scene:: absolute chair bndbox : "<<bndbox<<endl;
+//            cout<<"Scene:: absolute chair bndbox : "<<bndbox<<endl;
 
             Object obj( objName, Object::FRONTAL, false, false, bndbox);
 

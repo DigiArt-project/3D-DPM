@@ -35,7 +35,7 @@ Mixture::Mixture() : cached_(false), zero_(true)
 Mixture::Mixture(const vector<Model> & models) : models_(models), cached_(false), zero_(true)
 {}
 
-Mixture::Mixture(int nbComponents, const vector<Scene> & scenes, Object::Name name) :
+Mixture::Mixture(int nbComponents, const vector<Scene> & scenes, Object::Name name, int interval) :
 cached_(false), zero_(true)
 {
 	// Create an empty mixture if any of the given parameters is invalid
@@ -45,7 +45,7 @@ cached_(false), zero_(true)
 	}
 	
 	// Compute the root filters' sizes using Felzenszwalb's heuristic
-    const vector<Model::triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name);
+    const vector<Model::triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name, interval);
 	
 	// Early return in case the root filters' sizes could not be determined
     if (sizes.size() != nbComponents){
@@ -379,14 +379,15 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                                                          pyramid.sceneOffset_(1),
                                                                          pyramid.sceneOffset_(2)),
                             scenes[i].objects()[j].bndbox().depth(),
-                            scenes[i].objects()[j].bndbox().width(),
                             scenes[i].objects()[j].bndbox().height(),
+                            scenes[i].objects()[j].bndbox().width(),
                             scenes[i].objects()[j].bndbox().resolution());
 
 
-            cout<<"Mix::PosLatentSearch absolute positive box : "<<scenes[i].objects()[j].bndbox()<<endl;
-            cout<<"Mix::PosLatentSearch relative positive aabbox : "<<aabox<<endl;
-            const Intersector intersector(aabox, overlap);
+            cout<<"Mix::PosLatentSearch absolute positive box orig : "<<scenes[i].objects()[j].bndbox().getOriginCoordinate()<<endl;
+            cout<<"Mix::PosLatentSearch absolute positive box diago : "<<scenes[i].objects()[j].bndbox().getDiagonalCoordinate()<<endl;
+//            cout<<"Mix::PosLatentSearch relative positive aabbox : "<<aabox<<endl;
+            const Intersector intersector(scenes[i].objects()[j].bndbox(), overlap);
 			
             // The model, level, position, score, and intersection of the best example
             int argModel = -1;
@@ -406,6 +407,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                 int offz = floor(pyramid.sceneOffset_(0)*scale);
                 int offy = floor(pyramid.sceneOffset_(1)*scale);
                 int offx = floor(pyramid.sceneOffset_(2)*scale);
+//                int offz = 0;
+//                int offy = 0;
+//                int offx = 0;
 
                 cout << "Mix::posLatentSearch scale : " << scale << endl;
                 int rows = 0;
@@ -450,25 +454,25 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
                                                            (y+offy)/*- pad.y()*/,
                                                            (x+offx)/* - pad.x()*/);
-                                    int w = models_[k].rootSize().third /** scale*/;
-                                    int h = models_[k].rootSize().second /** scale*/;
-                                    int d = models_[k].rootSize().first /** scale*/;
+                                    int w = models_[k].rootSize().third/* * scale*/;
+                                    int h = models_[k].rootSize().second/* * scale*/;
+                                    int d = models_[k].rootSize().first/* * scale*/;
 
                                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
 
-//                                    cout<<"Mix::PosLatentSearch try box : "<<bndbox<<endl;
 
                                     double inter = 0.0;
 
                                     if (intersector(bndbox, &inter)) {
                                         cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
                                         if (inter > intersection) {
-                                            cout << "Mix::posLatentSearch intersector true" << endl;
+                                            cout<<"Mix::PosLatentSearch try box orig : "<<bndbox.getOriginCoordinate()<<endl;
+                                            cout<<"Mix::PosLatentSearch try box diago : "<<bndbox.getDiagonalCoordinate()<<endl;
                                             model = k;
                                             intersection = inter;
                                         }
                                     } else{
-                                        cout << "Mix::posLatentSearch wrong intersector score : " << inter << endl;
+//                                        cout << "Mix::posLatentSearch wrong intersector score : " << inter << endl;
                                     }
                                 }
                             }
@@ -967,14 +971,15 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 }
 
 std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
-											 Object::Name name)
+                                             Object::Name name, int interval)
 {
 	// Early return in case the filters or the dataset are empty
     if ((nbComponents <= 0) || scenes.empty()){
         cerr<<"nbComponents <= 0 or scenes.empty()"<<endl;
         return std::vector<Model::triple<int, int, int> >();
     }
-	
+
+    const float scale = 1 / pow(2.0, interval);
 	// Sort the aspect ratio of all the (non difficult) samples
     vector<Rectangle> rects;
 	
@@ -1025,9 +1030,9 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
         cout<<"Mixture::FilterSizes width : "<<width<<endl;
         cout<<"Mixture::FilterSizes height : "<<height<<endl;
 
-        sizes[i].first = depth / (references[i]+references[i+1]);
-        sizes[i].second = width / (references[i]+references[i+1]);
-        sizes[i].third = height / (references[i]+references[i+1]);
+        sizes[i].first = depth / (references[i]+references[i+1]) * scale;
+        sizes[i].second = height / (references[i]+references[i+1]) * scale;
+        sizes[i].third = width / (references[i]+references[i+1]) * scale;
     }
 
 //	// Store the areas of the objects associated to each component
