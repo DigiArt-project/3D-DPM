@@ -49,6 +49,12 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     min.y = floor(minTmp.y/starting_resolution)*starting_resolution;
     min.z = floor(minTmp.z/starting_resolution)*starting_resolution;
 
+    PointCloudPtr subspace(new PointCloudT());
+    pcl::UniformSampling<PointType> sampling;
+    sampling.setInputCloud(input);
+    sampling.setRadiusSearch (starting_resolution);
+    sampling.filter(*subspace);
+
 #pragma omp parallel for
     for (int i = 0; i < interval_; ++i) {
 #pragma omp parallel for
@@ -59,11 +65,11 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
             resolutions_[index] = resolution;
 
             cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
-            cout << "GSHOTPyr::constructor lvl size : "<<input->size()<<endl;
+            cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
             cout << "GSHOTPyr::constructor index "<<index<<endl;
 
             keypoints_[index] = compute_keypoints(resolution, min, max, index);
-            DescriptorsPtr descriptors = compute_descriptor(input, keypoints_[index], 2*resolution);
+            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
 
 
             Level level( topology[index](0), topology[index](1), topology[index](2));
@@ -154,6 +160,7 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
         return;
     }
 
+
     convolution = level.convolve(filter);
 
 //    convolution = level.khi2Convolve(filter);
@@ -165,7 +172,10 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
     cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
     cout<<"GSHOTPyramid::convolve results.cols() : "<< convolution.cols() << endl;
 
-    cout<<"GSHOTPyramid::convolve results.last() : "<< convolution.last() << endl;
+    cout<<"GSHOTPyramid::convolve results.max() : "<< convolution.max() << endl;
+    cout<<"GSHOTPyramid::convolve filter.max() : "<< TensorMap(filter).max() << endl;
+    cout<<"GSHOTPyramid::convolve filter.norm() : "<< filter.lvlSquaredNorm() << endl;
+
 
 }
 
@@ -232,12 +242,12 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     DescriptorsPtr descriptors (new Descriptors());
     SurfaceNormalsPtr normals (new SurfaceNormals());
 
-    pcl::NormalEstimation<PointType,NormalType> norm_est;
+    pcl::NormalEstimationOMP<PointType,NormalType> norm_est;
     norm_est.setKSearch (8);
     norm_est.setInputCloud (input);
     norm_est.compute (*normals);
 
-    pcl::SHOTEstimation<PointType, NormalType, DescriptorType> descr_est;
+    pcl::SHOTEstimationOMP<PointType, NormalType, DescriptorType> descr_est;
     descr_est.setRadiusSearch (descr_rad);
     descr_est.setInputCloud (keypoints);
     descr_est.setInputNormals (normals);

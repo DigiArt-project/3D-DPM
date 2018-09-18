@@ -876,16 +876,16 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
     cout<<"Model::conv den : "<<den<<" / nbFilters : "<<nbFilters<<endl;
 //    scores[1] *= den;
 
-    // Add the bias if necessary
-//    if (bias_) {
-////#pragma omp parallel for
-//        for (int i = interval; i < nbLevels; ++i){
-////			scores[i].array() += bias_;
-//            Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
-//            biasTensor().setConstant( bias_);
-//            scores[i]() += biasTensor();
-//        }
-//    }
+//     Add the bias if necessary
+    if (bias_) {
+//#pragma omp parallel for
+        for (int i = interval; i < nbLevels; ++i){
+//			scores[i].array() += bias_;
+            Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
+            biasTensor().setConstant( bias_);
+            scores[i]() += biasTensor();
+        }
+    }
 
 }
 

@@ -30,7 +30,7 @@
 #include "typedefs.h"
 #include "tensor3d.h"
 #include <boost/filesystem.hpp>
-
+#include <omp.h>
 
 
 namespace FFLD

@@ -189,11 +189,11 @@ public:
 
     void train( string dataFolder){
 
-        int nbParts = 0;
+        int nbParts = 2;
         double C = 0.002, J = 2;
         float boxOverlap = 0.5;
-        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 20;
-        int nbComponents = 1; //nb of object poses without symetry
+        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 2000;
+        int nbComponents = 2; //nb of object poses without symetry
 
 
         string xmlExtension = ".xml", pcExtension = ".ply";
@@ -360,7 +360,8 @@ public:
         cout<<"test:: detections.size after intersection = "<<detections.size()<<endl;
 
         // Draw the detections
-        if (detections.size() > nb) {
+        /*if (detections.size() > nb)*/ {
+            nb = std::min((int)detections.size(), nb);
 
             for (int i = 0; i < nb/*detections.size()*/; ++i) {
 
@@ -432,10 +433,10 @@ public:
     }
 
 
-    void test( string sceneName){
+    void test( string sceneName, string modelName){
 
 
-        ifstream in("tmp.txt");
+        ifstream in( modelName);
 
         if (!in.is_open()) {
             cerr << "Cannot open model file\n" << endl;
@@ -453,7 +454,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0.455, overlap=0.5;
+        float threshold=0/*.455*/, overlap=0.5;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -502,6 +503,8 @@ public:
         sampling.setInputCloud(sceneCloud);
         sampling.setRadiusSearch (sceneResolution);
         sampling.filter(*subspace);
+
+        cout<<"test:: model bias = "<<mixture.models()[0].bias()<<endl;
 
         viewer.addPC( subspace, 3);
 
@@ -685,7 +688,11 @@ int main(){
 
     test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
-    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply");
+    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
+               "tmp.txt");
+
+    //smallSceneNN+/chair_part1_it1_weight15.txt
+
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
 

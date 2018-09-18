@@ -202,6 +202,7 @@ Rectangle Rectangle::changeToPclCoordinateSystem() const{
     return rec;
 }
 
+//TODO use ratio instead of volume
 bool Rectangle::operator<(const Rectangle & rect){
     return volume() < rect.volume();
 }

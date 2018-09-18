@@ -105,7 +105,7 @@ public:
     
     Rectangle changeToPclCoordinateSystem() const;
 
-    /// compare volumes
+    /// compare ratio
     bool operator<(const Rectangle & rect);
 
 private:

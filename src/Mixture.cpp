@@ -138,8 +138,14 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
 		// Sample all the positives
 		vector<pair<Model, int> > positives;
-		
+//        vector<pair<Model, int> > positives2(1);
+
         posLatentSearch(scenes, name, pad, interval, overlap, positives);
+//        if( positives.size() >= 2){
+//            positives2[0] = positives[1];
+////            positives.at(0) = positives.at(1);
+//            positives.swap(positives2);
+//        }
         cout << "Mix::train found "<<positives.size() << " positives" << endl;
 
         // Cache of hard negative samples of maximum size maxNegatives
@@ -444,7 +450,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                     for (int y = 0; y < rows; ++y) {
                         for (int x = 0; x < cols; ++x) {
                             // Find the best matching model (highest score or else most intersecting)
-                            int model = 0;//zero_ ? 0 : argmaxes[lvl]()(z, y, x);
+                            int model = zero_ ? 0 : argmaxes[lvl]()(z, y, x);
                             double intersection = -1.0;
 
                             // Try all models and keep the most intersecting one
@@ -645,7 +651,7 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                 for (int y = 0; y < rows; ++y) {
                     for (int x = 0; x < cols; ++x) {
 
-                        const int argmax = 0;//zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
+                        const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
 
 //                        cout<<"Mix::negLatentSearch scores[lvl]()(z, y, x) = "<<scores[lvl]()(z, y, x)<<endl;
                         if (zero_ || (scores[lvl]()(z, y, x) > -1)) {
@@ -987,10 +993,9 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 		for (int j = 0; j < scenes[i].objects().size(); ++j) {
 			const Object & obj = scenes[i].objects()[j];
 			
-            if ((obj.name() == name) /*&& !obj.difficult()*/){
+            if ((obj.name() == name) && !obj.difficult()){
                 rects.push_back( obj.bndbox());
-            } else{
-
+                cout<<"Mixture::FilterSizes rects : "<<obj.bndbox()<<endl;
             }
 		}
 	}
@@ -1030,9 +1035,9 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
         cout<<"Mixture::FilterSizes width : "<<width<<endl;
         cout<<"Mixture::FilterSizes height : "<<height<<endl;
 
-        sizes[i].first = depth / (references[i]+references[i+1]) * scale;
-        sizes[i].second = height / (references[i]+references[i+1]) * scale;
-        sizes[i].third = width / (references[i]+references[i+1]) * scale;
+        sizes[i].first = depth / (references[i+1]-references[i]) * scale;
+        sizes[i].second = height / (references[i+1]-references[i]) * scale;
+        sizes[i].third = width / (references[i+1]-references[i]) * scale;
     }
 
 //	// Store the areas of the objects associated to each component

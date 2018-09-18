@@ -114,6 +114,8 @@ public:
 
         res().setConstant( 0);
 
+        Scalar filterNorm = filter.lvlSquaredNorm();
+
 // Uncomment if you want to normalize the convolution score
 //        Type filterMean = filter.sum() / Scalar(filter.size());
 
@@ -154,7 +156,7 @@ public:
                             }
                         }
                     }
-
+                    res()(z, y, x) /= filterNorm;
 //                    res()(z, y, x) /= /*sqrt*/(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
                 }
             }
@@ -231,9 +233,11 @@ public:
             cost_mat.push_back(cost_mat_row);
         }
 
-//#pragma omp parallel for num_threads(omp_get_max_threads())
+#pragma omp parallel for
         for (int z = 0; z < res.depths(); ++z) {
+#pragma omp parallel for
             for (int y = 0; y < res.rows(); ++y) {
+#pragma omp parallel for
                 for (int x = 0; x < res.cols(); ++x) {
 
                     vector<double> desc_lvl(352);
@@ -420,6 +424,20 @@ public:
             }
         }
         return res;
+    }
+
+    Scalar lvlSquaredNorm() const{
+        Scalar res = 0;
+        for (int i = 0; i < depths(); ++i) {
+            for (int j = 0; j < rows(); ++j) {
+                for (int k = 0; k < cols(); ++k) {
+                    for (int l = 0; l < 352; ++l) {
+                        res += tensor(i, j, k)(l) * tensor(i, j, k)(l);
+                    }
+                }
+            }
+        }
+        return sqrt(res);
     }
 
     Type squaredNorm() const{

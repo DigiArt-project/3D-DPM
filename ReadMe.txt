@@ -73,6 +73,12 @@ This imply that currently, the size of the objects during training and testing h
 	Problem to compute obb intersection
 - Viewer use addCube instaed of addLine
 - Analogie entre DT3D et matching problem (see pictorial structure optimization problem and DPM optim prob)
+- FilterSize() : use aspect ratio for several components => add Cluster() ?
+
+- Create a test to check training with 2D feature vector with hard negatives samples
+- What to do with the rotation invariance ? 
+	- Use the system in place (use nbComponents for each pose + symetry but use a lot of computationnal resources)
+	- Find a new one
 
 
 Infos :
