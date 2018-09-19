@@ -78,8 +78,8 @@ This imply that currently, the size of the objects during training and testing h
 - Create a test to check training with 2D feature vector with hard negatives samples
 - What to do with the rotation invariance ? 
 	- Use the system in place (use nbComponents for each pose + symetry but use a lot of computationnal resources)
-	- Find a new one
-
+	- Find a new one (might work if all parts are not ordered from the root but from the previous one ???)
+- Increase speed
 
 Infos :
 

@@ -193,7 +193,7 @@ public:
         double C = 0.002, J = 2;
         float boxOverlap = 0.5;
         int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 2000;
-        int nbComponents = 2; //nb of object poses without symetry
+        int nbComponents = 1; //nb of object poses without symetry
 
 
         string xmlExtension = ".xml", pcExtension = ".ply";
