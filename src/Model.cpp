@@ -798,7 +798,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
             // Transform the part one octave below
 
             sum = (*convolutions)[i+1][lvl - interval].sum();
-            cout<<"Model::conv sum for part "<<i+1<<" before DT3D : "<<sum<<endl;
+//            cout<<"Model::conv sum for part "<<i+1<<" before DT3D : "<<sum<<endl;
 
             DT3D((*convolutions)[i + 1][lvl - interval], parts_[i + 1], tmp1, tmp2,
                  positions ? &(*positions)[i][lvl - interval] : 0);
@@ -811,7 +811,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
             }
 
             sum = (*convolutions)[i+1][lvl - interval].sum();
-            cout<<"Model::conv sum for part "<<i+1<<" after DT3D : "<<sum<<endl;
+//            cout<<"Model::conv sum for part "<<i+1<<" after DT3D : "<<sum<<endl;
 
             if((*convolutions)[i+1][lvl - interval].size() > 0){
                 stringstream name;
@@ -845,10 +845,10 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
                             }
                         }
                         else {
-                            cout<<"Model::conv set score to -inf ..."<<endl;
-                            cout<<"Model::conv "<<zr<<" < "<<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
-                            cout<<"Model::conv "<<yr<<" < "<<(*convolutions)[i + 1][lvl - interval].rows()<<endl;
-                            cout<<"Model::conv "<<xr<<" < "<<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
+//                            cout<<"Model::conv set score to -inf ..."<<endl;
+//                            cout<<"Model::conv "<<zr<<" < "<<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
+//                            cout<<"Model::conv "<<yr<<" < "<<(*convolutions)[i + 1][lvl - interval].rows()<<endl;
+//                            cout<<"Model::conv "<<xr<<" < "<<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
 
                             (*convolutions)[0][lvl]()(z, y, x) =
                                 -numeric_limits<GSHOTPyramid::Scalar>::infinity();
@@ -872,8 +872,8 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
             (*positions)[j][i] = Positions();
     }
 
-    float den = 1.0/nbFilters;
-    cout<<"Model::conv den : "<<den<<" / nbFilters : "<<nbFilters<<endl;
+//    float den = 1.0/nbFilters;
+//    cout<<"Model::conv den : "<<den<<" / nbFilters : "<<nbFilters<<endl;
 //    scores[1] *= den;
 
 //     Add the bias if necessary
@@ -1111,7 +1111,7 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
     if (!tensor.size())
         return;
 
-    cout<<"Model::DT3D offsets : "<<part.offset<<endl;
+//    cout<<"Model::DT3D offsets : "<<part.offset<<endl;
 
     const int depths = static_cast<int>(tensor.depths());
     const int rows = static_cast<int>(tensor.rows());
@@ -1126,8 +1126,8 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
         }
     }
 
-    cout<<"Model::DT3D begin max : "<<copy.max()<<endl;
-    cout<<"Model::DT3D begin min : "<<copy.min()<<endl;
+//    cout<<"Model::DT3D begin max : "<<copy.max()<<endl;
+//    cout<<"Model::DT3D begin min : "<<copy.min()<<endl;
 
 
     const int weightDepths = 5;
@@ -1234,8 +1234,8 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 
     }
 
-    cout<<"Model::DT3D end max : "<<tensor.max()<<endl;
-    cout<<"Model::DT3D end min : "<<tensor.min()<<endl;
+//    cout<<"Model::DT3D end max : "<<tensor.max()<<endl;
+//    cout<<"Model::DT3D end min : "<<tensor.min()<<endl;
 
 
 }

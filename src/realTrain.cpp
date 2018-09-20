@@ -189,10 +189,10 @@ public:
 
     void train( string dataFolder){
 
-        int nbParts = 2;
+        int nbParts = 1;
         double C = 0.002, J = 2;
         float boxOverlap = 0.5;
-        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 2000;
+        int interval = 1, nbIterations = 100, nbDatamine = 10, maxNegSample = 24000;
         int nbComponents = 1; //nb of object poses without symetry
 
 
@@ -232,7 +232,7 @@ public:
 
 
         mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
-                      nbDatamine, maxNegSample, C, J, boxOverlap);
+                      nbDatamine, 2000, C, J, boxOverlap);
 
         cout<<"test::trained Root"<<endl;
 
@@ -686,7 +686,7 @@ int main(){
 ////               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
 
-    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+//    test.train("/media/ubuntu/DATA/3DDataset/sceneNN+/");
 
     test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
                "tmp.txt");

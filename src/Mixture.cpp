@@ -138,14 +138,9 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
 		// Sample all the positives
 		vector<pair<Model, int> > positives;
-//        vector<pair<Model, int> > positives2(1);
 
         posLatentSearch(scenes, name, pad, interval, overlap, positives);
-//        if( positives.size() >= 2){
-//            positives2[0] = positives[1];
-////            positives.at(0) = positives.at(1);
-//            positives.swap(positives2);
-//        }
+
         cout << "Mix::train found "<<positives.size() << " positives" << endl;
 
         // Cache of hard negative samples of maximum size maxNegatives
@@ -155,25 +150,22 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
         double prevLoss = -numeric_limits<double>::infinity();
 		
         for (int datamine = 0; datamine < nbDatamine; ++datamine) {
-            ////// TODO not sure if this part works
             // Remove easy samples (keep hard ones)
             int j = 0;
             cout<<"Mix::train datamine : "<<datamine<<endl;
+            cout<<"Mix:: negatives.size1 : "<<negatives.size()<<" / j : "<<j<<endl;
 
 
-//            for (int i = 0; i < negatives.size(); ++i)
-//                if ((negatives[i].first.parts()[0].deformation(4) =
-//                    models_[negatives[i].second].dot(negatives[i].first)) > -1.01)
-//                        negatives[j++] = negatives[i];
             for (int i = 0; i < negatives.size(); ++i){
                 negatives[i].first.parts()[0].deformation(4) =
                                      models_[negatives[i].second].dot(negatives[i].first);
-                cout<<"Mix::train negatives[i].first.parts()[0].deformation(4) : "<<
+                cout<<"Mix::train negatives["<<i<<"].first.parts()[0].deformation(4) : "<<
                    negatives[i].first.parts()[0].deformation(4)<<endl;
-                if (negatives[i].first.parts()[0].deformation(4) > -1.01){
-                    cout<<"Mix::train add hard negative : "<< j << " / " << i <<
-                       " / " << negatives.size() << endl;
-                            negatives[j++] = negatives[i];
+                if (negatives[i].first.parts()[0].deformation(4) > -1){
+                    cout<<"Mix::train j : "<<j<<" / i :"<<i << endl;
+                    negatives[j] = pair<Model, int>( negatives[i].first, negatives[i].second);
+                    cout<<"Mix::train keep hard negative" << endl;
+                    ++j;
                 }
             }
             cout<<"Mix::train j : "<<j<<endl;
@@ -183,6 +175,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             // Sample new hard negatives
             negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
 
+            cout<<"Mix:: negatives.size2 : "<<negatives.size()<<" / j : "<<j<<endl;
             //////
             // Stop if there are no new hard negatives
             if (datamine && (negatives.size() == j)){
@@ -205,8 +198,6 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             // The filters definitely changed
             cached_ = false;
             zero_ = false;
-            cout << "Mix:: set cached_ to false" << endl;
-            cout << "Mix:: set zero_ to false" << endl;
 
 
             // Save the latest model so as to be able to look at it while training
@@ -315,7 +306,7 @@ void Mixture::computeScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & sc
                 }
             }
         }
-        cout << "Mix::computeScores scores["<<lvl<<"] is zero = "<<scores[lvl].isZero() << endl;
+//        cout << "Mix::computeScores scores["<<lvl<<"] is zero = "<<scores[lvl].isZero() << endl;
     }
 }
 
@@ -355,7 +346,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         const GSHOTPyramid pyramid(cloud, pad, interval);
 		
 
-        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
+//        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
 
 
 		if (pyramid.empty()) {
@@ -390,8 +381,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             scenes[i].objects()[j].bndbox().resolution());
 
 
-            cout<<"Mix::PosLatentSearch absolute positive box orig : "<<scenes[i].objects()[j].bndbox().getOriginCoordinate()<<endl;
-            cout<<"Mix::PosLatentSearch absolute positive box diago : "<<scenes[i].objects()[j].bndbox().getDiagonalCoordinate()<<endl;
+//            cout<<"Mix::PosLatentSearch absolute positive box orig : "<<scenes[i].objects()[j].bndbox().getOriginCoordinate()<<endl;
+//            cout<<"Mix::PosLatentSearch absolute positive box diago : "<<scenes[i].objects()[j].bndbox().getDiagonalCoordinate()<<endl;
 //            cout<<"Mix::PosLatentSearch relative positive aabbox : "<<aabox<<endl;
             const Intersector intersector(scenes[i].objects()[j].bndbox(), overlap);
 			
@@ -423,22 +414,22 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                 int depths = 0;
 				
                 if (!zero_) {
-                    cout << "Mix::posLatentSearch scores["<<lvl<<"].size() = " << scores[lvl].size() << endl;
+//                    cout << "Mix::posLatentSearch scores["<<lvl<<"].size() = " << scores[lvl].size() << endl;
 
                     depths = scores[lvl].depths();
                     rows = scores[lvl].rows();
                     cols = scores[lvl].cols();
-                    cout << "Mix::posLatentSearch depths = scores["<<lvl<<"].depths() = " << depths << endl;
-                    cout << "Mix::posLatentSearch rows = scores["<<lvl<<"].rows() = " << rows << endl;
-                    cout << "Mix::posLatentSearch cols = scores["<<lvl<<"].cols() = " << cols << endl;
+//                    cout << "Mix::posLatentSearch depths = scores["<<lvl<<"].depths() = " << depths << endl;
+//                    cout << "Mix::posLatentSearch rows = scores["<<lvl<<"].rows() = " << rows << endl;
+//                    cout << "Mix::posLatentSearch cols = scores["<<lvl<<"].cols() = " << cols << endl;
                 }
                 else if (lvl >= interval) {
                     depths = pyramid.levels()[lvl].depths() - static_cast<int>(maxSize().first*scale) + 1;
                     rows = pyramid.levels()[lvl].rows() - static_cast<int>(maxSize().second*scale) + 1;
                     cols = pyramid.levels()[lvl].cols() - static_cast<int>(maxSize().third*scale)+ 1;
-                    cout << "Mix::posLatentSearch depths scene = " << depths << endl;
-                    cout << "Mix::posLatentSearch rows scene = " << rows << endl;
-                    cout << "Mix::posLatentSearch cols scene = " << cols << endl;
+//                    cout << "Mix::posLatentSearch depths scene = " << depths << endl;
+//                    cout << "Mix::posLatentSearch rows scene = " << rows << endl;
+//                    cout << "Mix::posLatentSearch cols scene = " << cols << endl;
                 }
 
                 cout << "Mix::posLatentSearch limit z : " << offz << " / " << offz+depths<< endl;
@@ -470,10 +461,10 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     double inter = 0.0;
 
                                     if (intersector(bndbox, &inter)) {
-                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
+//                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
                                         if (inter > intersection) {
-                                            cout<<"Mix::PosLatentSearch try box orig : "<<bndbox.getOriginCoordinate()<<endl;
-                                            cout<<"Mix::PosLatentSearch try box diago : "<<bndbox.getDiagonalCoordinate()<<endl;
+//                                            cout<<"Mix::PosLatentSearch try box orig : "<<bndbox.getOriginCoordinate()<<endl;
+//                                            cout<<"Mix::PosLatentSearch try box diago : "<<bndbox.getDiagonalCoordinate()<<endl;
                                             model = k;
                                             intersection = inter;
                                         }
@@ -553,7 +544,8 @@ static inline bool operator==(const Model & a, const Model & b)
 {
 	return (a.parts()[0].offset == b.parts()[0].offset) &&
 		   (a.parts()[0].deformation(0) == b.parts()[0].deformation(0)) &&
-		   (a.parts()[0].deformation(1) == b.parts()[0].deformation(1));
+           (a.parts()[0].deformation(1) == b.parts()[0].deformation(1) &&
+           (a.parts()[0].deformation(2) == b.parts()[0].deformation(2)));
 }
 
 static inline bool operator<(const Model & a, const Model & b)
@@ -564,7 +556,13 @@ static inline bool operator<(const Model & a, const Model & b)
 			 ((a.parts()[0].offset(1) == b.parts()[0].offset(1)) &&
 			  ((a.parts()[0].deformation(0) < b.parts()[0].deformation(0)) ||
 			   ((a.parts()[0].deformation(0) == b.parts()[0].deformation(0)) &&
-			    ((a.parts()[0].deformation(1) < b.parts()[0].deformation(1))))))));
+                ((a.parts()[0].deformation(1) < b.parts()[0].deformation(1)) ||
+                 ((a.parts()[0].deformation(1) == b.parts()[0].deformation(1)) &&
+                  ((a.parts()[0].deformation(2) < b.parts()[2].deformation(1))))))))));
+}
+
+bool scoreComp( Vector4f a, Vector4f b){
+    return a(3) > b(3);
 }
 
 void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad,
@@ -590,10 +588,10 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         for (int k = 0; k < scenes[i].objects().size(); ++k)
             if (scenes[i].objects()[k].name() == name)
                 positive = true;
-cout<<"Mix::negLatentSearch not found = "<<positive<<endl;
+//cout<<"Mix::negLatentSearch not found = "<<positive<<endl;
         if (positive)
             continue;
-cout<<"Mix::negLatentSearch test0"<<endl;
+
         PointCloudPtr cloud( new PointCloudT);
 
         if (readPointCloud(scenes[i].filename(), cloud) == -1) {
@@ -601,7 +599,7 @@ cout<<"Mix::negLatentSearch test0"<<endl;
             negatives.clear();
             return;
         }
-        cout<<"Mix::negLatentSearch test1"<<endl;
+
 
         const GSHOTPyramid pyramid(cloud, pad, interval);
 
@@ -610,16 +608,15 @@ cout<<"Mix::negLatentSearch test0"<<endl;
             negatives.clear();
             return;
         }
-cout<<"Mix::negLatentSearch test2"<<endl;
+
         vector<Tensor3DF> scores;
         vector<Indices> argmaxes;
         vector<vector<vector<Model::Positions> > > positions;
 
         if (!zero_){
-            cout << "Mix::NegLatentSearch computeEnergyScores ..." << endl;
             computeScores(pyramid, scores, argmaxes, &positions);
         }
-        cout<<"Mix::negLatentSearch test3"<<endl;
+
 
         for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
             const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
@@ -632,19 +629,99 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                 depths = scores[lvl].depths();
                 rows = scores[lvl].rows();
                 cols = scores[lvl].cols();
-                cout<<"Mix::negLatentSearch depths1 = "<<depths<<endl;
-                cout<<"Mix::negLatentSearch rows1 = "<<rows<<endl;
-                cout<<"Mix::negLatentSearch cols1 = "<<cols<<endl;
+                cout<<"Neg:: score.size : "<<scores[lvl].size()<<endl;
+                cout<<"Neg:: score.max : "<<scores[lvl].max()<<endl;
+
+//                // z,y,x,score
+//                vector<Vector4f> bestNeg( scores[lvl].size());
+//                for (int z = 0; z < depths; ++z) {
+//                    for (int y = 0; y < rows; ++y) {
+//                        for (int x = 0; x < cols; ++x) {
+//                            bestNeg[x+y*cols+z*cols*rows] = Vector4f( z, y, x, scores[lvl]()(z, y, x));
+//                        }
+//                    }
+//                }
+
+//                sort( bestNeg.begin(), bestNeg.end(), scoreComp);
+//                int i = 0;
+//                while( i < bestNeg.size()){
+//                    int z = bestNeg[i](0);
+//                    int y = bestNeg[i](1);
+//                    int x = bestNeg[i](2);
+//                    float score = bestNeg[i](3);
+//                    if(i<10) cout<<"NegLatentSearch:: score["<<i<<"] = "<<bestNeg[i]<<endl;
+
+//                    if( score > -1){
+
+//                        Model sample;
+//                        const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
+
+//                        models_[argmax].initializeSample(pyramid, z, y, x,
+//                                                         lvl, sample, zero_ ? 0 : &positions[argmax]);
+
+//                        if (!sample.empty()) {
+//                            // Store all the information about the sample in the offset and
+//                            // deformation of its root
+//                            sample.parts()[0].offset(0) = i;
+//                            sample.parts()[0].offset(1) = lvl;
+//                            sample.parts()[0].offset(2) = 0;
+//                            sample.parts()[0].offset(3) = 0;
+//                            sample.parts()[0].deformation(0) = z;
+//                            sample.parts()[0].deformation(1) = y;
+//                            sample.parts()[0].deformation(2) = x;
+//                            sample.parts()[0].deformation(3) = argmax;
+//                            sample.parts()[0].deformation(4) = zero_ ? 0.0 : score;
+//                            sample.parts()[0].deformation(5) = 0;
+//                            sample.parts()[0].deformation(6) = 0;
+//                            sample.parts()[0].deformation(7) = 0;
+//                        }
+//                        negatives.push_back(make_pair(sample, argmax));
+
+//                        if (negatives.size() == maxNegatives)
+//                            return;
+//                    }
+//                    ++i;
+//                }
+
             }
             else if (lvl >= interval) {
                 depths = static_cast<int>(pyramid.levels()[lvl].depths()) - maxSize().first*scale + 1;
                 rows = static_cast<int>(pyramid.levels()[lvl].rows()) - maxSize().second*scale + 1;
                 cols = static_cast<int>(pyramid.levels()[lvl].cols()) - maxSize().third*scale + 1;
-                cout<<"Mix::negLatentSearch depths2 = "<<depths<<endl;
-                cout<<"Mix::negLatentSearch rows2 = "<<rows<<endl;
-                cout<<"Mix::negLatentSearch cols2 = "<<cols<<endl;
-            }
 
+//                for (int z = 0; z < depths; ++z) {
+//                    for (int y = 0; y < rows; ++y) {
+//                        for (int x = 0; x < cols; ++x) {
+//                            Model sample;
+//                            const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
+
+//                            models_[argmax].initializeSample(pyramid, z, y, x,
+//                                                             lvl, sample, zero_ ? 0 : &positions[argmax]);
+
+//                            if (!sample.empty()) {
+//                                // Store all the information about the sample in the offset and
+//                                // deformation of its root
+//                                sample.parts()[0].offset(0) = i;
+//                                sample.parts()[0].offset(1) = lvl;
+//                                sample.parts()[0].offset(2) = 0;
+//                                sample.parts()[0].offset(3) = 0;
+//                                sample.parts()[0].deformation(0) = z;
+//                                sample.parts()[0].deformation(1) = y;
+//                                sample.parts()[0].deformation(2) = x;
+//                                sample.parts()[0].deformation(3) = argmax;
+//                                sample.parts()[0].deformation(4) = 0.0;
+//                                sample.parts()[0].deformation(5) = 0;
+//                                sample.parts()[0].deformation(6) = 0;
+//                                sample.parts()[0].deformation(7) = 0;
+//                            }
+//                            negatives.push_back(make_pair(sample, argmax));
+
+//                            if (negatives.size() == maxNegatives)
+//                                return;
+//                        }
+//                    }
+//                }
+            }
 
 
             for (int z = 0; z < depths; ++z) {
@@ -653,22 +730,20 @@ cout<<"Mix::negLatentSearch test2"<<endl;
 
                         const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
 
-//                        cout<<"Mix::negLatentSearch scores[lvl]()(z, y, x) = "<<scores[lvl]()(z, y, x)<<endl;
                         if (zero_ || (scores[lvl]()(z, y, x) > -1)) {
+                            if (!zero_) cout<<"Neg:: score = "<<scores[lvl]()(z, y, x)<<endl;
                             Model sample;
 
                             models_[argmax].initializeSample(pyramid, z, y, x, lvl, sample,
                                                              zero_ ? 0 : &positions[argmax]);
                             if (!sample.empty()) {
-//                                cout<<"Mix::negLatentSearch test4"<<endl;
 
-                                //TODO
                                 // Store all the information about the sample in the offset and
                                 // deformation of its root
                                 sample.parts()[0].offset(0) = i;
                                 sample.parts()[0].offset(1) = lvl;
-                                sample.parts()[0].offset(2) = i;
-                                sample.parts()[0].offset(3) = lvl;
+                                sample.parts()[0].offset(2) = 0;
+                                sample.parts()[0].offset(3) = 0;
                                 sample.parts()[0].deformation(0) = z;
                                 sample.parts()[0].deformation(1) = y;
                                 sample.parts()[0].deformation(2) = x;
@@ -683,9 +758,11 @@ cout<<"Mix::negLatentSearch test2"<<endl;
                                 while ((j < nbCached) && (negatives[j].first < sample))
                                     ++j;
 
+                                if (!zero_) cout<<"Neg:: j = "<<j<<endl;
                                 // Make sure not to put the same sample twice
                                 if ((j >= nbCached) || !(negatives[j].first == sample)) {
-//                                    cout<<"Mix::negLatentSearch test5"<<endl;
+                                    cout<<"Mix::negLatentSearch add new sample with score "
+                                       <<sample.parts()[0].deformation(4)<<endl;
 
                                     negatives.push_back(make_pair(sample, argmax));
 

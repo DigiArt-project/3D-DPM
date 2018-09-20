@@ -27,7 +27,7 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     interval_ = interval;
     
     float resolution;
-    cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
+//    cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 
 
     levels_.resize( interval_ * nbOctave);
@@ -64,9 +64,9 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
             resolutions_[index] = resolution;
 
-            cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
-            cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
-            cout << "GSHOTPyr::constructor index "<<index<<endl;
+//            cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
+//            cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
+//            cout << "GSHOTPyr::constructor index "<<index<<endl;
 
             keypoints_[index] = compute_keypoints(resolution, min, max, index);
             DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
@@ -87,8 +87,8 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 
             //Once the first level is done, push it to the array of level
             levels_[index] = level;
-            cout<<"GSHOTPyramid::constr dims level "<<index<<" : " <<level().dimension(0)<<" / " << level().dimension(1)
-              <<" / " << level().dimension(2)<< endl;
+//            cout<<"GSHOTPyramid::constr dims level "<<index<<" : " <<level().dimension(0)<<" / " << level().dimension(1)
+//              <<" / " << level().dimension(2)<< endl;
         }
     }
 }
@@ -142,8 +142,8 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
 
 //#pragma omp parallel for
     for (int i = 0; i < levels_.size(); ++i){
-        cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
-           << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
+//        cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
+//           << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
         Convolve(levels_[i], filter, convolutions[i]);
     }
 }
@@ -168,13 +168,13 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
 //    convolution = level.EMD(filter);
 
 
-    cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;
-    cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
-    cout<<"GSHOTPyramid::convolve results.cols() : "<< convolution.cols() << endl;
+//    cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;
+//    cout<<"GSHOTPyramid::convolve results.rows() : "<< convolution.rows() << endl;
+//    cout<<"GSHOTPyramid::convolve results.cols() : "<< convolution.cols() << endl;
 
-    cout<<"GSHOTPyramid::convolve results.max() : "<< convolution.max() << endl;
-    cout<<"GSHOTPyramid::convolve filter.max() : "<< TensorMap(filter).max() << endl;
-    cout<<"GSHOTPyramid::convolve filter.norm() : "<< filter.lvlSquaredNorm() << endl;
+//    cout<<"GSHOTPyramid::convolve results.max() : "<< convolution.max() << endl;
+//    cout<<"GSHOTPyramid::convolve filter.max() : "<< TensorMap(filter).max() << endl;
+//    cout<<"GSHOTPyramid::convolve filter.norm() : "<< filter.lvlSquaredNorm() << endl;
 
 
 }
@@ -254,8 +254,8 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     descr_est.setSearchSurface (input);
     descr_est.compute (*descriptors);
 
-    cout<<"GSHOT:: descriptors size = "<<descriptors->size()<<endl;
-    cout<<"GSHOT:: keypoints size = "<<keypoints->size()<<endl;
+//    cout<<"GSHOT:: descriptors size = "<<descriptors->size()<<endl;
+//    cout<<"GSHOT:: keypoints size = "<<keypoints->size()<<endl;
 
 #pragma omp parallel for
     for (size_t i = 0; i < descriptors->size(); ++i){
