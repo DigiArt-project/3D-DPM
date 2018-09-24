@@ -192,7 +192,7 @@ public:
         int nbParts = 1;
         double C = 0.002, J = 2;
         float boxOverlap = 0.5;
-        int interval = 1, nbIterations = 100, nbDatamine = 10, maxNegSample = 24000;
+        int interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
 
@@ -663,6 +663,375 @@ public:
         destroyWindow("A_good_name");
     }
 
+    void checkSHOT(string pcName){
+
+        int lumi = 5;
+        int rows = 150, cols = GSHOTPyramid::DescriptorSize;
+        int colsOff = 1;
+        int nbKeyPts = 2;
+        int nbKeyPtsX = nbKeyPts, nbKeyPtsY = nbKeyPts, nbKeyPtsZ = nbKeyPts;
+        Mat img( rows, cols*nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ, CV_8UC3, cv::Scalar(100,0,0));
+        float rf2[9] = {1,0,0,0,1,0,0,0,1};
+        RFType normLRF = RFType();
+        normLRF.rf[0] = 0.05;
+        normLRF.rf[1] = -0.72;
+        normLRF.rf[2] = -0.68;
+        normLRF.rf[3] = 0;
+        normLRF.rf[4] = -1;
+        normLRF.rf[5] = 0;
+        normLRF.rf[6] = 0.03;
+        normLRF.rf[7] = 0.68;
+        normLRF.rf[8] = -0.73;
+
+        float maxi = 0;
+
+        PointCloudPtr cloud( new PointCloudT);
+        if (readPointCloud(pcName, cloud) == -1) {
+            cout<<"test::couldnt open pc file"<<endl;
+        }
+
+        PointType min;
+        PointType max;
+        pcl::getMinMax3D(*cloud, min, max);
+
+        float descr_rad = std::max( (max.x - min.x) / (nbKeyPtsX + 1), std::max(
+                                        (max.y - min.y) / (nbKeyPtsY + 1), (max.z - min.z) / (nbKeyPtsZ + 1)));
+
+        cout<<"descr_rad : "<<descr_rad<<endl;
+
+        PointCloudPtr keypoints (new PointCloudT (nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ,1,PointType()));
+        PointCloudRFPtr lrf (new PointCloudRF (nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ,1,RFType()));
+
+        for(int z=0;z<nbKeyPtsZ;++z){
+            for(int y=0;y<nbKeyPtsY;++y){
+                for(int x=0;x<nbKeyPtsX;++x){
+                    PointType p = PointType();
+                    p.x = min.x + (x+1) * (max.x - min.x) / (nbKeyPtsX + 1);
+                    p.y = min.y + (y+1) * (max.y - min.y) / (nbKeyPtsY + 1);
+                    p.z = min.z + (z+1) * (max.z - min.z) / (nbKeyPtsZ + 1);
+                    keypoints->at(x + y * nbKeyPtsX + z * nbKeyPtsY * nbKeyPtsX) = p;
+                    lrf->at(x + y * nbKeyPtsX + z * nbKeyPtsY * nbKeyPtsX) = normLRF;
+                }
+            }
+        }
+
+        //    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+        //    transform.rotate (Eigen::AngleAxisf (1.57, Eigen::Vector3f::UnitY()));
+        //    PointCloudPtr rotatedCloud (new PointCloudT);
+        //    pcl::transformPointCloud (*cloud, *rotatedCloud, transform);
+
+
+        DescriptorsPtr descriptors (new Descriptors());
+        SurfaceNormalsPtr normals (new SurfaceNormals());
+
+        pcl::NormalEstimationOMP<PointType,NormalType> norm_est;
+        norm_est.setKSearch (8);
+        norm_est.setInputCloud (cloud);
+        norm_est.compute (*normals);
+
+        pcl::SHOTEstimationOMP<PointType, NormalType, DescriptorType> descr_est;
+        descr_est.setRadiusSearch (descr_rad);
+        descr_est.setInputCloud (keypoints);
+        descr_est.setInputNormals (normals);
+        descr_est.setSearchSurface (cloud);
+//        descr_est.setInputReferenceFrames(lrf);
+        descr_est.compute (*descriptors);
+
+/////Display sum descriptor
+//        for(int y=0;y<rows;++y){
+//            for(int x=0;x<cols;++x){
+//                Vec3b color = img.at<Vec3b>(Point(x,y));
+//                float sumColor = 0;
+//                for(int i=0;i<descriptors->size();++i){
+//                    if (pcl_isnan(descriptors->points[i].descriptor[x])){
+//                        descriptors->points[i].descriptor[x] = 0;
+//                    }
+//                    if( descriptors->points[i].descriptor[x] > maxi) maxi = descriptors->points[i].descriptor[x];
+//                    sumColor += descriptors->points[i].descriptor[x];
+//                }
+//                color[0] = lumi*sumColor*255/descriptors->size();
+//                color[1] = color[0];
+//                color[2] = color[0];
+//                for(int j=0;j<colsOff;++j){
+//                    img.at<Vec3b>(Point(x*colsOff+j,y)) = color;
+//                }
+//            }
+//        }
+//        for(int y=rows-6;y<rows;++y){
+//            for(int x=0;x<cols;++x){
+//                Vec3b color = img.at<Vec3b>(Point(x,y));
+//                if(x%32==0){
+//                    color[2] = 255;//r
+//                    color[1] = 0;//g
+//                    color[0] = 0;//b
+//                }else {
+//                    color[2] = 0;
+//                    if(x%2==0){
+//                        color[1] = 255;
+//                        color[0] = 0;
+//                    }else {
+//                        color[1] = 0;
+//                        if(x%2==1)color[0] = 255;
+//                        else color[0] = 0;
+//                    }
+//                }
+//                for(int j=0;j<colsOff;++j){
+//                    img.at<Vec3b>(Point(x*colsOff+j,y)) = color;
+//                }
+//            }
+//        }
+/////
+
+///Display concatenate descriptor
+        for(int y=0;y<rows;++y){
+            for(int x=0;x<cols;++x){
+                for(int i=0;i<descriptors->size();++i){
+                    Vec3b color = img.at<Vec3b>(Point(x+i*cols,y));
+                    if (pcl_isnan(descriptors->points[i].descriptor[x])){
+                        descriptors->points[i].descriptor[x] = 0;
+                    }
+                    if( descriptors->points[i].descriptor[x] > maxi) maxi = descriptors->points[i].descriptor[x];
+                    float desc = descriptors->points[i].descriptor[x];
+                    color[0] = lumi*desc*desc*255;
+                    color[1] = color[0];
+                    color[2] = color[0];
+                    img.at<Vec3b>(Point(x+i*cols,y)) = color;
+                }
+            }
+        }
+
+        for(int y=rows-6;y<rows;++y){
+            for(int x=0;x<cols;++x){
+                for(int i=0;i<descriptors->size();++i){
+                    Vec3b color = img.at<Vec3b>(Point(x,y));
+                    if(i%2==0){
+                        color[2] = 255;//r
+                        color[1] = 0;//g
+                        color[0] = 0;//b
+                    }else {
+                        color[0] = 0;//r
+                        color[1] = 255;//g
+                        color[2] = 0;//b
+                    }
+                    img.at<Vec3b>(Point(x+i*cols,y)) = color;
+                }
+            }
+        }
+///
+        float rf[9] = {0,0,0,0,0,0,0,0,0};
+        cout<<"mean rf : ";
+        for(int j=0;j<9;++j){
+            int cpt = 0;
+            for(int i=0;i<descriptors->size();++i){
+                if (!pcl_isnan(descriptors->points[i].rf[j])){
+                    rf[j] += descriptors->points[i].rf[j];
+                    ++cpt;
+                }
+            }
+            if(cpt) rf[j] /= cpt;
+            cout<<rf[j]<<" ";
+        }
+        cout<<endl;
+
+        cout<<"maxi descriptor value = "<<maxi<<endl;
+
+        for(int i=0;i<descriptors->size();++i){
+            viewer.displayAxis(descriptors->points[i].rf, pcl::PointXYZ(keypoints->points[i].x,
+                                                                   keypoints->points[i].y,
+                                                                   keypoints->points[i].z), descriptors->size());
+        }
+        viewer.displayAxis(rf);
+
+        viewer.addPC( cloud);
+        viewer.addPC( keypoints, 3, Eigen::Vector3i(255, 255, 255));
+        if (img.empty()){
+            cout << "\n Image not created. You"
+                         " have done something wrong. \n";
+            return;    // Unsuccessful.
+        }
+
+        imwrite( "img.jpg", img );
+
+        namedWindow("A_good_name", CV_WINDOW_AUTOSIZE);
+
+        imshow("A_good_name", img);
+//        resizeWindow("A_good_name", 600,600);
+
+        waitKey(0); //wait infinite time for a keypress
+
+        destroyWindow("A_good_name");
+    }
+
+
+    void checkSHOTs(vector<string> pcNames){
+
+        int lumi = 5;
+        int rows = 150, cols = GSHOTPyramid::DescriptorSize;
+        int nbKeyPts = 2;
+        int nbKeyPtsX = nbKeyPts, nbKeyPtsY = nbKeyPts, nbKeyPtsZ = nbKeyPts;
+        float rf[pcNames.size()*9];
+        for(int p=0; p<pcNames.size();++p){
+            for(int i=0; i<9;++i){
+                rf[i+9*p] = 0;
+            }
+        }
+
+        for(int p=0; p<pcNames.size();++p){
+            Mat img( rows, cols*nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ, CV_8UC3, cv::Scalar(100,0,0));
+
+            float maxi = 0;
+
+
+            PointCloudPtr cloud( new PointCloudT);
+            if (readPointCloud(pcNames[p], cloud) == -1) {
+                cout<<"test::couldnt open pc file"<<endl;
+            }
+
+            PointType min;
+            PointType max;
+            pcl::getMinMax3D(*cloud, min, max);
+
+            float descr_rad = std::max( (max.x - min.x) / (nbKeyPtsX + 1), std::max(
+                                            (max.y - min.y) / (nbKeyPtsY + 1), (max.z - min.z) / (nbKeyPtsZ + 1)));
+
+            cout<<"descr_rad : "<<descr_rad<<endl;
+
+            PointCloudPtr keypoints (new PointCloudT (nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ,1,PointType()));
+
+            for(int z=0;z<nbKeyPtsZ;++z){
+                for(int y=0;y<nbKeyPtsY;++y){
+                    for(int x=0;x<nbKeyPtsX;++x){
+                        PointType p = PointType();
+                        p.x = min.x + (x+1) * (max.x - min.x) / (nbKeyPtsX + 1);
+                        p.y = min.y + (y+1) * (max.y - min.y) / (nbKeyPtsY + 1);
+                        p.z = min.z + (z+1) * (max.z - min.z) / (nbKeyPtsZ + 1);
+                        keypoints->at(x + y * nbKeyPtsX + z * nbKeyPtsY * nbKeyPtsX) = p;
+                    }
+                }
+            }
+
+            DescriptorsPtr descriptors (new Descriptors());
+            SurfaceNormalsPtr normals (new SurfaceNormals());
+
+            pcl::NormalEstimationOMP<PointType,NormalType> norm_est;
+            norm_est.setKSearch (8);
+            norm_est.setInputCloud (cloud);
+            norm_est.compute (*normals);
+
+            pcl::SHOTEstimationOMP<PointType, NormalType, DescriptorType> descr_est;
+            descr_est.setRadiusSearch (descr_rad);
+            descr_est.setInputCloud (keypoints);
+            descr_est.setInputNormals (normals);
+            descr_est.setSearchSurface (cloud);
+            descr_est.compute (*descriptors);
+
+    ///Display concatenate descriptor
+            for(int y=0;y<rows;++y){
+                for(int x=0;x<cols;++x){
+                    for(int i=0;i<descriptors->size();++i){
+                        Vec3b color = img.at<Vec3b>(Point(x+i*cols,y));
+                        if (pcl_isnan(descriptors->points[i].descriptor[x])){
+                            descriptors->points[i].descriptor[x] = 0;
+                        }
+                        if( descriptors->points[i].descriptor[x] > maxi) maxi = descriptors->points[i].descriptor[x];
+                        float desc = descriptors->points[i].descriptor[x];
+                        color[0] = lumi*desc*desc*255;
+                        color[1] = color[0];
+                        color[2] = color[0];
+                        img.at<Vec3b>(Point(x+i*cols,y)) = color;
+                    }
+                }
+            }
+
+            for(int y=rows-6;y<rows;++y){
+                for(int x=0;x<cols;++x){
+                    for(int i=0;i<descriptors->size();++i){
+                        Vec3b color = img.at<Vec3b>(Point(x,y));
+                        if(i%2==0){
+                            color[2] = 255;//r
+                            color[1] = 0;//g
+                            color[0] = 0;//b
+                        }else {
+                            color[0] = 0;//r
+                            color[1] = 255;//g
+                            color[2] = 0;//b
+                        }
+                        img.at<Vec3b>(Point(x+i*cols,y)) = color;
+                    }
+                }
+            }
+    ///
+
+            cout<<"mean rf : ";
+            for(int j=0;j<9;++j){
+                int cpt = 0;
+                for(int i=0;i<descriptors->size();++i){
+                    if (!pcl_isnan(descriptors->points[i].rf[j])){
+                        rf[j+9*p] += descriptors->points[i].rf[j];
+                        ++cpt;
+                    }
+                }
+                if(cpt) rf[j+9*p] /= cpt;
+                cout<<rf[j+9*p]<<" ";
+            }
+            cout<<endl;
+
+            cout<<"maxi descriptor value = "<<maxi<<endl;
+
+//            for(int i=0;i<descriptors->size();++i){
+//                viewer.displayAxis(descriptors->points[i].rf, pcl::PointXYZ(keypoints->points[i].x,
+//                                                                       keypoints->points[i].y,
+//                                                                       keypoints->points[i].z), descriptors->size());
+//            }
+            viewer.displayAxis(rf+9*p);
+
+
+            viewer.addPC( cloud);
+            viewer.addPC( keypoints, 3, Eigen::Vector3i(255, 255, 255));
+
+            if (img.empty()){
+                cout << "\n Image not created. You"
+                             " have done something wrong. \n";
+                return;    // Unsuccessful.
+            }
+
+            string name = "img";
+            imwrite( name.append(to_string(p)).append(".jpg"), img );
+        }
+
+
+        if(pcNames.size()>1){
+            Matrix3f r0,r1;
+            for(int i=0; i<3;++i){
+                float aux0 = rf[i*3] + rf[1+i*3] + rf[2+i*3];
+                float aux1 = rf[9+i*3] + rf[9+1+i*3] + rf[9+2+i*3];
+
+                for(int j=0; j<3;++j){
+                    r0(i,j) = rf[j+i*3]/*/aux0*/;
+                    r1(j,i) = rf[9+j+i*3]/*/aux1*/;
+                }
+            }
+            cout<<endl;
+
+
+            Matrix3f rotation = r0*r1;
+//            rotation <<0,-1,0,
+//                    1,0,0,
+//                    0,0,1;
+            cout<<"r0 : "<<r0<<endl;
+            cout<<"r1 : "<<r1<<endl;
+            cout<<"rotation : "<<rotation<<endl;
+
+            Vector3f ea = rotation.eulerAngles(0, 1, 2);
+            cout<<"angles : ";
+            for(int i=0; i<3;++i){
+                float angle = ea[i]*180/M_PI;
+                cout<<angle<<" ";
+            }
+            cout<<endl;
+
+        }
+    }
 
     float sceneResolution;
     Viewer viewer;
@@ -676,6 +1045,21 @@ int main(){
 
     Test test;
 
+//    PointCloudPtr cloud( new PointCloudT);
+//    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd", cloud) == -1) {
+//        cout<<"test::couldnt open pcd file"<<endl;
+//    }
+//    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+//    transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitX()));//2rotChair
+//    transform.rotate (Eigen::AngleAxisf (-1.57, Eigen::Vector3f::UnitY()));
+////    transform.rotate (Eigen::AngleAxisf (-0.72, Eigen::Vector3f::UnitX()));//randomChair
+////    transform.rotate (Eigen::AngleAxisf (3, Eigen::Vector3f::UnitY()));
+////    transform.rotate (Eigen::AngleAxisf (-2.24, Eigen::Vector3f::UnitZ()));
+
+//    PointCloudPtr rotatedCloud (new PointCloudT);
+//    pcl::transformPointCloud (*cloud, *rotatedCloud, transform);
+//    pcl::io::savePCDFileASCII ("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd", *rotatedCloud);
+
     // testSceneMiddle_compress
     // smallScene2
     int start = getMilliCount();
@@ -688,10 +1072,18 @@ int main(){
 
 //    test.train("/media/ubuntu/DATA/3DDataset/sceneNN+/");
 
-    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
-               "tmp.txt");
+//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
+//               "tmp.txt");
 
     //smallSceneNN+/chair_part1_it1_weight15.txt
+
+//    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd");
+//    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd");
+//    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/upSideDownChair.pcd");
+//    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd");
+
+    test.checkSHOTs({"/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd",
+                     "/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd"});
 
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");

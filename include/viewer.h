@@ -77,6 +77,19 @@ public:
         ++id;
     }
 
+    void displayAxis( float* rf, pcl::PointXYZ origin = pcl::PointXYZ(0,0,0), float ratio = 1){
+        viewer->addLine(origin, pcl::PointXYZ(origin.x+rf[0]/ratio,
+                                              origin.y+rf[1]/ratio,
+                                              origin.z+rf[2]/ratio), 255,0,0, std::to_string(id).append(":l1"));
+        viewer->addLine(origin, pcl::PointXYZ(origin.x+rf[3]/ratio,
+                                              origin.y+rf[4]/ratio,
+                                              origin.z+rf[5]/ratio), 0,255,0, std::to_string(id).append(":l2"));
+        viewer->addLine(origin, pcl::PointXYZ(origin.x+rf[6]/ratio,
+                                              origin.y+rf[7]/ratio,
+                                              origin.z+rf[8]/ratio), 0,0,255, std::to_string(id).append(":l3"));
+        ++id;
+    }
+
     void show(){
         while (!viewer->wasStopped())
         {

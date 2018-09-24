@@ -9,6 +9,8 @@ using namespace std;
 
 /* Define some custom types to make the rest of our code easier to read */
 typedef pcl::ReferenceFrame RFType;
+typedef pcl::PointCloud<RFType> PointCloudRF;
+typedef pcl::PointCloud<RFType>::Ptr PointCloudRFPtr;
 
 // Define "PointCloud" to be a pcl::PointCloud of pcl::PointXYZRGB points
 typedef pcl::PointXYZRGB PointType;

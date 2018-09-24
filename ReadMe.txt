@@ -80,7 +80,8 @@ This imply that currently, the size of the objects during training and testing h
 	- Use the system in place (use nbComponents for each pose + symetry but use a lot of computationnal resources)
 	- Find a new one (might work if all parts are not ordered from the root but from the previous one ???)
 - Increase speed
-- Normalize tensor of shots with main axis and then add the parts scores with DT3D !!!!!!!!!!!!!
+- Normalize tensor of shots with main axis and then add the parts scores with DT3D !!!!!!!!!!!!!( only works for rot de 90°)
+- DT3D check init deformation scores
 
 Infos :
 
