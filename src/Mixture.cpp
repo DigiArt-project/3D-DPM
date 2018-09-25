@@ -45,7 +45,7 @@ cached_(false), zero_(true)
 	}
 	
 	// Compute the root filters' sizes using Felzenszwalb's heuristic
-    const vector<Model::triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name, interval);
+    const vector<triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name, interval);
 	
 	// Early return in case the root filters' sizes could not be determined
     if (sizes.size() != nbComponents){
@@ -79,9 +79,9 @@ vector<Model> & Mixture::models()
 	return models_;
 }
 
-Model::triple<int, int, int> Mixture::minSize() const
+triple<int, int, int> Mixture::minSize() const
 {
-    Model::triple<int, int, int> size(0, 0, 0);
+    triple<int, int, int> size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
@@ -96,9 +96,9 @@ Model::triple<int, int, int> Mixture::minSize() const
 	return size;
 }
 
-Model::triple<int, int, int> Mixture::maxSize() const
+triple<int, int, int> Mixture::maxSize() const
 {
-    Model::triple<int, int, int> size(0, 0, 0);
+    triple<int, int, int> size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
@@ -219,7 +219,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 	return loss;
 }
 
-void Mixture::initializeParts(int nbParts/*, Model::triple<int, int, int> partSize*/)
+void Mixture::initializeParts(int nbParts/*, triple<int, int, int> partSize*/)
 {
     for (int i = 0; i < models_.size(); ++i) {
         models_[i].initializeParts(nbParts, models_[i].rootSize());
@@ -343,7 +343,11 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			return;
 		}
 		
-        const GSHOTPyramid pyramid(cloud, pad, interval);
+        int maxFilterSizes = max( models_[0].rootSize().first, max( models_[0].rootSize().second,
+                models_[0].rootSize().third));
+        triple<int, int, int> filterSizes(maxFilterSizes,maxFilterSizes,maxFilterSizes);
+
+        const GSHOTPyramid pyramid(cloud, filterSizes, interval);
 		
 
 //        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
@@ -372,13 +376,13 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             if ((scenes[i].objects()[j].name() != name) || scenes[i].objects()[j].difficult())
                 continue;
 			
-            Rectangle aabox(scenes[i].objects()[j].bndbox().origin() - Vector3i(pyramid.sceneOffset_(0),
-                                                                         pyramid.sceneOffset_(1),
-                                                                         pyramid.sceneOffset_(2)),
-                            scenes[i].objects()[j].bndbox().depth(),
-                            scenes[i].objects()[j].bndbox().height(),
-                            scenes[i].objects()[j].bndbox().width(),
-                            scenes[i].objects()[j].bndbox().resolution());
+//            Rectangle aabox(scenes[i].objects()[j].bndbox().origin() - Vector3i(pyramid.sceneOffset_(0),
+//                                                                         pyramid.sceneOffset_(1),
+//                                                                         pyramid.sceneOffset_(2)),
+//                            scenes[i].objects()[j].bndbox().depth(),
+//                            scenes[i].objects()[j].bndbox().height(),
+//                            scenes[i].objects()[j].bndbox().width(),
+//                            scenes[i].objects()[j].bndbox().resolution());
 
 
 //            cout<<"Mix::PosLatentSearch absolute positive box orig : "<<scenes[i].objects()[j].bndbox().getOriginCoordinate()<<endl;
@@ -404,9 +408,6 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                 int offz = floor(pyramid.sceneOffset_(0)*scale);
                 int offy = floor(pyramid.sceneOffset_(1)*scale);
                 int offx = floor(pyramid.sceneOffset_(2)*scale);
-//                int offz = 0;
-//                int offy = 0;
-//                int offx = 0;
 
                 cout << "Mix::posLatentSearch scale : " << scale << endl;
                 int rows = 0;
@@ -601,7 +602,11 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         }
 
 
-        const GSHOTPyramid pyramid(cloud, pad, interval);
+        int maxFilterSizes = max( models_[0].rootSize().first, max( models_[0].rootSize().second,
+                models_[0].rootSize().third));
+        triple<int, int, int> filterSizes(maxFilterSizes,maxFilterSizes,maxFilterSizes);
+
+        const GSHOTPyramid pyramid(cloud, filterSizes, interval);
 
         if (pyramid.empty()) {
             cout<<"Mix::negLatentSearch pyramid empty"<<endl;
@@ -1053,13 +1058,13 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 
 }
 
-std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
+std::vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
                                              Object::Name name, int interval)
 {
 	// Early return in case the filters or the dataset are empty
     if ((nbComponents <= 0) || scenes.empty()){
         cerr<<"nbComponents <= 0 or scenes.empty()"<<endl;
-        return std::vector<Model::triple<int, int, int> >();
+        return std::vector<triple<int, int, int> >();
     }
 
     const float scale = 1 / pow(2.0, interval);
@@ -1080,7 +1085,7 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 	// Early return if there is no object
     if (rects.empty()){
         cerr<<"rects.empty()"<<endl;
-        return std::vector<Model::triple<int, int, int> >();
+        return std::vector<triple<int, int, int> >();
     }
 	
 	// Sort the aspect ratio of all the samples
@@ -1089,7 +1094,7 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 	
 	// For each mixture model
     vector<int> references(nbComponents+1);
-    std::vector<Model::triple<int, int, int> > sizes(nbComponents);
+    std::vector<triple<int, int, int> > sizes(nbComponents);
 
     for (int i = 0; i <= nbComponents; ++i){
         references[i] = rects.size() * i / nbComponents;
@@ -1138,7 +1143,7 @@ std::vector<Model::triple<int, int, int> > Mixture::FilterSizes(int nbComponents
 //	}
 	
 //	// For each component in reverse order
-//    std::vector<Model::triple<int, int, int> > sizes(nbComponents);
+//    std::vector<triple<int, int, int> > sizes(nbComponents);
 	
 //	for (int i = nbComponents - 1; i >= 0; --i) {
 //		if (!areas[i].empty()) {

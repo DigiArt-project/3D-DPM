@@ -97,21 +97,21 @@ double & Model::bias()
 	return bias_;
 }
 
-Model::triple<int, int, int> Model::rootSize() const
+triple<int, int, int> Model::rootSize() const
 {
-    return Model::triple<int, int, int>(static_cast<int>(parts_[0].filter.depths()),
+    return triple<int, int, int>(static_cast<int>(parts_[0].filter.depths()),
                                  static_cast<int>(parts_[0].filter.rows()),
                                  static_cast<int>(parts_[0].filter.cols()));
 }
 
-Model::triple<int, int, int> Model::partSize() const
+triple<int, int, int> Model::partSize() const
 {
 	if (parts_.size() > 1)
-        return Model::triple<int, int, int>(static_cast<int>(parts_[1].filter.depths()),
+        return triple<int, int, int>(static_cast<int>(parts_[1].filter.depths()),
                                      static_cast<int>(parts_[1].filter.rows()),
                                      static_cast<int>(parts_[1].filter.cols()));
 	else
-        return Model::triple<int, int, int>(0, 0, 0);
+        return triple<int, int, int>(0, 0, 0);
 }
 
 void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOTPyramid::Level root2x*/)

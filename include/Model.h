@@ -44,34 +44,6 @@ public:
 	
 	/// Type of a 3d quadratic deformation (dx^2 dx dy^2 dy dz^2 dz).
     typedef Eigen::Array<double, 8, 1> Deformation;
-
-    template< typename T1, typename T2, typename T3>
-    struct triple : std::tuple<T1, T2, T3>{
-        triple(){
-            first = 0;
-            second = 0;
-            third = 0;
-        }
-        triple( std::tuple<T1, T2, T3> t){
-            first = std::get<0>(t);
-            second = std::get<1>(t);
-            third = std::get<2>(t);
-        }
-        triple( T1 t1, T2 t2, T3 t3){
-            first = t1;
-            second = t2;
-            third = t3;
-        }
-
-        friend std::ostream & operator<<(std::ostream & os, const triple & tri){
-            os << "[" << tri.first << ";" << tri.second << ";" << tri.third << "]";
-            return os;
-        }
-
-        T1 first;
-        T2 second;
-        T3 third;
-    };
 	
 	/// The part structure stores all the information about a part (or the root).
 	struct Part
@@ -91,8 +63,8 @@ public:
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of all the parts (<tt>rows x cols</tt>).
 	/// @note The model will be empty if any of the parameter is invalid.
-    explicit Model(Model::triple<int, int, int> rootSize, int nbParts = 0,
-                   Model::triple<int, int, int> partSize = Model::triple<int, int, int>(0, 0, 0));
+    explicit Model(triple<int, int, int> rootSize, int nbParts = 0,
+                   triple<int, int, int> partSize = triple<int, int, int>(0, 0, 0));
 	
 	/// Constructs a model from a list of parts and a bias.
 	explicit Model(const std::vector<Part> & parts, double bias = 0.0);
@@ -114,18 +86,18 @@ public:
 	
 	/// Returns the size of the root (<tt>rows x cols</tt>).
 	/// @note Equivalent to std::pair<int, int>(parts()[0].rows(), parts()[0].cols()).
-    Model::triple<int, int, int> rootSize() const;
+    triple<int, int, int> rootSize() const;
 	
 	/// Returns the size of the parts (<tt>rows x cols</tt>).
 	/// @note Equivalent to make_pair(parts()[1].rows(), parts()[1].cols()) if the model has parts.
-    Model::triple<int, int, int> partSize() const;
+    triple<int, int, int> partSize() const;
 	
 	/// Initializes the specidied number of parts from the root.
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
 	/// @note The model stay unmodified if any of the parameter is invalid.
 	/// @note The parts are always initialized at twice the root resolution.
-    void initializeParts(int nbParts, Model::triple<int, int, int> partSize);
+    void initializeParts(int nbParts, triple<int, int, int> partSize);
 	
 	/// Initializes a training sample with fixed latent variables from a specified position in
 	/// a pyramid of features.

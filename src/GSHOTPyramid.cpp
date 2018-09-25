@@ -14,16 +14,17 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval, float starting_resolution,
+GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filterSizes,
+//                           originalOrientation,
+                           int interval, float starting_resolution,
                            int nbOctave):
-pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
+    interval_(0), filterSizes_(filterSizes)
 {
-    if (input->empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1)) {
+    if (input->empty() || (interval < 1)) {
         cerr << "Attempting to create an empty pyramid" << endl;
         return;
     }
     
-    pad_ = pad;
     interval_ = interval;
     
     float resolution;
@@ -55,83 +56,133 @@ pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
     sampling.setRadiusSearch (starting_resolution);
     sampling.filter(*subspace);
 
-#pragma omp parallel for
-    for (int i = 0; i < interval_; ++i) {
-#pragma omp parallel for
-        for (int j = 0; j < nbOctave; ++j) {
-            int index = i + j * interval_;
-            resolution = starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
 
-            resolutions_[index] = resolution;
+    resolution = starting_resolution * 2;
 
-//            cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
-//            cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
-//            cout << "GSHOTPyr::constructor index "<<index<<endl;
+    PointCloudPtr globalKeyPts = compute_keypoints(resolution, min, max, 1);
+    DescriptorsPtr globalDescriptors = compute_descriptor(subspace, globalKeyPts, filterSizes.first*resolution);
 
-            keypoints_[index] = compute_keypoints(resolution, min, max, index);
-            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
+    //for each boxes i
+    for( int i = 0; i < globalDescriptors->size(); ++i){
+//        rotation = getNormalizeRotation(originalOrientation, globalDescriptors->points[i].rf);
+        Eigen::Matrix4f tform;
+        tform.setIdentity ();
+//        tform.topLeftCorner (3, 3) = rotation;
+        PointType p = PointType();
+        p.x = globalKeyPts->points[i].x + filterSizes.first*resolution;
+        p.y = globalKeyPts->points[i].y + filterSizes.first*resolution;
+        p.z = globalKeyPts->points[i].z + filterSizes.first*resolution;
 
 
-            Level level( topology[index](0), topology[index](1), topology[index](2));
-            int kpt = 0;
-            for (int z = 0; z < level.depths(); ++z){
-                for (int y = 0; y < level.rows(); ++y){
-                    for (int x = 0; x < level.cols(); ++x){
-                        for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
-                            level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
+//    #pragma omp parallel for
+        for (int j = 0; j < interval_; ++j) {
+//    #pragma omp parallel for
+            for (int k = 0; k < nbOctave; ++k) {
+                int lvl = j + k * interval_;
+                resolution = starting_resolution / pow(2.0, -static_cast<double>(j) / interval) * pow(2.0, k);
+
+                PointCloudPtr keypointsBox = compute_keypoints(resolution, globalKeyPts->points[i], p, 1);
+
+                pcl::transformPointCloud (*keypointsBox, *(keypoints_[lvl][i]), tform);
+
+                DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[lvl][i], 2*resolution);
+
+                Level level( topology[lvl](0), topology[lvl](1), topology[lvl](2));
+                int kpt = 0;
+                for (int z = 0; z < level.depths(); ++z){
+                    for (int y = 0; y < level.rows(); ++y){
+                        for (int x = 0; x < level.cols(); ++x){
+                            for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+                                level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
+                            }
+                            ++kpt;
                         }
-                        ++kpt;
                     }
                 }
-            }
 
-            //Once the first level is done, push it to the array of level
-            levels_[index] = level;
-//            cout<<"GSHOTPyramid::constr dims level "<<index<<" : " <<level().dimension(0)<<" / " << level().dimension(1)
-//              <<" / " << level().dimension(2)<< endl;
+                //Once the first level is done, push it to the array of level
+                levels_[lvl][i] = level;
+            }
         }
     }
+
+//#pragma omp parallel for
+//    for (int i = 0; i < interval_; ++i) {
+//#pragma omp parallel for
+//        for (int j = 0; j < nbOctave; ++j) {
+//            int index = i + j * interval_;
+//            resolution = starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
+
+//            resolutions_[index] = resolution;
+
+////            cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
+////            cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
+////            cout << "GSHOTPyr::constructor index "<<index<<endl;
+
+//            keypoints_[index] = compute_keypoints(resolution, min, max, index);
+//            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
+
+
+//            Level level( topology[index](0), topology[index](1), topology[index](2));
+//            int kpt = 0;
+//            for (int z = 0; z < level.depths(); ++z){
+//                for (int y = 0; y < level.rows(); ++y){
+//                    for (int x = 0; x < level.cols(); ++x){
+//                        for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+//                            level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
+//                        }
+//                        ++kpt;
+//                    }
+//                }
+//            }
+
+//            //Once the first level is done, push it to the array of level
+//            levels_[index] = level;
+////            cout<<"GSHOTPyramid::constr dims level "<<index<<" : " <<level().dimension(0)<<" / " << level().dimension(1)
+////              <<" / " << level().dimension(2)<< endl;
+//        }
+//    }
 }
 
 
 void GSHOTPyramid::sumConvolve(const Level & filter, vector<Tensor3DF >& convolutions) const
 {
 
-    convolutions.resize(levels_.size());
-    Level filt = filter.agglomerate();
+//    convolutions.resize(levels_.size());
+//    Level filt = filter.agglomerate();
 
-//#pragma omp parallel for num_threads(2)
-    for (int i = 0; i < levels_.size(); ++i){
-        cout<<"GSHOTPyramid::sumConvolve filter.size() : "<< filter.size()
-           << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
+////#pragma omp parallel for num_threads(2)
+//    for (int i = 0; i < levels_.size(); ++i){
+//        cout<<"GSHOTPyramid::sumConvolve filter.size() : "<< filter.size()
+//           << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
 
-        if ((levels_[i]().dimension(0) < filter().dimension(0)) || (levels_[i]().dimension(1) < filter().dimension(1) )
-                || (levels_[i]().dimension(2) < filter().dimension(2) )) {
-            cout<<"GSHOTPyramid::sumConvolve error : " <<levels_[i]().dimension(0) - filter().dimension(0)+1<<" < "<<filt().dimension(0)
-               <<" / " << levels_[i]().dimension(1) - filter().dimension(1)+1<<" < "<<filt().dimension(1)
-              <<" / " << levels_[i]().dimension(2) - filter().dimension(2)+1<<" < "<<filt().dimension(2)<< endl;
-            return;
-        } else{
-            Level lvl( levels_[i].depths() - filter.depths() + 1,
-                       levels_[i].rows() - filter.rows() + 1,
-                       levels_[i].cols() - filter.cols() + 1);
+//        if ((levels_[i]().dimension(0) < filter().dimension(0)) || (levels_[i]().dimension(1) < filter().dimension(1) )
+//                || (levels_[i]().dimension(2) < filter().dimension(2) )) {
+//            cout<<"GSHOTPyramid::sumConvolve error : " <<levels_[i]().dimension(0) - filter().dimension(0)+1<<" < "<<filt().dimension(0)
+//               <<" / " << levels_[i]().dimension(1) - filter().dimension(1)+1<<" < "<<filt().dimension(1)
+//              <<" / " << levels_[i]().dimension(2) - filter().dimension(2)+1<<" < "<<filt().dimension(2)<< endl;
+//            return;
+//        } else{
+//            Level lvl( levels_[i].depths() - filter.depths() + 1,
+//                       levels_[i].rows() - filter.rows() + 1,
+//                       levels_[i].cols() - filter.cols() + 1);
 
-            for (int z = 0; z < lvl.depths(); ++z) {
-                for (int y = 0; y < lvl.rows(); ++y) {
-                    for (int x = 0; x < lvl.cols(); ++x) {
-                        lvl()(z, y, x) = levels_[i].agglomerateBlock(z, y, x,
-                                                                filter.depths(),
-                                                                filter.rows(),
-                                                                filter.cols())()(0,0,0);
-                    }
-                }
-            }
+//            for (int z = 0; z < lvl.depths(); ++z) {
+//                for (int y = 0; y < lvl.rows(); ++y) {
+//                    for (int x = 0; x < lvl.cols(); ++x) {
+//                        lvl()(z, y, x) = levels_[i].agglomerateBlock(z, y, x,
+//                                                                filter.depths(),
+//                                                                filter.rows(),
+//                                                                filter.cols())()(0,0,0);
+//                    }
+//                }
+//            }
 
 
 
-            Convolve(lvl, filt, convolutions[i]);
-        }
-    }
+//            Convolve(lvl, filt, convolutions[i]);
+//        }
+//    }
 }
 
 
@@ -144,7 +195,7 @@ void GSHOTPyramid::convolve(const Level & filter, vector<Tensor3DF >& convolutio
     for (int i = 0; i < levels_.size(); ++i){
 //        cout<<"GSHOTPyramid::convolve filter.size() : "<< filter.size()
 //           << " with levels_[" <<i<< "].size() : " << levels_[i].size() << endl;
-        Convolve(levels_[i], filter, convolutions[i]);
+        Convolve(levels_[i][0], filter, convolutions[i]);
     }
 }
 
@@ -340,7 +391,7 @@ bool GSHOTPyramid::empty() const
     return levels_.empty();
 }
 
-const vector<GSHOTPyramid::Level> & GSHOTPyramid::levels() const{
+const vector<vector<GSHOTPyramid::Level> > & GSHOTPyramid::levels() const{
     
     return levels_;
 }

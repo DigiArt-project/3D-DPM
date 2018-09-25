@@ -35,6 +35,35 @@
 
 namespace FFLD
 {
+
+    template< typename T1, typename T2, typename T3>
+    struct triple : std::tuple<T1, T2, T3>{
+        triple(){
+            first = 0;
+            second = 0;
+            third = 0;
+        }
+        triple( std::tuple<T1, T2, T3> t){
+            first = std::get<0>(t);
+            second = std::get<1>(t);
+            third = std::get<2>(t);
+        }
+        triple( T1 t1, T2 t2, T3 t3){
+            first = t1;
+            second = t2;
+            third = t3;
+        }
+
+        friend std::ostream & operator<<(std::ostream & os, const triple & tri){
+            os << "[" << tri.first << ";" << tri.second << ";" << tri.third << "]";
+            return os;
+        }
+
+        T1 first;
+        T2 second;
+        T3 third;
+    };
+
     class GSHOTPyramid
     {
         public:
@@ -69,7 +98,7 @@ namespace FFLD
         /// @param[in] pad Amount of horizontal, vertical and depth zero padding (in cells).
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i pad, int interval = 5,
+        GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filterSizes, int interval = 1,
                      float starting_resolution = 0.05/*0.09/2.0*/, int nbOctave = 2);
 
         /// Constructs a pyramid from a given point cloud data.
@@ -98,7 +127,7 @@ namespace FFLD
         
         /// Returns the pyramid levels.
         /// @note Scales are given by the following formula: 2^(1 - @c index / @c interval).
-        const std::vector<Level> & levels() const;
+        const vector<vector<Level> > &levels() const;
 
         const std::vector<float> & resolutions() const;
         
@@ -143,13 +172,20 @@ namespace FFLD
         int interval_;
         // Represent a vector of 3D scene of descriptors computed at different resolution
         //from 0 (original resolution) to n (lowest resolution, last octave)
-        std::vector<Level> levels_;
+        std::vector<std::vector<Level> > levels_;
 
         std::vector<float> resolutions_;
 
-        //TODO: Can be removed
-        // The corresponding positions of the descriptors in the space for each level
-        std::vector<PointCloudPtr > keypoints_;
+        struct Box{
+            PointCloudPtr keypoints_;
+            Eigen::Quaternionf q_;
+        };
+
+        // The corresponding positions of boxes descriptors in the space for each level
+        std::vector<std::vector<PointCloudPtr > > keypoints_;//[lvl][box]
+        std::vector<std::vector<Eigen::Quaternionf > > q_;//[lvl][box]
+
+        triple<int, int, int> filterSizes_;
 
         Eigen::Vector3i sceneOffset_;
     };

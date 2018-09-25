@@ -71,8 +71,8 @@ public:
     void trainPositives(string folder){
 
         int nbParts = 4;
-        Model::triple<int, int, int> chairSize(6,4,5);//in lvl 1
-        Model::triple<int, int, int> chairPartSize( 6,4,5);//in lvl 0
+        triple<int, int, int> chairSize(6,4,5);//in lvl 1
+        triple<int, int, int> chairPartSize( 6,4,5);//in lvl 0
         Model model( chairSize, 0);
         std::vector<Model> models = { model};
 
@@ -110,7 +110,7 @@ public:
             Vector3i originScene = Vector3i(floor(min.z/resolution(0)),
                                    floor(min.y/resolution(1)),
                                    floor(min.x/resolution(2)));
-            Model::triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
+            triple<int, int, int> sceneSize( ceil((max.z-originScene(0)*resolution(0))/resolution(0))+1,
                                                     ceil((max.y-originScene(1)*resolution(1))/resolution(1))+1,
                                                     ceil((max.x-originScene(2)*resolution(2))/resolution(2))+1);
             Rectangle chairBox(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);

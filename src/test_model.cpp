@@ -32,8 +32,8 @@ using namespace Eigen;
 
         void test1(){
             Eigen::Vector3i pad(1,1,1);
-            Model::triple<int,int,int> rootSize(5,5,5);
-            Model::triple<int,int,int>partSize( 10,10,10);
+            triple<int,int,int> rootSize(5,5,5);
+            triple<int,int,int>partSize( 10,10,10);
             Model model( rootSize);
 
 
@@ -78,8 +78,8 @@ using namespace Eigen;
 
 
             Eigen::Vector3i origin(-2, -1, 4);//-2,10,4
-            Model::triple<int, int, int> chairSize(5,3,4);
-//            Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
+            triple<int, int, int> chairSize(5,3,4);
+//            triple<int, int, int> chairPartSize( chairBox.depth()/2,
 //                                                        chairBox.height()/2,
 //                                                        chairBox.width()/2);
 

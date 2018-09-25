@@ -146,7 +146,7 @@ public:
         int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
-        Model model( Model::triple<int,int,int>(3,3,1));
+        Model model( triple<int,int,int>(3,3,1));
         Mixture mixture( {model});
 
 
@@ -155,7 +155,7 @@ public:
 
 
 
-        mixture.models()[0].initializeParts(nbParts, Model::triple<int,int,int>(2,2,1));
+        mixture.models()[0].initializeParts(nbParts, triple<int,int,int>(2,2,1));
 
         cout<<"test::initializeParts"<<endl;
 
@@ -180,7 +180,7 @@ public:
         mixture.computeScores( pyramid, scores, argmaxes, &positions);
 
         // Cache the size of the models
-        vector<Model::triple<int, int, int> > sizes(mixture.models().size());
+        vector<triple<int, int, int> > sizes(mixture.models().size());
 
         for (int i = 0; i < sizes.size(); ++i)
             sizes[i] = mixture.models()[i].rootSize();
@@ -403,7 +403,7 @@ public:
         Vector3i originScene( floor(minScene.z/sceneResolution),
                                floor(minScene.y/sceneResolution),
                                floor(minScene.x/sceneResolution));
-        Model::triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution)+1,
+        triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution)+1,
                                                 ceil((maxScene.y-originScene(1)*sceneResolution)/sceneResolution)+1,
                                                 ceil((maxScene.x-originScene(2)*sceneResolution)/sceneResolution)+1);
         Rectangle sceneRect(originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);

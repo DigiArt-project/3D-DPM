@@ -98,7 +98,7 @@ public:
         originScene = Vector3i(floor(minScene.z/sceneResolution),
                                floor(minScene.y/sceneResolution),
                                floor(minScene.x/sceneResolution));
-        Model::triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution)+1,
+        triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution)+1,
                                                 ceil((maxScene.y-originScene(1)*sceneResolution)/sceneResolution)+1,
                                                 ceil((maxScene.x-originScene(2)*sceneResolution)/sceneResolution)+1);
         sceneBox = Rectangle(originScene , sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
@@ -136,7 +136,7 @@ public:
         pcl::getMinMax3D(*chairCloud , minChair, maxChair);
 
 
-        Model::triple<int, int, int> chairSize( ceil((maxChair.z-minChair.z)/sceneResolution/2)+1,
+        triple<int, int, int> chairSize( ceil((maxChair.z-minChair.z)/sceneResolution/2)+1,
                                                 ceil((maxChair.y-minChair.y)/sceneResolution/2)+1,
                                                 ceil((maxChair.x-minChair.x)/sceneResolution/2)+1);
         chairBox = Rectangle(Eigen::Vector3i(round((minChair.z-minScene.z)/sceneResolution/2.0)-3,
@@ -156,7 +156,7 @@ public:
         PointType maxTable;
         pcl::getMinMax3D(*tableCloud , minTable, maxTable);
 
-        Model::triple<int, int, int> tableSize( ceil((maxTable.z-minTable.z)/sceneResolution/2)+1,
+        triple<int, int, int> tableSize( ceil((maxTable.z-minTable.z)/sceneResolution/2)+1,
                                                 ceil((maxTable.y-minTable.y)/sceneResolution/2)+1,
                                                 ceil((maxTable.x-minTable.x)/sceneResolution/2)+1);
 
@@ -178,8 +178,8 @@ public:
 
         int nbParts = 1;
 
-        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
+        triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        triple<int, int, int> chairPartSize( chairBox.depth()/2,
                                                     chairBox.height()/2,
                                                     chairBox.width()/2);
 
@@ -192,8 +192,8 @@ public:
 
     void testNegLatSearch(){
         cout << "testNegLatSearch ..." << endl;
-        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
+        triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
                                                     chairBox.height()/2*2,
                                                     chairBox.width()/2*2);
 
@@ -282,8 +282,8 @@ public:
 
         int nbParts = 1;
         int nbLevel = 2;
-        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2,
+        triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        triple<int, int, int> chairPartSize( chairBox.depth()/2,
                                                     chairBox.height()/2,
                                                     chairBox.width()/2);
 
@@ -379,8 +379,8 @@ public:
         int nbParts = 0;
 
 
-        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
+        triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
                                                     chairBox.height()/2*2,
                                                     chairBox.width()/2*2);//in lvl 0
 
@@ -518,7 +518,7 @@ public:
         mixture.computeScores( pyramid, scores, argmaxes, &positions);
 
         // Cache the size of the models
-        vector<Model::triple<int, int, int> > sizes(mixture.models().size());
+        vector<triple<int, int, int> > sizes(mixture.models().size());
 
         for (int i = 0; i < sizes.size(); ++i)
             sizes[i] = mixture.models()[i].rootSize();
@@ -705,8 +705,8 @@ public:
 
         cout<<"test model root norm : "<<sqrt(GSHOTPyramid::TensorMap(mixture.models()[0].parts()[0].filter).squaredNorm())<<endl;
 
-        Model::triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
-        Model::triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
+        triple<int, int, int> chairSize(chairBox.depth(), chairBox.height(), chairBox.width());
+        triple<int, int, int> chairPartSize( chairBox.depth()/2*2,
                                                     chairBox.height()/2*2,
                                                     chairBox.width()/2*2);//in lvl 0
 
@@ -802,7 +802,7 @@ public:
         negatives.push_back( pair<Model, int>( Model( partsN1), 0));
 
 
-        Model::triple<int, int, int> rootSize( 1, 1, 2);
+        triple<int, int, int> rootSize( 1, 1, 2);
         Model model( rootSize);
         std::vector<Model> models = { model};
 
