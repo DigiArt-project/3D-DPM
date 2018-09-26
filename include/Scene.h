@@ -89,6 +89,8 @@ public:
 	
 	/// Sets the list of objects present in the scene.
 	void setObjects(const std::vector<Object> & objects);
+
+    float resolution() const;
 	
 private:
 //    Eigen::Vector3i origin_;
@@ -97,6 +99,7 @@ private:
 //	int depth_;
 //    Eigen::Vector3i origin_;
 //    Eigen::Vector3i size_;
+    float resolution_;
     std::string pcFileName_;
 	std::vector<Object> objects_;
 };

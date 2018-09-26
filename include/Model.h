@@ -108,8 +108,8 @@ public:
 	/// (<tt>parts x levels</tt>, only required if the model has parts).
 	/// @note The sample will be empty if any of the parameter is invalid or if any of the part
 	/// filter is unreachable.
-    void initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, int lvl, Model & sample,
-						  const std::vector<std::vector<Positions> > * positions = 0) const;
+    void initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y, int x, int lvl, Model & sample,
+                          const vector<vector<vector<Positions> > >* positions = 0) const;
 	
     //Detection, energy computation
 	/// Returns the scores of the convolutions + distance transforms of the parts with a pyramid of
@@ -118,9 +118,9 @@ public:
 	/// @param[out] scores Scores for each pyramid level.
 	/// @param[out] positions Positions of each part and each pyramid level.
 	/// @param[in] Precomputed convolutions of each part and each pyramid level.
-    void convolve(const GSHOTPyramid & pyramid, std::vector<Tensor3DF> & scores,
-                  std::vector<std::vector<Positions> > * positions = 0,
-                  std::vector<std::vector<Tensor3DF> > * convolutions = 0) const;
+    void convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > & scores,
+                  vector<vector<vector<Positions> > > *positions = 0,
+                  vector<vector<vector<Tensor3DF> > > *convolutions = 0) const;
 	
     //Similarity in the optimization process of the SVM
 	/// Returns the dot product between the model and a fixed training @p sample.

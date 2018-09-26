@@ -93,9 +93,9 @@ public:
 	/// @param[out] positions Positions of each part of each model for each pyramid level
 	/// (<tt>models x parts x levels</tt>).
     ///     //Replace convolve
-    void computeScores(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
+    void computeScores(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &scores,
                              vector<Indices> & argmaxes,
-                             vector<vector<vector<Model::Positions> > > * positions) const;
+                             vector<vector<vector<vector<Model::Positions> > > > *positions) const;
 
 	
 //private:
@@ -117,8 +117,8 @@ public:
 	// Returns the scores of the convolutions + distance transforms of the models with a pyramid of
 	// features (useful to compute the SVM margins)
     void convolve(const GSHOTPyramid & pyramid,
-                  std::vector<std::vector<Tensor3DF> > & scores,
-                  std::vector<std::vector<std::vector<Model::Positions> > > * positions = 0) const;
+                  vector<vector<vector<Tensor3DF> > >& scores,
+                  vector<vector<vector<vector<Model::Positions> > > > *positions = 0) const;
 	
 	// Computes the size of the roots of the models
     static std::vector<triple<int, int, int> > FilterSizes(int nbComponents,

@@ -562,32 +562,30 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
 //        parts_[i + 1].deformation << -0.01, 0.0, -0.01, 0.0, -0.01, 0.0, -0.01, 0.0;
 //}
 
-void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, int lvl, Model & sample,
-							 const vector<vector<Positions> > * positions) const
+void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y, int x, int lvl, Model & sample,
+                             const vector<vector<vector<Positions> > > *positions) const
 {
 //    cout << "initializeSample ..." << endl;
     // All the constants relative to the model and the pyramid
     const int nbFilters = static_cast<int>(parts_.size());
     const int nbParts = nbFilters - 1;
-    const Eigen::Vector3i pad = pyramid.pad();
     const int interval = pyramid.interval();
     const int nbLevels = static_cast<int>(pyramid.levels().size());
-    const float resolution = 1 / pow(2.0, static_cast<double>(lvl) / interval);
 	
 //    cout << "initializeSample pyramid.levels()["<<lvl<<"].cols() = " << pyramid.levels()[lvl].cols() << endl;
 
     // Invalid parameters
     if (empty() || (x < 0) || (y < 0) || (z < 0) || (lvl >= nbLevels) ||
-        (x + rootSize().third > pyramid.levels()[lvl].cols()) ||//////TODO (rootSize-1)*....
-        (y + rootSize().second > pyramid.levels()[lvl].rows()) ||
-        (z + rootSize().first > pyramid.levels()[lvl].depths()) ||
+        (x + rootSize().third > pyramid.levels()[lvl][box].cols()) ||//////TODO (rootSize-1)*....
+        (y + rootSize().second > pyramid.levels()[lvl][box].rows()) ||
+        (z + rootSize().first > pyramid.levels()[lvl][box].depths()) ||
         (nbParts && (!positions || (positions->size() != nbParts)))) {
         sample = Model();
         cerr << "Attempting to initialize an empty sample 1" << endl;
         cerr << "lvl : "<<lvl<<" >= "<<nbLevels<< endl;
-        cerr << "x : "<<x + rootSize().third<<" > "<<pyramid.levels()[lvl].cols()<< endl;
-        cerr << "y : "<<y + rootSize().second<<" > "<<pyramid.levels()[lvl].rows()<< endl;
-        cerr << "z : "<<z + rootSize().first<<" > "<<pyramid.levels()[lvl].depths()<< endl;
+        cerr << "x : "<<x + rootSize().third<<" > "<<pyramid.levels()[lvl][box].cols()<< endl;
+        cerr << "y : "<<y + rootSize().second<<" > "<<pyramid.levels()[lvl][box].rows()<< endl;
+        cerr << "z : "<<z + rootSize().first<<" > "<<pyramid.levels()[lvl][box].depths()<< endl;
         cerr << "rootSize : "<<rootSize().first<<" / "<<rootSize().second<<" / "<<rootSize().third<< endl;
         cerr << "empty() : "<<empty()<< endl;
         if(nbParts && (!positions || (positions->size() != nbParts))) {
@@ -611,7 +609,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 //    sample.parts_[0].filter() = pyramid.levels()[lvl]().slice(offsets, extents).reshape(three_dims);
 
 
-    sample.parts_[0].filter = pyramid.levels()[lvl].block(z, y, x, rootSize().first,
+    sample.parts_[0].filter = pyramid.levels()[lvl][box].block(z, y, x, rootSize().first,
                                                           rootSize().second, rootSize().third);
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
@@ -619,19 +617,19 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
 //TODO parallelize
     for (int i = 0; i < nbParts; ++i) {
         // Position of the part
-        if ((lvl >= (*positions)[i].size()) || (x >= (*positions)[i][lvl].cols()) ||
-            (y >= (*positions)[i][lvl].rows()) || (z >= (*positions)[i][lvl].depths())) {
+        if ((lvl >= (*positions)[i].size()) || (x >= (*positions)[i][lvl][box].cols()) ||
+            (y >= (*positions)[i][lvl][box].rows()) || (z >= (*positions)[i][lvl][box].depths())) {
             sample = Model();
             cerr << "Attempting to initialize an empty sample 2" << endl;
             cerr << "lvl : "<<lvl<<" >= "<<(*positions)[i].size()<< endl;
-            cerr << "x : "<<x<<" >= "<<(*positions)[i][lvl].cols()<< endl;
-            cerr << "y : "<<y<<" >= "<<(*positions)[i][lvl].rows()<< endl;
-            cerr << "z : "<<z<<" >= "<<(*positions)[i][lvl].depths()<< endl;
+            cerr << "x : "<<x<<" >= "<<(*positions)[i][lvl][box].cols()<< endl;
+            cerr << "y : "<<y<<" >= "<<(*positions)[i][lvl][box].rows()<< endl;
+            cerr << "z : "<<z<<" >= "<<(*positions)[i][lvl][box].depths()<< endl;
 
             return;
         }
 		
-        const Position position = (*positions)[i][lvl]()(z, y, x);
+        const Position position = (*positions)[i][lvl][box]()(z, y, x);
 		
         // Level of the part
         if ((position(3) < 0) || (position(3) >= nbLevels)) {
@@ -640,7 +638,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
             return;
         }
 		
-        const GSHOTPyramid::Level & level = pyramid.levels()[position(3)];
+        const GSHOTPyramid::Level & level = pyramid.levels()[position(3)][box];
 		
         if ((position(0) < 0) || (position(1) < 0 || (position(2) < 0)) ||
             (position(2) + partSize().third > level.cols()) ||
@@ -704,9 +702,9 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int z, int y, int x, 
     sample.bias_ = 1.0;
 }
 
-void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
-                     vector<vector<Positions> > * positions,
-                     vector<vector<Tensor3DF> > * convolutions) const
+void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &scores,
+                     vector<vector<vector<Positions> > >* positions,
+                     vector<vector<vector<Tensor3DF> > > * convolutions) const
 {
 
 	// Invalid parameters
@@ -729,12 +727,11 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 	// All the constants relative to the model and the pyramid
 	const int nbFilters = static_cast<int>(parts_.size());
 	const int nbParts = nbFilters - 1;
-    const Eigen::Vector3i pad = pyramid.pad();
 	const int interval = pyramid.interval();
 	const int nbLevels = static_cast<int>(pyramid.levels().size());
 	
 	// Convolve the pyramid with all the filters
-    vector<vector<Tensor3DF> > tmpConvolutions;
+    vector<vector<vector<Tensor3DF> > >tmpConvolutions;
 	
 	if (convolutions) {
 		for (int i = 0; i < nbFilters; ++i) {
@@ -752,6 +749,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
 	else {
 		tmpConvolutions.resize(nbFilters);
 		
+    cout<<"Model::convolve ..."<<endl;
 
 //#pragma omp parallel for
         for (int i = 0; i < nbFilters; ++i){
@@ -787,77 +785,80 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
     // For each root level in reverse order
     for (int lvl = nbLevels - 1; lvl >= interval; --lvl) {
 
-        if((*convolutions)[0][lvl - interval].size() > 0){
-            stringstream name;
-            name << "conv" << 0 << ".txt";
-            ofstream out(name.str().c_str());
-            out << (*convolutions)[0][lvl]();
-        }
+//        if((*convolutions)[0][lvl - interval].size() > 0){
+//            stringstream name;
+//            name << "conv" << 0 << ".txt";
+//            ofstream out(name.str().c_str());
+//            out << (*convolutions)[0][lvl]();
+//        }
         // For each part
         for (int i = 0; i < nbParts; ++i) {
-            // Transform the part one octave below
+            for (int box = 0; box < pyramid.levels()[lvl].size(); ++box){
 
-            sum = (*convolutions)[i+1][lvl - interval].sum();
-//            cout<<"Model::conv sum for part "<<i+1<<" before DT3D : "<<sum<<endl;
+                // Transform the part one octave below
 
-            DT3D((*convolutions)[i + 1][lvl - interval], parts_[i + 1], tmp1, tmp2,
-                 positions ? &(*positions)[i][lvl - interval] : 0);
+    //            sum = (*convolutions)[i+1][lvl - interval].sum();
+    //            cout<<"Model::conv sum for part "<<i+1<<" before DT3D : "<<sum<<endl;
 
-            if (positions){
-                (*positions)[i][lvl] = Positions((*convolutions)[0][lvl].depths(),
-                                                 (*convolutions)[0][lvl].rows(),
-                                                 (*convolutions)[0][lvl].cols());
-                (*positions)[i][lvl]().setConstant( Position::Zero());
-            }
+                DT3D((*convolutions)[i + 1][lvl - interval][box], parts_[i + 1], tmp1, tmp2,
+                     positions ? &(*positions)[i][lvl - interval][box] : 0);
 
-            sum = (*convolutions)[i+1][lvl - interval].sum();
-//            cout<<"Model::conv sum for part "<<i+1<<" after DT3D : "<<sum<<endl;
+                if (positions){
+                    (*positions)[i][lvl][box] = Positions((*convolutions)[0][lvl][box].depths(),
+                                                     (*convolutions)[0][lvl][box].rows(),
+                                                     (*convolutions)[0][lvl][box].cols());
+                    (*positions)[i][lvl][box]().setConstant( Position::Zero());
+                }
 
-            if((*convolutions)[i+1][lvl - interval].size() > 0){
-                stringstream name;
-                name << "conv" << i+1 << ".txt";
-                ofstream out(name.str().c_str());
-                out << (*convolutions)[i+1][lvl - interval]();
-            }
+    //            sum = (*convolutions)[i+1][lvl - interval].sum();
+    //            cout<<"Model::conv sum for part "<<i+1<<" after DT3D : "<<sum<<endl;
 
-            // Add the distance transforms of the part one octave below
-            for (int z = 0; z < (*convolutions)[0][lvl].depths(); ++z) {//lvl=1
-                for (int y = 0; y < (*convolutions)[0][lvl].rows(); ++y) {
-                    for (int x = 0; x < (*convolutions)[0][lvl].cols(); ++x) {
+    //            if((*convolutions)[i+1][lvl - interval].size() > 0){
+    //                stringstream name;
+    //                name << "conv" << i+1 << ".txt";
+    //                ofstream out(name.str().c_str());
+    //                out << (*convolutions)[i+1][lvl - interval]();
+    //            }
 
-                        const int zr = 2 * z/*- pad.z()*/ + parts_[i + 1].offset(0);//coord lvl - interval 0
-                        const int yr = 2 * y /*- pad.y()*/ + parts_[i + 1].offset(1);
-                        const int xr = 2 * x /*- pad.x()*/ + parts_[i + 1].offset(2);
+                // Add the distance transforms of the part one octave below
+                for (int z = 0; z < (*convolutions)[0][lvl][box].depths(); ++z) {//lvl=1
+                    for (int y = 0; y < (*convolutions)[0][lvl][box].rows(); ++y) {
+                        for (int x = 0; x < (*convolutions)[0][lvl][box].cols(); ++x) {
 
-                        if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
-                            (xr < (*convolutions)[i + 1][lvl - interval].cols()) &&//lvl - interval 0
-                            (yr < (*convolutions)[i + 1][lvl - interval].rows()) &&
-                            (zr < (*convolutions)[i + 1][lvl - interval].depths())) {
+                            const int zr = 2 * z/*- pad.z()*/ + parts_[i + 1].offset(0);//coord lvl - interval 0
+                            const int yr = 2 * y /*- pad.y()*/ + parts_[i + 1].offset(1);
+                            const int xr = 2 * x /*- pad.x()*/ + parts_[i + 1].offset(2);
 
-                            (*convolutions)[0][lvl]()(z, y, x) += (*convolutions)[i + 1][lvl - interval]()(zr, yr, xr);
+                            if ((xr >= 0) && (yr >= 0) && (zr >= 0) &&
+                                (xr < (*convolutions)[i + 1][lvl - interval][box].cols()) &&//lvl - interval 0
+                                (yr < (*convolutions)[i + 1][lvl - interval][box].rows()) &&
+                                (zr < (*convolutions)[i + 1][lvl - interval][box].depths())) {
 
-                            if (positions){
-                                (*positions)[i][lvl]()(z, y, x) <<
-                                    (*positions)[i][lvl - interval]()(zr, yr, xr)(0) - parts_[i + 1].offset(0),
-                                    (*positions)[i][lvl - interval]()(zr, yr, xr)(1) - parts_[i + 1].offset(1),
-                                    (*positions)[i][lvl - interval]()(zr, yr, xr)(2) - parts_[i + 1].offset(2),
-                                    lvl - interval;
+                                (*convolutions)[0][lvl][box]()(z, y, x) += (*convolutions)[i + 1][lvl - interval][box]()(zr, yr, xr);
+
+                                if (positions){
+                                    (*positions)[i][lvl][box]()(z, y, x) <<
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(0) - parts_[i + 1].offset(0),
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(1) - parts_[i + 1].offset(1),
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(2) - parts_[i + 1].offset(2),
+                                        lvl - interval;
+                                }
                             }
-                        }
-                        else {
-//                            cout<<"Model::conv set score to -inf ..."<<endl;
-//                            cout<<"Model::conv "<<zr<<" < "<<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
-//                            cout<<"Model::conv "<<yr<<" < "<<(*convolutions)[i + 1][lvl - interval].rows()<<endl;
-//                            cout<<"Model::conv "<<xr<<" < "<<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
+                            else {
+    //                            cout<<"Model::conv set score to -inf ..."<<endl;
+    //                            cout<<"Model::conv "<<zr<<" < "<<(*convolutions)[i + 1][lvl - interval].depths()<<endl;
+    //                            cout<<"Model::conv "<<yr<<" < "<<(*convolutions)[i + 1][lvl - interval].rows()<<endl;
+    //                            cout<<"Model::conv "<<xr<<" < "<<(*convolutions)[i + 1][lvl - interval].cols()<<endl;
 
-                            (*convolutions)[0][lvl]()(z, y, x) =
-                                -numeric_limits<GSHOTPyramid::Scalar>::infinity();
+                                (*convolutions)[0][lvl][box]()(z, y, x) =
+                                    -numeric_limits<GSHOTPyramid::Scalar>::infinity();
+                            }
                         }
                     }
                 }
+                if (positions)
+                    (*positions)[i][lvl - interval][box] = Positions();
             }
-            if (positions)
-                (*positions)[i][lvl - interval] = Positions();
 
         }
 
@@ -866,10 +867,14 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
     scores.swap((*convolutions)[0]);
 
     for (int i = 0; i < interval; ++i) {
-        scores[i] = Tensor3DF();
+        for (int box = 0; box < pyramid.levels()[0].size(); ++box){
 
-        for (int j = 0; j < nbParts; ++j)
-            (*positions)[j][i] = Positions();
+            scores[i][box] = Tensor3DF();
+
+            for (int j = 0; j < nbParts; ++j){
+                (*positions)[j][i][box] = Positions();
+            }
+        }
     }
 
 //    float den = 1.0/nbFilters;
@@ -880,10 +885,13 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<Tensor3DF> & scores,
     if (bias_) {
 //#pragma omp parallel for
         for (int i = interval; i < nbLevels; ++i){
-//			scores[i].array() += bias_;
-            Tensor3DF biasTensor( scores[i].depths(), scores[i].rows(), scores[i].cols());
-            biasTensor().setConstant( bias_);
-            scores[i]() += biasTensor();
+            for (int box = 0; box < pyramid.levels()[0].size(); ++box){
+
+    //			scores[i].array() += bias_;
+                Tensor3DF biasTensor( scores[i][box].depths(), scores[i][box].rows(), scores[i][box].cols());
+                biasTensor().setConstant( bias_);
+                scores[i][box]() += biasTensor();
+            }
         }
     }
 

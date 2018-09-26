@@ -137,7 +137,7 @@ namespace FFLD
         /// Returns the convolutions of the pyramid with a filter.
         /// @param[in] filter Filter.
         /// @param[out] convolutions Convolution of each level.
-        void convolve(const Level & filter, vector<Tensor3DF >& convolutions) const;
+        void convolve(const Level & filter, vector<vector<Tensor3DF> > &convolutions) const;
 
         void sumConvolve(const Level & filter, vector<Tensor3DF >& convolutions) const;
 
@@ -151,6 +151,8 @@ namespace FFLD
         static double computeCloudResolution (PointCloudConstPtr cloud);
         
 //        private:
+
+        Eigen::Matrix4f getNormalizeTransform(float* originalOrientation, float* orientation, PointType translation);
         
         std::vector<float> minMaxScaler(std::vector<float> data);
 
@@ -158,6 +160,9 @@ namespace FFLD
         DescriptorsPtr
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
         
+        PointCloudPtr computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, PointType min, PointType max,
+                                              int filterSize, int thresh);
+
         // Method creating the keypoint grid using the min/max values of the input
         /*static */PointCloudPtr
         compute_keypoints(float grid_reso, PointType min, PointType max, int index);

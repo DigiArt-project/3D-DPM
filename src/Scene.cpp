@@ -55,8 +55,8 @@ static inline Result content(const xmlNodePtr cur)
 }
 
 Scene::Scene(const string & xmlName, const string & pcFileName, const float resolution)
+    : pcFileName_(pcFileName), resolution_(resolution)
 {
-    pcFileName_ = pcFileName;
 
 //    PointCloudPtr cloud( new PointCloudT);
 
@@ -234,6 +234,10 @@ const vector<Object> & Scene::objects() const
 void Scene::setObjects(const vector<Object> &objects)
 {
 	objects_ = objects;
+}
+
+float Scene::resolution() const{
+    return resolution_;
 }
 
 ostream & FFLD::operator<<(ostream & os, const Scene & scene)
