@@ -149,7 +149,6 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
 //        }
         ++cpt;
     }
-    cout << "GSHOTPyr::constructor nbBoxes in level : "<<levels_[0].size()<<endl;
 
 
 //#pragma omp parallel for
@@ -239,7 +238,8 @@ void GSHOTPyramid::convolve(const Level & filter, vector<vector<Tensor3DF > >& c
     convolutions.resize(levels_.size());
 
     for (int i = 0; i < levels_.size(); ++i){
-        #pragma omp parallel for //for each box
+//        #pragma omp parallel for //for each box
+        convolutions[i].resize(levels_[i].size());
         for (int j = 0; j < levels_[i].size(); ++j){
             Convolve(levels_[i][j], filter, convolutions[i][j]);
         }
@@ -289,15 +289,22 @@ Matrix4f GSHOTPyramid::getNormalizeTransform(float* originalOrientation, float* 
     Matrix3f r0, r1, rotation;
     for(int i=0; i<3;++i){
         for(int j=0; j<3;++j){
-            r0(i,j) = originalOrientation[j+i*3];
-            r1(i,j) = orientation[j+i*3];
+            r0(j,i) = originalOrientation[j+i*3];
+            r1(j,i) = orientation[j+i*3];
         }
     }
+
+//    cout<<"r0 : "<<endl<<r0<<endl;
+//    cout<<"r1 : "<<endl<<r1<<endl;
     rotation = r1*r0.inverse();
     Eigen::Matrix4f tform;
     tform.setIdentity ();
     tform.topLeftCorner (3, 3) = rotation.inverse();
-    tform.topRightCorner(1, 3) = Vector3f(translation.x,translation.y,translation.z);
+
+    Vector3f offset(translation.x,translation.y,translation.z);
+    tform.topRightCorner(3, 1) = offset /*- rotation.inverse() * offset*/;
+//    cout<<"transform : "<<endl<<tform<<endl;
+
     return tform;
 }
 

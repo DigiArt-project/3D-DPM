@@ -1000,11 +1000,11 @@ public:
 //                                                                       keypoints->points[i].y,
 //                                                                       keypoints->points[i].z), descriptors->size());
 //            }
-            viewer.displayAxis(rf+9*p);
+//            viewer.displayAxis(rf+9*p);
 
 
-            viewer.addPC( cloud);
-            viewer.addPC( keypoints, 3, Eigen::Vector3i(255, 255, 255));
+//            viewer.addPC( cloud);
+//            viewer.addPC( keypoints, 3, Eigen::Vector3i(255, 255, 255));
 
             if (img.empty()){
                 cout << "\n Image not created. You"
@@ -1031,22 +1031,28 @@ public:
             cout<<endl;
 
 
-            Matrix3f rotation = r0*r1;
-//            rotation <<0,-1,0,
-//                    1,0,0,
-//                    0,0,1;
-            cout<<"r0 : "<<r0<<endl;
-            cout<<"r1 : "<<r1<<endl;
-            cout<<"rotation : "<<rotation<<endl;
+            Matrix4f res;
+            res.setIdentity ();
+            res.topLeftCorner (3, 3) = r1;
+            PointType trans = PointType();
+            trans.x = 1;
+            trans.y = 0;
+            trans.z = 0;
 
-            Vector3f ea = rotation.eulerAngles(0, 1, 2);
-            cout<<"angles : ";
-            for(int i=0; i<3;++i){
-                float angle = ea[i]*180/M_PI;
-                cout<<angle<<" ";
+            Matrix4f tf = GSHOTPyramid::getNormalizeTransform(rf, &rf[9], trans);
+
+            cout<<"r0 : "<<endl<<r0<<endl;
+            cout<<"r1 : "<<endl<<tf*res<<endl;
+//            cout<<"rotation : "<<endl<<tf<<endl;
+
+            PointCloudPtr cloud( new PointCloudT);
+            if (readPointCloud(pcNames[1], cloud) == -1) {
+                cout<<"test::couldnt open pcd file"<<endl;
             }
-            cout<<endl;
 
+            PointCloudPtr rotatedCloud (new PointCloudT);
+            pcl::transformPointCloud (*cloud, *rotatedCloud, tf);
+            viewer.addPC( rotatedCloud);
         }
     }
 
@@ -1087,10 +1093,10 @@ int main(){
 ////               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
 
-    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+//    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
 //    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
-//               "tmp.txt");
+//               "smallSceneNN+/chair_part1_it1_weight15.txt");
 
     //smallSceneNN+/chair_part1_it1_weight15.txt
 
@@ -1099,8 +1105,8 @@ int main(){
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/upSideDownChair.pcd");
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd");
 
-//    test.checkSHOTs({"/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd",
-//                     "/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd"});
+    test.checkSHOTs({"/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd",
+                     "/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd"});
 
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");

@@ -106,11 +106,13 @@ public:
 
     //Level
     Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
-        cout<<"tensor3D::convolve ..."<<endl;
+//        cout<<"tensor3D::convolve ..."<<endl;
 
         Tensor3D<Scalar> res( depths() - filter.depths() + 1,
                               rows() - filter.rows() + 1,
                               cols() - filter.cols() + 1);
+
+
 
         res().setConstant( 0);
 

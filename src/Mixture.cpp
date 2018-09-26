@@ -261,7 +261,7 @@ void Mixture::computeScores(const GSHOTPyramid & pyramid, vector<vector<Tensor3D
     }
 
     // Convolve with all the models
-    vector<vector<vector<Tensor3DF> > > convolutions;//[mod][lvl][box]
+    vector<vector<vector<Tensor3DF> > > convolutions;//[model][lvl][box]
     convolve(pyramid, convolutions, positions);
 
     // In case of error
@@ -1034,7 +1034,7 @@ double Mixture::trainSVM(const vector<pair<Model, int> > & positives,
 }
 
 void Mixture::convolve(const GSHOTPyramid & pyramid,
-                       vector<vector<vector<Tensor3DF> > > & scores,//[model.size][lvl][box]
+                       vector<vector<vector<Tensor3DF> > > & scores,//[model][lvl][box]
                        vector<vector<vector<vector<Model::Positions> > > > * positions) const//[model.size][model.part.size][pyramid.lvl.size][box]
 {
 

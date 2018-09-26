@@ -702,9 +702,9 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y
     sample.bias_ = 1.0;
 }
 
-void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &scores,
-                     vector<vector<vector<Positions> > >* positions,
-                     vector<vector<vector<Tensor3DF> > > * convolutions) const
+void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &scores,//[lvl][box]
+                     vector<vector<vector<Positions> > >* positions,//[part][lvl][box]
+                     vector<vector<vector<Tensor3DF> > > * convolutions/*useless*/) const
 {
 
 	// Invalid parameters
@@ -762,7 +762,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
         }
 
-        convolutions = &tmpConvolutions;
+        convolutions = &tmpConvolutions;//[part][lvl][box]
 	}
 	
     // Resize the positions
@@ -771,8 +771,12 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
         positions->resize(nbParts);
 		
-        for (int i = 0; i < nbParts; ++i)
+        for (int i = 0; i < nbParts; ++i){
             (*positions)[i].resize(nbLevels);
+            for (int j = 0; j < pyramid.levels().size(); ++j){
+                (*positions)[i][j].resize(pyramid.levels()[j].size());
+            }
+        }
     }
 	
     // Temporary data needed by the distance transforms

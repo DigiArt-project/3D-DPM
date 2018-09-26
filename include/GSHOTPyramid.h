@@ -152,7 +152,8 @@ namespace FFLD
         
 //        private:
 
-        Eigen::Matrix4f getNormalizeTransform(float* originalOrientation, float* orientation, PointType translation);
+        static Eigen::Matrix4f getNormalizeTransform(float* originalOrientation, float* orientation,
+                                                     PointType translation = PointType(0,0,0));
         
         std::vector<float> minMaxScaler(std::vector<float> data);
 
