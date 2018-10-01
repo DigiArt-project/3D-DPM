@@ -82,6 +82,7 @@ This imply that currently, the size of the objects during training and testing h
 - Increase speed
 - Normalize tensor of shots with main axis and then add the parts scores with DT3D !!!!!!!!!!!!!( only works for rot de 90°)
 - DT3D check init deformation scores
+- compute Intersector and obbox in Scene and center the globalKeyPoints at the center of the box instead at the corner
 
 Infos :
 

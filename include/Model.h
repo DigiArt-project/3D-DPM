@@ -156,6 +156,7 @@ public:
                      Positions * positions = 0);
 	
 private:
+    float* orientation_;//9 values (3x3 axis)
 	std::vector<Part> parts_;
 	double bias_;
 };

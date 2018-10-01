@@ -30,96 +30,96 @@ Rectangle::Rectangle(const Rectangle& rect)
       diagonal_( rect.diagonal_), volume_(rect.volume_), resolution_(rect.resolution_)
 {}
 
-Rectangle::Rectangle(int depth, int height, int width, float resolution) :
+Rectangle::Rectangle(float depth, float height, float width, float resolution) :
     origin_( 0, 0, 0), width_(width), height_(height), depth_(depth),
     diagonal_( depth_, height_, width_), resolution_(resolution)
 {
     volume_ = volume();
 }
 
-Rectangle::Rectangle(Eigen::Vector3i origin, int depth, int height, int width, float resolution) :
+Rectangle::Rectangle(Eigen::Vector3f origin, float depth, float height, float width, float resolution) :
     origin_( origin), width_(width), height_(height), depth_(depth), resolution_(resolution)
 {
-    diagonal_ = Eigen::Vector3i( origin_(0) + depth_, origin_(1) + height_, origin_(2) + width_);
+    diagonal_ = Eigen::Vector3f( origin_(0) + depth_, origin_(1) + height_, origin_(2) + width_);
     volume_ = volume();
 }
 
-Eigen::Vector3i Rectangle::origin() const
+Eigen::Vector3f Rectangle::origin() const
 {
     return origin_;
 }
 
-Eigen::Vector3i Rectangle::diagonal() const
+Eigen::Vector3f Rectangle::diagonal() const
 {
     return diagonal_;
 }
 
-void Rectangle::setOrigin(Eigen::Vector3i origin)
+void Rectangle::setOrigin(Eigen::Vector3f origin)
 {
     origin_ = origin;
 }
 
-void Rectangle::setDiagonal(Eigen::Vector3i diagonal)
+void Rectangle::setDiagonal(Eigen::Vector3f diagonal)
 {
     diagonal_ = diagonal;
 }
 
-int Rectangle::width() const
+float Rectangle::width() const
 {
 	return width_;
 }
 
-void Rectangle::setWidth(int width)
+void Rectangle::setWidth(float width)
 {
 	width_ = width;
 }
 
-int Rectangle::height() const
+float Rectangle::height() const
 {
 	return height_;
 }
 
-void Rectangle::setHeight(int height)
+void Rectangle::setHeight(float height)
 {
 	height_ = height;
 }
 
-int Rectangle::depth() const
+float Rectangle::depth() const
 {
     return depth_;
 }
 
-void Rectangle::setDepth(int depth)
+void Rectangle::setDepth(float depth)
 {
     depth_ = depth;
 }
 
-int Rectangle::right() const
+float Rectangle::right() const
 {
     return diagonal_(2);
 }
 
-int Rectangle::left() const
+float Rectangle::left() const
 {
     return origin_(2);
 }
 
-int Rectangle::top() const
+float Rectangle::top() const
 {
     return origin_(1);
 }
 
-int Rectangle::bottom() const
+float Rectangle::bottom() const
 {
     return diagonal_(1);
 }
 
-int Rectangle::front() const
+float Rectangle::front() const
 {
     return origin_(0);
 }
 
-int Rectangle::back() const
+float Rectangle::back() const
 {
     return diagonal_(0);
 }
@@ -134,37 +134,37 @@ void Rectangle::setResolution( float resolution)
     resolution_ = resolution;
 }
 
-void Rectangle::setLeft(int left)
+void Rectangle::setLeft(float left)
 {
     origin_(2) = left;
     setWidth( right() - left);
 }
 
-void Rectangle::setRight(int right)
+void Rectangle::setRight(float right)
 {
     diagonal_(2) = right;
     setWidth( right - left());
 }
 
-void Rectangle::setBottom(int bottom)
+void Rectangle::setBottom(float bottom)
 {
     diagonal_(1) = bottom;
     setHeight( top() - bottom);
 }
 
-void Rectangle::setTop(int top)
+void Rectangle::setTop(float top)
 {
     origin_(1) = top;
     setHeight( top - bottom());
 }
 
-void Rectangle::setBack(int back)
+void Rectangle::setBack(float back)
 {
     diagonal_(0) = back;
     setDepth( front() - back);
 }
 
-void Rectangle::setFront(int front)
+void Rectangle::setFront(float front)
 {
     origin_(0) = front;
     setDepth( front - back());
@@ -184,21 +184,14 @@ void Rectangle::setVolume(float volume)
 float Rectangle::volume() const
 {
     //max() requires that the first and second arguments are of the same type
-    return width() * height() * depth() * resolution() * resolution() * resolution();
+    return width() * height() * depth();
 }
 
-Eigen::Vector3f Rectangle::getOriginCoordinate() const{
-    return Eigen::Vector3f( origin_(0) * resolution_, origin_(1) * resolution_, origin_(2) * resolution_);
-}
-
-Eigen::Vector3f Rectangle::getDiagonalCoordinate() const{
-    return Eigen::Vector3f( diagonal_(0) * resolution_, diagonal_(1) * resolution_, diagonal_(2) * resolution_);
-}
 
 Rectangle Rectangle::changeToPclCoordinateSystem() const{
-    Eigen::Vector3i pclOrigin( diagonal()(0), diagonal()(1), origin()(2));
+    Eigen::Vector3f pclOrigin( diagonal()(0), diagonal()(1), origin()(2));
     Rectangle rec( pclOrigin, depth(), height(), width(), resolution());
-    rec.setDiagonal(Eigen::Vector3i( origin()(0), origin()(1), diagonal()(2)));
+    rec.setDiagonal(Eigen::Vector3f( origin()(0), origin()(1), diagonal()(2)));
     return rec;
 }
 
@@ -215,13 +208,13 @@ ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)
 
 istream & FFLD::operator>>(istream & is, Rectangle & rect)
 {
-    int x, y, z, width, height, depth;
+    float x, y, z, width, height, depth;
     float resolution;
 	
     is >> z >> y >> x >> depth >> height >> width >> resolution;
 	
-    rect.setOrigin(Eigen::Vector3i( z, y, x));
-    rect.setDiagonal(Eigen::Vector3i( z+depth, y+height, x+width));
+    rect.setOrigin(Eigen::Vector3f( z, y, x));
+    rect.setDiagonal(Eigen::Vector3f( z+depth, y+height, x+width));
     rect.setWidth(width);
 	rect.setHeight(height);
     rect.setDepth(depth);

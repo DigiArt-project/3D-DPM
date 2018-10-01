@@ -356,7 +356,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
         cout << "Mix::posLatentSearch maxFilterSizes : " << maxFilterSizes << endl;
 
-        const GSHOTPyramid pyramid(cloud, filterSizes, interval, scenes[i].resolution());
+        const GSHOTPyramid pyramid(cloud, models_[0].rootSize(), interval, scenes[i].resolution());
 		
 
 //        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
@@ -390,7 +390,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 //            cout<<"Mix::PosLatentSearch absolute positive box diago : "<<scenes[i].objects()[j].bndbox().getDiagonalCoordinate()<<endl;
 //            cout<<"Mix::PosLatentSearch relative positive aabbox : "<<aabox<<endl;
             const Intersector intersector(scenes[i].objects()[j].bndbox(), overlap);
-			
+
+//            cout<<"Pos scenes[i].objects()[j].bndbox() : "<<scenes[i].objects()[j].bndbox()<<endl;
+
             // The model, level, position, score, and intersection of the best example
             int argModel = -1;
             int argBox = -1;
@@ -407,9 +409,6 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			
             for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
                 const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
-                int offz = floor(pyramid.sceneOffset_(0)*scale);
-                int offy = floor(pyramid.sceneOffset_(1)*scale);
-                int offx = floor(pyramid.sceneOffset_(2)*scale);
 
                 cout << "Mix::posLatentSearch scale : " << scale << endl;
                 for (int box = 0; box < pyramid.levels()[lvl].size(); ++box) {
@@ -429,17 +428,31 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
     //                    cout << "Mix::posLatentSearch cols = scores["<<lvl<<"].cols() = " << cols << endl;
                     }
                     else if (lvl >= interval) {
-                        depths = pyramid.levels()[lvl][box].depths() - static_cast<int>(maxSize().first*scale) + 1;
-                        rows = pyramid.levels()[lvl][box].rows() - static_cast<int>(maxSize().second*scale) + 1;
-                        cols = pyramid.levels()[lvl][box].cols() - static_cast<int>(maxSize().third*scale)+ 1;
-    //                    cout << "Mix::posLatentSearch depths scene = " << depths << endl;
-    //                    cout << "Mix::posLatentSearch rows scene = " << rows << endl;
-    //                    cout << "Mix::posLatentSearch cols scene = " << cols << endl;
+//                        depths = pyramid.levels()[lvl][box].depths() - static_cast<int>(maxSize().first*scale) + 1;
+//                        rows = pyramid.levels()[lvl][box].rows() - static_cast<int>(maxSize().second*scale) + 1;
+//                        cols = pyramid.levels()[lvl][box].cols() - static_cast<int>(maxSize().third*scale)+ 1;
+                        depths = 1;
+                        rows = 1;
+                        cols = 1;
+
                     }
 
-                    cout << "Mix::posLatentSearch limit z : " << offz << " / " << offz+depths<< endl;
-                    cout << "Mix::posLatentSearch limit y : " << offy << " / " << offy+rows<< endl;
-                    cout << "Mix::posLatentSearch limit x : " << offx << " / " << offx+cols<< endl;
+                    cout << "Mix::posLatentSearch depths scene = " << depths << endl;
+                    cout << "Mix::posLatentSearch rows scene = " << rows << endl;
+                    cout << "Mix::posLatentSearch cols scene = " << cols << endl;
+
+                    const PointCloudConstPtr boxCloud = pyramid.keypoints_[lvl][box];
+                    PointType min;
+                    PointType max;
+                    pcl::getMinMax3D(*boxCloud, min, max);
+
+                    if( abs(boxCloud->points[0].z-scenes[i].objects()[j].bndbox().origin()(0)) < pyramid.resolutions()[lvl] &&
+                        abs(boxCloud->points[0].y-scenes[i].objects()[j].bndbox().origin()(1)) < pyramid.resolutions()[lvl] &&
+                        abs(boxCloud->points[0].x-scenes[i].objects()[j].bndbox().origin()(2)) < pyramid.resolutions()[lvl]){
+                        cout<<"Positif at box : "<<box<<endl;
+                    }
+
+
 
 
                     for (int z = 0; z < depths; ++z) {
@@ -453,15 +466,17 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 if (zero_) {
                                     for (int k = 0; k < models_.size(); ++k) {
                                         // The bounding box of the model at this position
-                                        Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
-                                                               (y+offy)/*- pad.y()*/,
-                                                               (x+offx)/* - pad.x()*/);
-                                        int w = models_[k].rootSize().third/* * scale*/;
-                                        int h = models_[k].rootSize().second/* * scale*/;
-                                        int d = models_[k].rootSize().first/* * scale*/;
+                                        Eigen::Vector3f origin(min.z + z * pyramid.resolutions()[lvl],
+                                                               min.y + y * pyramid.resolutions()[lvl],
+                                                               min.x + x * pyramid.resolutions()[lvl]);
+                                        float w = models_[k].rootSize().third * pyramid.resolutions()[lvl];
+                                        float h = models_[k].rootSize().second * pyramid.resolutions()[lvl];
+                                        float d = models_[k].rootSize().first * pyramid.resolutions()[lvl];
 
                                         Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
 
+
+                                        cout<<"Pos:: bndbox : "<<bndbox<<endl;
 
                                         double inter = 0.0;
 
@@ -481,12 +496,13 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 // Just take the model with the best score
                                 else {
                                     // The bounding box of the model at this position
-                                    Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
-                                                           (y+offy)/*- pad.y()*/,
-                                                           (x+offx)/* - pad.x()*/);
-                                    int w = models_[model].rootSize().third /** scale*/;
-                                    int h = models_[model].rootSize().second /** scale*/;
-                                    int d = models_[model].rootSize().first /** scale*/;
+                                    Eigen::Vector3f origin(min.z + z * pyramid.resolutions()[lvl],
+                                                           min.y + y * pyramid.resolutions()[lvl],
+                                                           min.x + x * pyramid.resolutions()[lvl]);
+                                    float w = models_[model].rootSize().third * pyramid.resolutions()[lvl];
+                                    float h = models_[model].rootSize().second * pyramid.resolutions()[lvl];
+                                    float d = models_[model].rootSize().first * pyramid.resolutions()[lvl];
+
 
                                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
 
@@ -508,9 +524,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                     argX = x;
                                     argY = y;
                                     argZ = z;
-                                    argOffX = offx;
-                                    argOffY = offy;
-                                    argOffZ = offz;
+//                                    argOffX = offx;
+//                                    argOffY = offy;
+//                                    argOffZ = offz;
                                     argLvl = lvl;
 
                                     if (!zero_){
@@ -529,9 +545,11 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
             if (maxInter >= overlap) {
                 cout << "Mix:PosLatentSearch found a positive sample at : "
-                     << argZ+argOffZ << " " << argY+argOffY << " " << argX+argOffX << " / " << pyramid.resolutions()[argLvl] << endl;
-                cout << "Mix:PosLatentSearch found a positive sample with offsets : "
-                     << argOffZ << " " << argOffY << " " << argOffX << endl;
+                     << argZ << " " << argY << " " << argX << " / " << pyramid.resolutions()[argLvl] << endl;
+                cout << "Mix:PosLatentSearch found at : "
+                     << pyramid.keypoints_[argLvl][argBox]->points[0]
+                     << " for box : " << argBox << endl;
+
 
                 Model sample;
 				
@@ -612,7 +630,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                 models_[0].rootSize().third));
         triple<int, int, int> filterSizes(maxFilterSizes,maxFilterSizes,maxFilterSizes);
 
-        const GSHOTPyramid pyramid(cloud, filterSizes, interval, scenes[i].resolution());
+        const GSHOTPyramid pyramid(cloud, models_[0].rootSize(), interval, scenes[i].resolution());
 
         if (pyramid.empty()) {
             cout<<"Mix::negLatentSearch pyramid empty"<<endl;
@@ -642,8 +660,6 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                     depths = scores[lvl][box].depths();
                     rows = scores[lvl][box].rows();
                     cols = scores[lvl][box].cols();
-                    cout<<"Neg:: score.size : "<<scores[lvl][box].size()<<endl;
-                    cout<<"Neg:: score.max : "<<scores[lvl][box].max()<<endl;
 
     //                // z,y,x,score
     //                vector<Vector4f> bestNeg( scores[lvl].size());
@@ -1126,9 +1142,9 @@ std::vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const
         cout<<"Mixture::FilterSizes width : "<<width<<endl;
         cout<<"Mixture::FilterSizes height : "<<height<<endl;
 
-        sizes[i].first = depth / (references[i+1]-references[i]) * scale;
-        sizes[i].second = height / (references[i+1]-references[i]) * scale;
-        sizes[i].third = width / (references[i+1]-references[i]) * scale;
+        sizes[i].first = ceil( depth / (references[i+1]-references[i]) * scale / scenes[i].resolution());
+        sizes[i].second = ceil( height / (references[i+1]-references[i]) * scale / scenes[i].resolution());
+        sizes[i].third = ceil( width / (references[i+1]-references[i]) * scale / scenes[i].resolution());
     }
 
 //	// Store the areas of the objects associated to each component

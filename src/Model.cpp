@@ -333,6 +333,7 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
 //    parts_.swap(best);
 
     // Initialize the deformations
+    //TODO replace values see paper
     for (int i = 0; i < nbParts; ++i)
         parts_[i + 1].deformation << -0.01, 0.0, -0.01, 0.0, -0.01, 0.0, -0.01, 0.0;
 
@@ -640,12 +641,17 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y
 		
         const GSHOTPyramid::Level & level = pyramid.levels()[position(3)][box];
 		
-        if ((position(0) < 0) || (position(1) < 0 || (position(2) < 0)) ||
-            (position(2) + partSize().third > level.cols()) ||
+        if ((position(0) < 0) || (position(1) < 0 || (position(2) < 0))) {
+            sample = Model();
+            cerr << "Attempting to initialize an empty sample 4 : " << position << endl;
+            return;
+        }
+        if ((position(2) + partSize().third > level.cols()) ||
             (position(1) + partSize().second > level.rows()) ||
             (position(0) + partSize().first > level.depths())) {
             sample = Model();
-            cerr << "Attempting to initialize an empty sample 4" << endl;
+            cerr << "Attempting to initialize an empty sample 5 : " << level.depths()
+                 << " " << level.rows() << " " << level.cols()<< endl;
             return;
         }
 		

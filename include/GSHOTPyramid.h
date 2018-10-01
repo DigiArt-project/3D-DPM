@@ -99,7 +99,7 @@ namespace FFLD
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
         GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filterSizes, int interval = 1,
-                     float starting_resolution = 0.05/*0.09/2.0*/, int nbOctave = 2);
+                     float starting_resolution = 0.05/*0.09/2.0*/, int thresh = 0, int nbOctave = 2);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
@@ -153,7 +153,7 @@ namespace FFLD
 //        private:
 
         static Eigen::Matrix4f getNormalizeTransform(float* originalOrientation, float* orientation,
-                                                     PointType translation = PointType(0,0,0));
+                                                     const PointType translation = PointType(0,0,0));
         
         std::vector<float> minMaxScaler(std::vector<float> data);
 
@@ -162,7 +162,7 @@ namespace FFLD
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
         
         PointCloudPtr computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, PointType min, PointType max,
-                                              int filterSize, int thresh);
+                                              triple<int, int, int> filterSizes, int thresh);
 
         // Method creating the keypoint grid using the min/max values of the input
         /*static */PointCloudPtr
@@ -172,7 +172,7 @@ namespace FFLD
         static void Convolve(const Level & level, const Level & filter, Tensor3DF & convolution);
         
 //        // Number of keypoints per dimension (needed for the sliding box process)
-        std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology;//number of points at [lvl]
+        std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > topology_;//number of points at [lvl]
 
         Eigen::Vector3i pad_;
         int interval_;
@@ -182,14 +182,13 @@ namespace FFLD
 
         std::vector<float> resolutions_;
 
-        struct Box{
-            PointCloudPtr keypoints_;
-            Eigen::Quaternionf q_;
-        };
 
         // The corresponding positions of boxes descriptors in the space for each level
         std::vector<std::vector<PointCloudPtr > > keypoints_;//[lvl][box]
         std::vector<std::vector<Eigen::Quaternionf > > q_;//[lvl][box]
+
+        PointCloudPtr globalKeyPts;
+        DescriptorsPtr globalDescriptors;
 
         triple<int, int, int> filterSizes_;
 

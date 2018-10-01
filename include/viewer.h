@@ -45,12 +45,12 @@ public:
 
 //        cout << "rec pcl : "<< rec << endl;
 //        cout << "rec pcl diagonal : "<< rec.diagonal() << endl;
-        float left = rec.left()*rec.resolution() + offset(0);
-        float top = rec.top()*rec.resolution() + offset(1);
-        float right = rec.right()*rec.resolution() + offset(0);
-        float front = rec.front()*rec.resolution() + offset(2);
-        float bottom = rec.bottom()*rec.resolution() + offset(1);
-        float back = rec.back()*rec.resolution() + offset(2);
+        float left = rec.left() + offset(0);
+        float top = rec.top() + offset(1);
+        float right = rec.right() + offset(0);
+        float front = rec.front() + offset(2);
+        float bottom = rec.bottom() + offset(1);
+        float back = rec.back() + offset(2);
 
 //        cout << "line left : "<< left << endl;
 //        cout << "line right : "<< right << endl;

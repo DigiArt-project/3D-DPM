@@ -59,7 +59,7 @@ public:
     Test()
     {
 
-        sceneResolution = 0.05;//0.09/2.0;
+        sceneResolution = 0.2;//0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
     }
@@ -189,7 +189,7 @@ public:
 
     void train( string dataFolder){
 
-        int nbParts = 1;
+        int nbParts = 2;
         double C = 0.002, J = 2;
         float boxOverlap = 0.5;
         int interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 2000;
@@ -283,6 +283,12 @@ public:
 
             for (int box = 0; box < scores[lvl].size(); ++box) {
 
+
+                const PointCloudConstPtr boxCloud = pyramid.keypoints_[lvl][box];
+                PointType min;
+                PointType max;
+                pcl::getMinMax3D(*boxCloud, min, max);
+
                 const int depths = static_cast<int>(scores[lvl][box].depths());
                 const int rows = static_cast<int>(scores[lvl][box].rows());
                 const int cols = static_cast<int>(scores[lvl][box].cols());
@@ -326,22 +332,21 @@ public:
                             cout<<"test:: scores = "<<score<<endl;
 
                             if (score >= threshold) {
+                                Eigen::Vector3f origin(min.z + z * pyramid.resolutions()[lvl],
+                                                       min.y + y * pyramid.resolutions()[lvl],
+                                                       min.x + x * pyramid.resolutions()[lvl]);
+                                float w = sizes[argmaxes[lvl]()(z, y, x)].third * pyramid.resolutions()[lvl];
+                                float h = sizes[argmaxes[lvl]()(z, y, x)].second * pyramid.resolutions()[lvl];
+                                float d = sizes[argmaxes[lvl]()(z, y, x)].first * pyramid.resolutions()[lvl];
 
-                                    Eigen::Vector3i origin((z+offz)/*- pad.z()*/,
-                                                           (y+offy)/*- pad.y()*/,
-                                                           (x+offx)/* - pad.x()*/);
-                                    int w = sizes[argmaxes[lvl]()(z, y, x)].third /** scale*/;
-                                    int h = sizes[argmaxes[lvl]()(z, y, x)].second /** scale*/;
-                                    int d = sizes[argmaxes[lvl]()(z, y, x)].first /** scale*/;
+                                Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
 
-                                    Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
+                                cout<<"test:: detection bndbox = "<<bndbox<<endl;
 
-                                    cout<<"test:: detection bndbox = "<<bndbox<<endl;
-
-                                    if (!bndbox.empty()){
-                                        detections.push_back(Detection(score, z, y, x, lvl, box, bndbox));
-                                        cout<<"test:: bndbox added to detections"<<endl;
-                                    }
+                                if (!bndbox.empty()){
+                                    detections.push_back(Detection(score, z, y, x, lvl, box, bndbox));
+                                    cout<<"test:: bndbox added to detections"<<endl;
+                                }
 
                             }
                         }
@@ -400,41 +405,48 @@ public:
 //                    const double scale = 1 / pow(2.0, static_cast<double>(lvlp) / interval);
 
 
-                    Eigen::Vector3i origin((zp+pyramid.sceneOffset_(0)/* + detections[i].origin()(0)*2*/)/*- pad.z()*/,
-                                           (yp+pyramid.sceneOffset_(1) /*+ detections[i].origin()(1)*2*/)/*- pad.y()*/,
-                                           (xp+pyramid.sceneOffset_(2) /*+ detections[i].origin()(2)*2*/)/* - pad.x()*/);
-                    int w = mixture.models()[argmax].partSize().third /** scale*/;
-                    int h = mixture.models()[argmax].partSize().second /** scale*/;
-                    int d = mixture.models()[argmax].partSize().first /** scale*/;
+                    int pt_nb_y = pyramid.topology_[lvlp](1);
+                    int pt_nb_x = pyramid.topology_[lvlp](2);
+                    PointType p = pyramid.keypoints_[lvlp][box]->points[xp + yp * pt_nb_x + zp * pt_nb_y * pt_nb_x];
+                    Eigen::Vector3f origin(p.z, p.y, p.x);
+                    float w = mixture.models()[argmax].partSize().third * pyramid.resolutions()[lvlp];
+                    float h = mixture.models()[argmax].partSize().second * pyramid.resolutions()[lvlp];
+                    float d = mixture.models()[argmax].partSize().first * pyramid.resolutions()[lvlp];
 
                     Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
 
-//                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
 
+//                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
+            //TODO add rotation to drawing
                     viewer.displayCubeLine(bndbox, Eigen::Vector3f(0,0,0), Vector3i(0,0,255));
                 }
 
                 // Draw the root last
 //                cout<<"test:: root bndbox = "<<detections[i]<<endl;
-                Rectangle bbox(Vector3i(detections[i].origin()(0), detections[i].origin()(1), detections[i].origin()(2)),
-                              mixture.models()[argmax].rootSize().first,
-                              mixture.models()[argmax].rootSize().second,
-                              mixture.models()[argmax].rootSize().third, pyramid.resolutions()[1]);
+
+                int pt_nb_y = pyramid.topology_[lvl](1);
+                int pt_nb_x = pyramid.topology_[lvl](2);
+                PointType p = pyramid.keypoints_[lvl][box]->points[x + y * pt_nb_x + z * pt_nb_y * pt_nb_x];
+                Eigen::Vector3f origin(p.z, p.y, p.x);
+                float w = sizes[argmaxes[lvl]()(z, y, x)].third * pyramid.resolutions()[lvl];
+                float h = sizes[argmaxes[lvl]()(z, y, x)].second * pyramid.resolutions()[lvl];
+                float d = sizes[argmaxes[lvl]()(z, y, x)].first * pyramid.resolutions()[lvl];
+                Rectangle bbox( origin, d, h, w, pyramid.resolutions()[1]);
                 viewer.displayCubeLine(bbox, Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
                         Vector3i(0,255,255));
             }
 
         }
-        if( detections.size() > 0){
-            cout<<"test:: root bndbox = "<<detections[0]<<" with score : "<<detections[0].score<<endl;
-            Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
-                          mixture.models()[0].rootSize().first,
-                          mixture.models()[0].rootSize().second,
-                          mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
-            viewer.displayCubeLine(box,
-                                   Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-                    Vector3i(255,0,0));
-        }
+//        if( detections.size() > 0){
+//            cout<<"test:: root bndbox = "<<detections[0]<<" with score : "<<detections[0].score<<endl;
+//            Rectangle box(Vector3i(detections[0].origin()(0), detections[0].origin()(1), detections[0].origin()(2)),
+//                          mixture.models()[0].rootSize().first,
+//                          mixture.models()[0].rootSize().second,
+//                          mixture.models()[0].rootSize().third, pyramid.resolutions()[1]);
+//            viewer.displayCubeLine(box,
+//                                   Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
+//                    Vector3i(255,0,0));
+//        }
     }
 
 
@@ -487,22 +499,33 @@ public:
                 mixture.models()[0].rootSize().third));
         triple<int, int, int> filterSizes(maxFilterSizes,maxFilterSizes,maxFilterSizes);
 
-        const GSHOTPyramid pyramid(sceneCloud, filterSizes, interval);
-
-//        GSHOTPyramid pyramid(sceneCloud, Eigen::Vector3i( 3,3,3), interval);
+        const GSHOTPyramid pyramid(sceneCloud, mixture.models()[0].rootSize(), interval, sceneResolution);
 
         PointType minScene;
         PointType maxScene;
         pcl::getMinMax3D(*sceneCloud , minScene, maxScene);
 
-        Vector3i originScene( floor(minScene.z/sceneResolution),
-                               floor(minScene.y/sceneResolution),
-                               floor(minScene.x/sceneResolution));
-        triple<int, int, int> sceneSize( ceil((maxScene.z-originScene(0)*sceneResolution)/sceneResolution)+1,
-                                                ceil((maxScene.y-originScene(1)*sceneResolution)/sceneResolution)+1,
-                                                ceil((maxScene.x-originScene(2)*sceneResolution)/sceneResolution)+1);
+        Vector3f originScene( minScene.z,
+                               minScene.y,
+                               minScene.x);
+        triple<float, float, float> sceneSize( maxScene.z-minScene.z,
+                                               maxScene.y-minScene.y,
+                                               maxScene.x-minScene.x);
         Rectangle sceneRect(originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
+        cout<<"sceneRect : "<<sceneRect<<endl;
 
+        PointCloudPtr test (new PointCloudT(1,1,PointType()));
+        int boxNb = 570;//570;724
+        test->points[0] = pyramid.globalKeyPts->points[boxNb];
+        viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
+        viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
+        cout<<"lrf : ";
+        for(int i=0;i<9;++i){
+            cout<<pyramid.globalDescriptors->points[boxNb].rf[i]<<" ";
+        }
+        cout<<endl;
+        viewer.addPC( pyramid.globalKeyPts, 2, Eigen::Vector3i(255, 255, 255));
+        viewer.displayAxis(pyramid.globalDescriptors->points[boxNb].rf);
         ofstream out("tmpTest.txt");
         vector<Detection> detections;
         Scene scene( /*originScene, /*sceneSize.first, sceneSize.second, sceneSize.third,*/ sceneName, {});
@@ -520,7 +543,7 @@ public:
 
         viewer.addPC( subspace, 3);
 
-        viewer.displayCubeLine(sceneRect);
+//        viewer.displayCubeLine(sceneRect);
 //        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
 //                mixture.models()[0].parts()[0].offset(1),
 //                mixture.models()[0].parts()[0].offset(2)-20),
@@ -1095,18 +1118,32 @@ int main(){
 
 //    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
-//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
-//               "smallSceneNN+/chair_part1_it1_weight15.txt");
+    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
+               "tmp.txt");
 
     //smallSceneNN+/chair_part1_it1_weight15.txt
+
+
+    Eigen::Vector3f origin1( 0.415045, -0.00194225, 0.382699);
+    // absolute bndbox positions
+    Rectangle bndbox1( origin1, 0.742005, 1.05238, 0.681131,
+                      test.sceneResolution);
+    Eigen::Vector3f origin2( -1.16383, -0.0100944, 0.935017);
+    // absolute bndbox positions
+    Rectangle bndbox2( origin2, 0.743034, 1.06102, 0.719493,
+                      test.sceneResolution);
+    test.viewer.displayCubeLine(bndbox1);
+    test.viewer.displayCubeLine(bndbox2);
+
+
 
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd");
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd");
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/upSideDownChair.pcd");
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd");
 
-    test.checkSHOTs({"/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd",
-                     "/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd"});
+//    test.checkSHOTs({"/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd",
+//                     "/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd"});
 
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
@@ -1130,38 +1167,63 @@ int main(){
 
 //    test.viewer.addPC( subspace, 3);
 
-//    Eigen::Vector3f boxCenter(0.938741, -0.755513, 0.433967);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
-//    Eigen::Vector3f boxSize(0.687472, 1.26525, 0.743552);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-//    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-//    Eigen::Matrix4f tform;
-//    tform.setIdentity ();
-//    tform.topLeftCorner (3, 3) = Eigen::Matrix3f (Eigen::Quaternionf (-0.253353,0.967048, -0.0249017, 0.00309352));
+    Eigen::Vector3f boxCenter(0.331836, -0.733711, -1.28253);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
+    Eigen::Vector3f boxSize(0.694655, 1.24823, 0.808719);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+    Eigen::Matrix4f tform;
+    tform.setIdentity ();
+    tform.topLeftCorner (3, 3) = Eigen::Quaternionf (0.231075, 0.972684, -0.00420024, -0.0217461 ).toRotationMatrix();
 
-//    Eigen::Vector3i origin( floor( ( boxCenter(2)-boxSize(2)/2 ) / test.sceneResolution),
-//                            floor( ( boxCenter(1)-boxSize(1)/2) / test.sceneResolution),
-//                            floor( ( boxCenter(0)-boxSize(0)/2) / test.sceneResolution));
-//    // absolute bndbox positions
-//    Rectangle bndbox( origin, ( boxSize(2)) / test.sceneResolution,
-//                      ( boxSize(1)) / test.sceneResolution,
-//            ( boxSize(0)) / test.sceneResolution,
-//                      test.sceneResolution);
-//    cout<<"bndbox : "<<bndbox<<endl;
-//    test.viewer.displayCubeLine(bndbox);
+    Eigen::Vector3i origin( floor( ( boxCenter(2) ) / test.sceneResolution),
+                            floor( ( boxCenter(1)) / test.sceneResolution),
+                            floor( ( boxCenter(0)) / test.sceneResolution));
+    // absolute bndbox positions
+    Rectangle bndbox( origin, ( boxSize(2)) / test.sceneResolution,
+                      ( boxSize(1)) / test.sceneResolution,
+            ( boxSize(0)) / test.sceneResolution,
+                      test.sceneResolution);
+    cout<<"bndbox : "<<bndbox<<endl;
+    test.viewer.displayCubeLine(bndbox);
 
-//    PointCloudPtr cloud2( new PointCloudT (2,1,PointType()));
+//    PointCloudPtr cloud2( new PointCloudT (8,1,PointType()));
 //    PointType p = PointType();
-//    p.x = boxCenter(0)-boxSize(0)/2;
-//    p.y = boxCenter(1)-boxSize(1)/2;
-//    p.z = boxCenter(2)-boxSize(2)/2;
+//    p.x = boxCenter(0);
+//    p.y = boxCenter(1);
+//    p.z = boxCenter(2);
 //    cloud2->at(0) = p;
-//    p.x = boxSize(0)/2+boxCenter(0);
-//    p.y = boxSize(1)/2+boxCenter(1);
-//    p.z = boxSize(2)/2+boxCenter(2);
+//    p.x = boxCenter(0)+boxSize(0);
+//    p.y = boxCenter(1)+boxSize(1);
+//    p.z = boxCenter(2)+boxSize(2);
 //    cloud2->at(1) = p;
+//    p.x = boxCenter(0);
+//    p.y = boxCenter(1)+boxSize(1);
+//    p.z = boxCenter(2)+boxSize(2);
+//    cloud2->at(2) = p;
+//    p.x = boxCenter(0)+boxSize(0);
+//    p.y = boxCenter(1);
+//    p.z = boxCenter(2)+boxSize(2);
+//    cloud2->at(3) = p;
+//    p.x = boxCenter(0)+boxSize(0);
+//    p.y = boxCenter(1)+boxSize(1);
+//    p.z = boxCenter(2);
+//    cloud2->at(4) = p;
+//    p.x = boxCenter(0);
+//    p.y = boxCenter(1);
+//    p.z = boxCenter(2)+boxSize(2);
+//    cloud2->at(5) = p;
+//    p.x = boxCenter(0);
+//    p.y = boxCenter(1)+boxSize(1);
+//    p.z = boxCenter(2);
+//    cloud2->at(6) = p;
+//    p.x = boxCenter(0)+boxSize(0);
+//    p.y = boxCenter(1);
+//    p.z = boxCenter(2);
+//    cloud2->at(7) = p;
+
+
 
 //    PointCloudPtr orientedCloud (new PointCloudT);
-//    pcl::transformPointCloud (*cloud2, *orientedCloud,
-//                              Vector3f(0,0,0), Eigen::Quaternionf (0.5,1, 0,0));
+//    pcl::transformPointCloud (*cloud2, *orientedCloud, tform);
 
 //    test.viewer.addPC( cloud2, 8, Eigen::Vector3i(255, 255, 0));
 //    test.viewer.addPC( orientedCloud, 8, Eigen::Vector3i(0, 255, 255));
@@ -1173,163 +1235,14 @@ int main(){
 
     cout << "Time : " << end-start << endl;
 
-//    ifstream in("tableModel4parts1pos.txt");
-
-//    if (!in.is_open()) {
-//        cerr << "Cannot open model file\n" << endl;
-//    }
-
-//    Mixture mixTable;
-//    in >> mixTable;
-
-//    if (mixTable.empty()) {
-//        cerr << "Invalid model file\n" << endl;
-//    }
-
-//    ifstream in2("chairModel4parts1pos.txt");
-
-//    if (!in2.is_open()) {
-//        cerr << "Cannot open model file\n" << endl;
-//    }
-
-//    Mixture mixChair;
-//    in2 >> mixChair;
-
-//    if (mixChair.empty()) {
-//        cerr << "Invalid model file\n" << endl;
-//    }
-
-//    cout<<"Chair dot Table = " << mixChair.models()[0].dot(mixTable.models()[0]) << endl;
-//    cout<<"Table dot Chair = " << mixTable.models()[0].dot(mixChair.models()[0]) << endl;
-//    cout<<"Table dot Table = " << mixTable.models()[0].dot(mixTable.models()[0]) << endl;
-//    cout<<"Chair dot Chair = " << mixChair.models()[0].dot(mixChair.models()[0]) << endl;
-
-//    cout<<"Chair norm = " << mixChair.models()[0].norm() << endl;
-//    cout<<"Table norm = " << mixTable.models()[0].norm() << endl;
-
-//    cout<<"Part 0 agglo : " << endl;
-
-//    cout<<"Chair dot Table = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
-//    cout<<"Table dot Chair = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
-//    cout<<"Table dot Table = " << mixTable.models()[0].parts()[0].filter.agglomerate().dot(mixTable.models()[0].parts()[0].filter.agglomerate()) << endl;
-//    cout<<"Chair dot Chair = " << mixChair.models()[0].parts()[0].filter.agglomerate().dot(mixChair.models()[0].parts()[0].filter.agglomerate()) << endl;
-
-
-//    Mat img( GSHOTPyramid::DescriptorSize, GSHOTPyramid::DescriptorSize, CV_8UC3, cv::Scalar(0,0,0));
 
 //    PointCloudPtr cloud( new PointCloudT);
 //    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/table.pcd", cloud) == -1) {
 //        cout<<"test::couldnt open pcd file"<<endl;
 //    }
 
-//    PointType minTmp;
-//    PointType min;
-//    PointType max;
-//    pcl::getMinMax3D(*cloud, minTmp, max);
-
-//    min.x = floor(minTmp.x/0.09)*0.09;
-//    min.y = floor(minTmp.y/0.09)*0.09;
-//    min.z = floor(minTmp.z/0.09)*0.09;
-
-//    float resolution = 0.009;
-//    PointCloudPtr keypoints = GSHOTPyramid::compute_keypoints(resolution, min, max, 0);
-
-//    DescriptorsPtr descriptors (new Descriptors());
-//    SurfaceNormalsPtr normals (new SurfaceNormals());
-
-//    pcl::NormalEstimation<PointType,NormalType> norm_est;
-//    norm_est.setKSearch (8);
-//    norm_est.setInputCloud (cloud);
-//    norm_est.compute (*normals);
-
-//    pcl::SHOTEstimation<PointType, NormalType, DescriptorType> descr_est;
-//    descr_est.setRadiusSearch (2*resolution);
-//    descr_est.setInputCloud (keypoints);
-//    descr_est.setInputNormals (normals);
-//    descr_est.setSearchSurface (cloud);
-//    descr_est.compute (*descriptors);
-
-//    cout<<"GSHOT:: descriptors size = "<<descriptors->size()<<endl;
-
-
-//    for (size_t i = 0; i < descriptors->size(); ++i){
-
-//        if (pcl_isnan(descriptors->points[i].descriptor[0])){
-//            descriptors->points[i].descriptor[0] = 0;
-//        }
-//        for (size_t j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
-
-//            if (pcl_isnan(descriptors->points[i].descriptor[j])){
-//                descriptors->points[i].descriptor[j] = 0;
-//            }
-//        }
-//    }
-
-
-//    GSHOTPyramid::Level level( descriptors->size(),1,1);
-//    int kpt = 0;
-////#pragma omp parallel for
-//    for (int z = 0; z < level.depths(); ++z){
-//        for (int y = 0; y < level.rows(); ++y){
-//            for (int x = 0; x < level.cols(); ++x){
-//                for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
-//                    level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
-////                            if(descriptors->points[kpt].descriptor[k]<0){
-////                                cout << "GSHOTPyr::constructor descriptors->points["<<kpt<<"].descriptor["<<k<<"] = "
-////                                     << descriptors->points[kpt].descriptor[k] << endl;
-////                            }
-//                }
-//                ++kpt;
-//            }
-//        }
-//    }
-
-//    GSHOTPyramid::Level lvl = level.agglomerate();
-
-//    float maxi = 0, mini = lvl()(0,0,0)(0);
-//    for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
-//        if( maxi < lvl()(0,0,0)(x)) maxi = lvl()(0,0,0)(x);
-//        if( mini > lvl()(0,0,0)(x)) mini = lvl()(0,0,0)(x);
-//    }
-//    cout<<"maxi model descriptor value = "<<maxi<<endl;
-//    cout<<"mini model descriptor value = "<<mini<<endl;
-
-
-//    for(int x=0;x<GSHOTPyramid::DescriptorSize;x++){
-//        for(int y=0;y<GSHOTPyramid::DescriptorSize;y++){
-
-//            Vec3b color = img.at<Vec3b>(Point(x, y));
-//            color[0] = lvl()(0,0,0)(x)/maxi*255;//*mixture.models()[0].parts()[p].filter.size()*/;
-//            color[1] = color[0];
-//            color[2] = color[0];
-//            img.at<Vec3b>(Point(x, y)) = color;
-//        }
-//    }
-
-
-
-//    if (img.empty()){
-//        cout << "\n Image not created. You"
-//                     " have done something wrong. \n";
-//        return 0;    // Unsuccessful.
-//    }
-
-//    imwrite( "img.jpg", img );
-
-//    namedWindow("A_good_name", CV_WINDOW_AUTOSIZE);
-
-//    imshow("A_good_name", img);
-////        resizeWindow("A_good_name", 600,600);
-
-//    waitKey(0); //wait infinite time for a keypress
-
-//    destroyWindow("A_good_name");
-
 
     test.viewer.show();
-
-
-
 
     return 0;
 }

@@ -48,20 +48,26 @@ public:
         if (score)
             *score = 0.0;
 
-        const float left = std::max(reference_.left() * reference_.resolution(), rect.left() * rect.resolution());
-        const float right = std::min(reference_.right() * reference_.resolution(), rect.right() * rect.resolution());
+//        pcl::ConvexHull<pcl::PointXYZ> cHull;
+//        pcl::PointCloud<pcl::PointXYZ> cHull_points;
+//        cHull.setInputCloud(cloud);
+//        cHull.reconstruct (cHull_points);
+//        double vol = cHull.getTotalVolume();
+
+        const float left = std::max(reference_.left(), rect.left());
+        const float right = std::min(reference_.right(), rect.right());
 
         if (right < left)
             return false;
 
-        const float top = std::max(reference_.top() * reference_.resolution(), rect.top() * rect.resolution());
-        const float bottom = std::min(reference_.bottom() * reference_.resolution(), rect.bottom() * rect.resolution());
+        const float top = std::max(reference_.top(), rect.top());
+        const float bottom = std::min(reference_.bottom(), rect.bottom());
 
         if (bottom < top)
             return false;
 
-        const float front = std::max(reference_.front() * reference_.resolution(), rect.front() * rect.resolution());
-        const float back = std::min(reference_.back() * reference_.resolution(), rect.back() * rect.resolution());
+        const float front = std::max(reference_.front(), rect.front());
+        const float back = std::min(reference_.back(), rect.back());
 
         if (back < front)
             return false;

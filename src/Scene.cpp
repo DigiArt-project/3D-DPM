@@ -121,48 +121,49 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
 
 
             size_t first = 0, last = 0;
-//            while ( ( (last = obboxStr.find(" ", last)) != string::npos)){
-//                obbox.push_back( stof( obboxStr.substr( first, last - first)));
-//                ++last;
-//                first = last;
-//            }
-//            obbox.push_back( stof( obboxStr.substr( first, obboxStr.length() - first)));
-
-//            if( obbox.size() != 10){
-//                cerr<<"Xml oriented bounding box is not correct"<<endl;
-//                return;
-//            }
-
-//            //            Eigen::Matrix3f orientationTransform ( Eigen::Quaternion( obbox[9], obbox[6], obbox[7], obbox[8]));
-//            //            Eigen::Vector3i origin();
-//            //            Rectangle bndbox( origin, depth, row, col, resolution);
-//            //            Object obj( (char*)className, Object::FRONTAL, false, false, bndbox);
-
-            first = 0, last = 0;
-            while ( ( (last = aabboxStr.find(" ", first)) != string::npos)){
-                aabbox.push_back( stof( aabboxStr.substr( first, last - first)));
+            while ( ( (last = obboxStr.find(" ", last)) != string::npos)){
+                obbox.push_back( stof( obboxStr.substr( first, last - first)));
                 ++last;
                 first = last;
             }
-            aabbox.push_back( stof( aabboxStr.substr( first, aabboxStr.length() - first)));
+            obbox.push_back( stof( obboxStr.substr( first, obboxStr.length() - first)));
 
-            if( aabbox.size() != 6){
-                cerr<<"Xml aa bounding box is not correct : "<< aabbox.size() <<endl;
+            if( obbox.size() != 10){
+                cerr<<"Xml oriented bounding box is not correct"<<endl;
                 return;
             }
-            Eigen::Vector3f minPt(aabbox[2], aabbox[1], aabbox[0]);
-            Eigen::Vector3f maxPt(aabbox[5], aabbox[4], aabbox[3]);
-            Eigen::Vector3i origin( floor( minPt(0) / resolution),
-                                    floor( minPt(1) / resolution),
-                                    floor( minPt(2) / resolution));
-            // absolute bndbox positions
-            Rectangle bndbox( origin, floor( (maxPt(0)-minPt(0)) / resolution),
-                              floor( (maxPt(1)-minPt(1)) / resolution), floor( (maxPt(2)-minPt(2)) / resolution),
-                              resolution);
+
+            Eigen::Vector3f origin(obbox[2], obbox[1], obbox[0]);
+            Eigen::Vector3f sizes(obbox[5], obbox[4], obbox[3]);
+
+            Eigen::Matrix3f orientationTransform ( Eigen::Quaternion( obbox[9], obbox[6], obbox[7], obbox[8]));
+            Rectangle obndbox( origin, depth, row, col, orientationTransform, resolution);
+            Object obj( objName, Object::FRONTAL, false, false, obndbox);
+
+//            first = 0, last = 0;
+//            while ( ( (last = aabboxStr.find(" ", first)) != string::npos)){
+//                aabbox.push_back( stof( aabboxStr.substr( first, last - first)));
+//                ++last;
+//                first = last;
+//            }
+//            aabbox.push_back( stof( aabboxStr.substr( first, aabboxStr.length() - first)));
+
+//            if( aabbox.size() != 6){
+//                cerr<<"Xml aa bounding box is not correct : "<< aabbox.size() <<endl;
+//                return;
+//            }
+//            Eigen::Vector3f minPt(aabbox[2], aabbox[1], aabbox[0]);
+//            Eigen::Vector3f maxPt(aabbox[5], aabbox[4], aabbox[3]);
+////            Eigen::Vector3i origin( floor( minPt(0) / resolution),
+////                                    floor( minPt(1) / resolution),
+////                                    floor( minPt(2) / resolution));
+//            // absolute bndbox positions
+//            Rectangle aabndbox( minPt, maxPt(0)-minPt(0), maxPt(1)-minPt(1), maxPt(2)-minPt(2),
+//                              resolution);
 
 //            cout<<"Scene:: absolute chair bndbox : "<<bndbox<<endl;
 
-            Object obj( objName, Object::FRONTAL, false, false, bndbox);
+//            Object obj( objName, Object::FRONTAL, false, false, aabndbox);
 
             objects_.push_back( obj);
 
