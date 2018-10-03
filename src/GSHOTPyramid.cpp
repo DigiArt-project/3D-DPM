@@ -34,6 +34,7 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
     levels_.resize( interval_ * nbOctave);
     resolutions_.resize( interval_ * nbOctave);
     keypoints_.resize( interval_ * nbOctave);
+    rectangles_.resize( interval_ * nbOctave);
     topology_.resize( interval_ * nbOctave);
 
     for (int j = 0; j < interval_; ++j) {
@@ -63,8 +64,8 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
     sampling.setRadiusSearch (starting_resolution);
     sampling.filter(*subspace);
 
-
-    float originalOrientation[9] = {-0.118525, 0.931382, 0.344209, -0.992036, -0.125949, -0.000797627, 0.0426101, -0.341563, 0.938893};//{1,0,0,0,1,0,0,0,1};
+//    float orientationFrom[9] = {1,0,0,0,1,0,0,0,1};
+    float orientationFrom[9] = {-0.118525, 0.931382, 0.344209, -0.992036, -0.125949, -0.000797627, 0.0426101, -0.341563, 0.938893};//{1,0,0,0,1,0,0,0,1};
     resolution = starting_resolution * 2;
 
     globalKeyPts = computeKeyptsWithThresh(subspace, resolution, min, max, filterSizes, thresh);
@@ -74,9 +75,10 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
     for(int i=0;i<levels_.size();++i){
         levels_[i].resize( globalKeyPts->size());
         keypoints_[i].resize( globalKeyPts->size());
+        rectangles_[i].resize( globalKeyPts->size());
         for(int j=0;j<levels_[i].size();++j){
             PointCloudPtr cloud (new PointCloudT);
-            (keypoints_[i][j]) = cloud;
+            keypoints_[i][j] = cloud;
         }
 
     }
@@ -93,20 +95,30 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
     tmp = compute_keypoints(resolution, boxStart, boxEnd, 1);
     boxKeyPts[1] = tmp;
 
+    Vector3f origin(0,0,0);
+    Vector3f recSize(filterSizes.first * starting_resolution * 2,
+                     filterSizes.second * starting_resolution * 2,
+                     filterSizes.third * starting_resolution * 2);
+
     int cpt = 0;
     //for each boxes i
 #pragma omp parallel for
     for( int i = 0; i < globalDescriptors->size(); ++i){
 
-        PointType boxEnd = PointType();
-        boxEnd.x = globalKeyPts->points[i].x - filterSizes.third * starting_resolution * 2 / 2;
-        boxEnd.y = globalKeyPts->points[i].y - filterSizes.second * starting_resolution * 2 / 2;
-        boxEnd.z = globalKeyPts->points[i].z - filterSizes.first * starting_resolution * 2 / 2;
+        Vector3f boxOrigin(
+                    filterSizes.third * starting_resolution * 2 / 2.0,
+                    filterSizes.second * starting_resolution * 2 / 2.0,
+                    filterSizes.first * starting_resolution * 2 / 2.0);
+        //translation from low front left anchor (0,0,0)
+        Vector3f translation(
+                    globalKeyPts->points[i].x - filterSizes.third * starting_resolution * 2 / 2.0,
+                    globalKeyPts->points[i].y - filterSizes.second * starting_resolution * 2 / 2.0,
+                    globalKeyPts->points[i].z - filterSizes.first * starting_resolution * 2 / 2.0);
 
         //TODO check translation
-            Eigen::Matrix4f transform = getNormalizeTransform(originalOrientation,
+            Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
                                                               globalDescriptors->points[i].rf,
-                                                              globalKeyPts->points[i]);
+                                                              boxOrigin, translation);
 //            cout << "GSHOTPyr::constructor rotation : "<<endl<<transform<<endl;
 
     //    #pragma omp parallel for
@@ -119,6 +131,7 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
 //                    cout << "GSHOTPyr::constructor compute_keypoints done"<<endl;
 
                     pcl::transformPointCloud (*boxKeyPts[lvl], *(keypoints_[lvl][i]), transform);
+                    rectangles_[lvl][i] = Rectangle( origin, recSize, transform);
 //                    cout << "GSHOTPyr::constructor transformPointCloud done"<<endl;
 //                    cout<<"Keypts1 : "<<keypoints_[lvl][i]->points[0]<<endl;
 //                    cout<<"Keypts2 : "<<keypoints_[lvl][i]->points[1]<<endl;
@@ -149,44 +162,6 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
 
         ++cpt;
     }
-
-
-//#pragma omp parallel for
-//    for (int i = 0; i < interval_; ++i) {
-//#pragma omp parallel for
-//        for (int j = 0; j < nbOctave; ++j) {
-//            int index = i + j * interval_;
-//            resolution = starting_resolution / pow(2.0, -static_cast<double>(i) / interval) * pow(2.0, j);
-
-//            resolutions_[index] = resolution;
-
-////            cout << "GSHOTPyr::constructor radius resolution at lvl "<<i<<" = "<<resolution<<endl;
-////            cout << "GSHOTPyr::constructor lvl size : "<<subspace->size()<<endl;
-////            cout << "GSHOTPyr::constructor index "<<index<<endl;
-
-//            keypoints_[index] = compute_keypoints(resolution, min, max, index);
-//            DescriptorsPtr descriptors = compute_descriptor(subspace, keypoints_[index], 2*resolution);
-
-
-//            Level level( topology[index](0), topology[index](1), topology[index](2));
-//            int kpt = 0;
-//            for (int z = 0; z < level.depths(); ++z){
-//                for (int y = 0; y < level.rows(); ++y){
-//                    for (int x = 0; x < level.cols(); ++x){
-//                        for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
-//                            level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
-//                        }
-//                        ++kpt;
-//                    }
-//                }
-//            }
-
-//            //Once the first level is done, push it to the array of level
-//            levels_[index] = level;
-////            cout<<"GSHOTPyramid::constr dims level "<<index<<" : " <<level().dimension(0)<<" / " << level().dimension(1)
-////              <<" / " << level().dimension(2)<< endl;
-//        }
-//    }
 }
 
 
@@ -278,25 +253,20 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
 }
 
 
-//GSHOTPyramid::~GSHOTPyramid()
-//{
-////    keypoints_.clear();
-//}
-
-Matrix4f GSHOTPyramid::getNormalizeTransform(float* originalOrientation, float* orientation,
-                                             const PointType translation){
+Matrix4f GSHOTPyramid::getNormalizeTransform(float* orientationFrom, float* orientationTo,
+                                             const Vector3f origin, const Vector3f translation){
 
     float* finiteOrientation;
-    if( std::isfinite(orientation[0])){
-        finiteOrientation = orientation;
+    if( std::isfinite(orientationTo[0])){
+        finiteOrientation = orientationTo;
     } else{
-        finiteOrientation = originalOrientation;
+        finiteOrientation = orientationFrom;
     }
 
     Matrix3f r0, r1, rotation;
     for(int i=0; i<3;++i){
         for(int j=0; j<3;++j){
-            r0(j,i) = originalOrientation[j+i*3];
+            r0(j,i) = orientationFrom[j+i*3];
             r1(j,i) = finiteOrientation[j+i*3];
         }
     }
@@ -305,11 +275,10 @@ Matrix4f GSHOTPyramid::getNormalizeTransform(float* originalOrientation, float* 
 //    cout<<"r1 : "<<endl<<r1<<endl;
     rotation = r1*r0.inverse();
     Eigen::Matrix4f tform;
-    tform.setIdentity ();
-    tform.topLeftCorner (3, 3) = rotation.inverse();
+    tform.setIdentity();
+    tform.topLeftCorner (3, 3) = rotation;
 
-    Vector3f offset(translation.x,translation.y,translation.z);
-    tform.topRightCorner(3, 1) = offset /*- rotation.inverse() * offset*/;
+    tform.topRightCorner(3, 1) = origin - rotation * origin + translation;
 //    cout<<"transform : "<<endl<<tform<<endl;
 
     return tform;
@@ -336,9 +305,9 @@ std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data){
 PointCloudPtr
 GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, int index){
 
-    int pt_nb_x = ceil((max.x-min.x)/grid_reso+1);
-    int pt_nb_y = ceil((max.y-min.y)/grid_reso+1);
-    int pt_nb_z = ceil((max.z-min.z)/grid_reso+1);
+    int pt_nb_x = ceil((max.x-min.x)/grid_reso);
+    int pt_nb_y = ceil((max.y-min.y)/grid_reso);
+    int pt_nb_z = ceil((max.z-min.z)/grid_reso);
 
     int pt_nb = pt_nb_x*pt_nb_y*pt_nb_z;
 
@@ -355,9 +324,9 @@ GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, i
 #pragma omp parallel for
             for(int x=0;x<pt_nb_x;++x){
                 PointType p = PointType();
-                p.x = min.x + x*grid_reso;
-                p.y = min.y + y*grid_reso;
-                p.z = min.z + z*grid_reso;
+                p.x = min.x + (x+1)*(max.x - min.x) / (pt_nb_x + 1);
+                p.y = min.y + (y+1)*(max.y - min.y) / (pt_nb_y + 1);
+                p.z = min.z + (z+1)*(max.z - min.z) / (pt_nb_z + 1);
                 keypoints->at(x + y * pt_nb_x + z * pt_nb_y * pt_nb_x) = p;
             }
         }
@@ -374,6 +343,9 @@ GSHOTPyramid::computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, Poin
     int pt_nb_y = ceil((max.y-min.y)/grid_reso+1)-filterSizes.second;
     int pt_nb_z = ceil((max.z-min.z)/grid_reso+1)-filterSizes.first;
     
+    cout<<"pt_nb_x : "<<pt_nb_x<<endl;
+    cout<<"pt_nb_y : "<<pt_nb_y<<endl;
+
 //    PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
 
     PointCloudPtr keypoints (new PointCloudT());
@@ -384,6 +356,7 @@ GSHOTPyramid::computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, Poin
     for(int z=0;z<pt_nb_z;++z){
         for(int y=0;y<pt_nb_y;++y){
             for(int x=0;x<pt_nb_x;++x){
+                //put keyPts in the middle of the box
                 PointType p = PointType();
                 p.x = min.x + (x+filterSizes.third/2.0)*grid_reso;
                 p.y = min.y + (y+filterSizes.second/2.0)*grid_reso;

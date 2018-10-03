@@ -21,205 +21,162 @@
 using namespace FFLD;
 using namespace std;
 
-Rectangle::Rectangle() : origin_( 0, 0, 0), diagonal_( 0, 0, 0), width_(0), height_(0), depth_(0),
-    resolution_(0.0)
+Rectangle::Rectangle() : origin_( 0, 0, 0), boxSizes_(0, 0, 0), cloud_( new PointCloudT (8,1,PointType())),
+    tform_(Eigen::Matrix4f::Identity()), volume_(0)
 {
+    PointType p = PointType();
+    p.z = 0;
+    p.y = 0;
+    p.x = 0;
+    cloud_->at(0) = p;
+    cloud_->at(1) = p;
+    cloud_->at(2) = p;
+    cloud_->at(3) = p;
+    cloud_->at(4) = p;
+    cloud_->at(5) = p;
+    cloud_->at(6) = p;
+    cloud_->at(7) = p;
 }
+
 Rectangle::Rectangle(const Rectangle& rect)
-    : origin_( rect.origin_), width_(rect.width_), height_(rect.height_), depth_(rect.depth_),
-      diagonal_( rect.diagonal_), volume_(rect.volume_), resolution_(rect.resolution_)
+    : origin_( rect.origin_), boxSizes_(rect.boxSizes_), cloud_( rect.cloud_),
+      tform_( rect.tform_), volume_(rect.volume_)
 {}
 
-Rectangle::Rectangle(float depth, float height, float width, float resolution) :
-    origin_( 0, 0, 0), width_(width), height_(height), depth_(depth),
-    diagonal_( depth_, height_, width_), resolution_(resolution)
+//Rectangle::Rectangle(float depth, float height, float width, float resolution) :
+//    origin_( 0, 0, 0), width_(width), height_(height), depth_(depth),
+//    diagonal_( depth_, height_, width_), resolution_(resolution)
+//{
+//    volume_ = volume();
+//}
+
+Rectangle::Rectangle(Eigen::Vector3f origin, Eigen::Vector3f boxSizes, Eigen::Matrix4f tform) :
+    origin_( origin), boxSizes_(boxSizes), cloud_( new PointCloudT (8,1,PointType())),
+    tform_(tform)
 {
-    volume_ = volume();
+    volume_ = boxSizes_(0) * boxSizes_(1) * boxSizes_(2);
+
+    PointCloudPtr cloud (new PointCloudT(8,1,PointType()));
+    PointType p = PointType();
+    p.z = origin(0);
+    p.y = origin(1);
+    p.x = origin(2);
+    cloud->at(0) = p;
+    p.z = origin(0)+boxSizes(0);
+    p.y = origin(1);
+    p.x = origin(2);
+    cloud->at(1) = p;
+    p.z = origin(0);
+    p.y = origin(1)+boxSizes(1);
+    p.x = origin(2);
+    cloud->at(2) = p;
+    p.z = origin(0)+boxSizes(0);
+    p.y = origin(1)+boxSizes(1);
+    p.x = origin(2);
+    cloud->at(3) = p;
+    p.z = origin(0);
+    p.y = origin(1);
+    p.x = origin(2)+boxSizes(2);
+    cloud->at(4) = p;
+    p.z = origin(0)+boxSizes(0);
+    p.y = origin(1);
+    p.x = origin(2)+boxSizes(2);
+    cloud->at(5) = p;
+    p.z = origin(0);
+    p.y = origin(1)+boxSizes(1);
+    p.x = origin(2)+boxSizes(2);
+    cloud->at(6) = p;
+    p.z = origin(0)+boxSizes(0);
+    p.y = origin(1)+boxSizes(1);
+    p.x = origin(2)+boxSizes(2);
+    cloud->at(7) = p;
+
+    pcl::transformPointCloud (*cloud, *cloud_, tform);
+
 }
 
-Rectangle::Rectangle(Eigen::Vector3f origin, float depth, float height, float width, float resolution) :
-    origin_( origin), width_(width), height_(height), depth_(depth), resolution_(resolution)
-{
-    diagonal_ = Eigen::Vector3f( origin_(0) + depth_, origin_(1) + height_, origin_(2) + width_);
-    volume_ = volume();
-}
+//Rectangle::~Rectangle()
+//{
+//    cloud_ = NULL;
+//    delete [] cloud_;
+
+//}
 
 Eigen::Vector3f Rectangle::origin() const
 {
     return origin_;
 }
 
-Eigen::Vector3f Rectangle::diagonal() const
+Eigen::Vector3f Rectangle::size() const
 {
-    return diagonal_;
+    return boxSizes_;
 }
 
-void Rectangle::setOrigin(Eigen::Vector3f origin)
+float Rectangle::origin( int i) const
 {
-    origin_ = origin;
+    return origin_(i);
 }
 
-void Rectangle::setDiagonal(Eigen::Vector3f diagonal)
+float Rectangle::size( int i) const
 {
-    diagonal_ = diagonal;
+    return boxSizes_(i);
 }
 
-float Rectangle::width() const
-{
-	return width_;
+PointCloudPtr Rectangle::cloud() const{
+    return cloud_;
 }
 
-void Rectangle::setWidth(float width)
-{
-	width_ = width;
+PointType Rectangle::cloud( int index) const{
+    return cloud_->points[index];
 }
 
-float Rectangle::height() const
-{
-	return height_;
-}
+//void Rectangle::setCloud( PointCloudPtr cloud){
+//    cloud_ = cloud;
+//}
 
-void Rectangle::setHeight(float height)
-{
-	height_ = height;
+Eigen::Matrix4f Rectangle::transform() const{
+    return tform_;
 }
-
-float Rectangle::depth() const
-{
-    return depth_;
-}
-
-void Rectangle::setDepth(float depth)
-{
-    depth_ = depth;
-}
-
-float Rectangle::right() const
-{
-    return diagonal_(2);
-}
-
-float Rectangle::left() const
-{
-    return origin_(2);
-}
-
-float Rectangle::top() const
-{
-    return origin_(1);
-}
-
-float Rectangle::bottom() const
-{
-    return diagonal_(1);
-}
-
-float Rectangle::front() const
-{
-    return origin_(0);
-}
-
-float Rectangle::back() const
-{
-    return diagonal_(0);
-}
-
-float Rectangle::resolution() const
-{
-    return resolution_;
-}
-
-void Rectangle::setResolution( float resolution)
-{
-    resolution_ = resolution;
-}
-
-void Rectangle::setLeft(float left)
-{
-    origin_(2) = left;
-    setWidth( right() - left);
-}
-
-void Rectangle::setRight(float right)
-{
-    diagonal_(2) = right;
-    setWidth( right - left());
-}
-
-void Rectangle::setBottom(float bottom)
-{
-    diagonal_(1) = bottom;
-    setHeight( top() - bottom);
-}
-
-void Rectangle::setTop(float top)
-{
-    origin_(1) = top;
-    setHeight( top - bottom());
-}
-
-void Rectangle::setBack(float back)
-{
-    diagonal_(0) = back;
-    setDepth( front() - back);
-}
-
-void Rectangle::setFront(float front)
-{
-    origin_(0) = front;
-    setDepth( front - back());
-}
-
 
 bool Rectangle::empty() const
 {
-    return (width() <= 0) || (height() <= 0) || (depth() <= 0 ) || (volume() <=0);
-}
-
-void Rectangle::setVolume(float volume)
-{
-    volume_ = volume;
+    return (boxSizes_(0) <= 0) || (boxSizes_(1) <= 0) || (boxSizes_(2) <= 0 ) || (volume_ <=0);
 }
 
 float Rectangle::volume() const
 {
-    //max() requires that the first and second arguments are of the same type
-    return width() * height() * depth();
+    return volume_;
 }
 
-
-Rectangle Rectangle::changeToPclCoordinateSystem() const{
-    Eigen::Vector3f pclOrigin( diagonal()(0), diagonal()(1), origin()(2));
-    Rectangle rec( pclOrigin, depth(), height(), width(), resolution());
-    rec.setDiagonal(Eigen::Vector3f( origin()(0), origin()(1), diagonal()(2)));
-    return rec;
-}
-
-//TODO use ratio instead of volume
 bool Rectangle::operator<(const Rectangle & rect){
     return volume() < rect.volume();
 }
 
 ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)
 {
-    return os << rect.origin()(0) << ' ' << rect.origin()(1) << ' ' << rect.origin()(2)
-              <<' ' << rect.depth() << ' ' << rect.height() << ' ' << rect.width() << ' ' << rect.resolution();
+    return os << rect.origin(0) << ' ' << rect.origin()(1) << ' ' << rect.origin()(2) << ' '
+              << rect.size(0) << ' ' << rect.size(1) << ' ' << rect.size(2) << ' ';
+    for(int i=0; i< rect.transform().rows(); ++i){
+        for(int j=0; j< rect.transform().cols(); ++j){
+            os << rect.transform()(i,j) << ' ';
+        }
+    }
 }
 
 istream & FFLD::operator>>(istream & is, Rectangle & rect)
 {
-    float x, y, z, width, height, depth;
-    float resolution;
+    Eigen::Vector3f origin, boxSizes;
+    Eigen::Matrix4f tform;
 	
-    is >> z >> y >> x >> depth >> height >> width >> resolution;
+    is >> origin(0) >> origin(1) >> origin(2)
+       >> boxSizes(0) >> boxSizes(1) >> boxSizes(2);
+    for(int i=0; i< tform.rows(); ++i){
+        for(int j=0; j< tform.cols(); ++j){
+            is >> tform(i,j);
+        }
+    }
 	
-    rect.setOrigin(Eigen::Vector3f( z, y, x));
-    rect.setDiagonal(Eigen::Vector3f( z+depth, y+height, x+width));
-    rect.setWidth(width);
-	rect.setHeight(height);
-    rect.setDepth(depth);
-    rect.setResolution(resolution);
-    rect.setVolume( rect.volume());
+    rect = Rectangle(origin, boxSizes, tform);
 	
 	return is;
 }

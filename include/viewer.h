@@ -38,41 +38,23 @@ public:
         ++id;
     }
 
-    void displayCubeLine(Rectangle& rectangle, Eigen::Vector3f offset = Eigen::Vector3f(0, 0, 0),
-                         Eigen::Vector3i color = Eigen::Vector3i(255, 0, 0), string name = ""){
+    void displayCubeLine(const Rectangle& rec, Eigen::Vector3i color = Eigen::Vector3i(255, 0, 0), string name = ""){
 
-        Rectangle rec = rectangle.changeToPclCoordinateSystem();
-
-//        cout << "rec pcl : "<< rec << endl;
-//        cout << "rec pcl diagonal : "<< rec.diagonal() << endl;
-        float left = rec.left() + offset(0);
-        float top = rec.top() + offset(1);
-        float right = rec.right() + offset(0);
-        float front = rec.front() + offset(2);
-        float bottom = rec.bottom() + offset(1);
-        float back = rec.back() + offset(2);
-
-//        cout << "line left : "<< left << endl;
-//        cout << "line right : "<< right << endl;
-//        cout << "line top : "<< top << endl;
-//        cout << "line bottom : "<< bottom << endl;
-//        cout << "line front : "<< front << endl;
-//        cout << "line back : "<< back << endl;
-        viewer->addLine(pcl::PointXYZ(left, top, front), pcl::PointXYZ(left, bottom, front), color(0), color(1), color(2), name.append(std::to_string(id)).append(":l1"));
-        viewer->addLine(pcl::PointXYZ(left, bottom, front), pcl::PointXYZ(right, bottom, front),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l2"));
-        viewer->addLine(pcl::PointXYZ(right, bottom, front), pcl::PointXYZ(right, top, front),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l3"));
-        viewer->addLine(pcl::PointXYZ(right, top, front), pcl::PointXYZ(left, top, front),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l4"));
+        viewer->addLine(rec.cloud(0), rec.cloud(1),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l1"));
+        viewer->addLine(rec.cloud(2), rec.cloud(3),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l2"));
+        viewer->addLine(rec.cloud(4), rec.cloud(5),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l3"));
+        viewer->addLine(rec.cloud(6), rec.cloud(7),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l4"));
 
 
-        viewer->addLine(pcl::PointXYZ(left, top, back), pcl::PointXYZ(left, bottom, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l5"));
-        viewer->addLine(pcl::PointXYZ(left, bottom, back), pcl::PointXYZ(right, bottom, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l6"));
-        viewer->addLine(pcl::PointXYZ(right, bottom, back), pcl::PointXYZ(right, top, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l7"));
-        viewer->addLine(pcl::PointXYZ(right, top, back), pcl::PointXYZ(left, top, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l8"));
+        viewer->addLine(rec.cloud(0), rec.cloud(2),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l5"));
+        viewer->addLine(rec.cloud(1), rec.cloud(3),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l6"));
+        viewer->addLine(rec.cloud(4), rec.cloud(6),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l7"));
+        viewer->addLine(rec.cloud(5), rec.cloud(7),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l8"));
 
-        viewer->addLine(pcl::PointXYZ(left, top, front), pcl::PointXYZ(left, top, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l9"));
-        viewer->addLine(pcl::PointXYZ(left, bottom, front), pcl::PointXYZ(left, bottom, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l10"));
-        viewer->addLine(pcl::PointXYZ(right, bottom, front), pcl::PointXYZ(right, bottom, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l11"));
-        viewer->addLine(pcl::PointXYZ(right, top, front), pcl::PointXYZ(right, top, back),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l12"));
+        viewer->addLine(rec.cloud(0), rec.cloud(4),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l9"));
+        viewer->addLine(rec.cloud(1), rec.cloud(5),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l10"));
+        viewer->addLine(rec.cloud(2), rec.cloud(6),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l11"));
+        viewer->addLine(rec.cloud(3), rec.cloud(7),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l12"));
 
         ++id;
     }

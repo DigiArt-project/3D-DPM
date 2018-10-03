@@ -20,6 +20,26 @@
 
 #include <iosfwd>
 
+//PCL
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
+#include <pcl/features/board.h>
+#include <pcl/filters/uniform_sampling.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/features/shot_omp.h>
+#include <pcl/common/common_headers.h>
+#include <pcl/common/transforms.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
+#include <pcl/surface/convex_hull.h>
+
+//Other
+#include "typedefs.h"
+
 #include <algorithm>
 #include <iostream>
 //EIGEN
@@ -36,84 +56,53 @@ class Rectangle
 {
 public:
 	/// Constructs an empty rectangle. An empty rectangle has no area.
-	Rectangle();
+    Rectangle();
     
     Rectangle(const Rectangle& rect);
 	
 	/// Constructs a rectangle with the given @p width and @p height.
-    Rectangle(float depth, float height, float width, float resolution);
+//    Rectangle(float depth, float height, float width, float resolution);
 	
 	/// Constructs a rectangle with coordinates (@p x, @p y) and the given @p width and @p height.
-    Rectangle(Eigen::Vector3f origin, float depth, float height, float width, float resolution);
-	
+    Rectangle(Eigen::Vector3f origin, Eigen::Vector3f boxSizes, Eigen::Matrix4f tform = Eigen::Matrix4f::Identity());
+
+//    ~Rectangle();
+
     ///Correspond to the top left corner of the rectangle
 	/// Returns the x-coordinate of the rectangle.
     Eigen::Vector3f origin() const;
 
-    Eigen::Vector3f diagonal() const;
+    Eigen::Vector3f size() const;
+
+    float origin( int i) const;
+
+    float size( int i) const;
+
+    PointCloudPtr cloud() const;
+
+    PointType cloud( int index) const;
+
+//    void setCloud( PointCloudPtr cloud);
+
+    Eigen::Matrix4f transform() const;
 	
-	/// Sets the x coordinate of the rectangle to @p x.
-    void setOrigin(Eigen::Vector3f origin);
-
-    void setDiagonal(Eigen::Vector3f diagonal);
-
-
-	/// Returns the width of the rectangle.
-    float width() const;
-	/// Sets the height of the rectangle to the given @p width.
-    void setWidth(float width);
-	
-	/// Returns the height of the rectangle.
-    float height() const;
-	/// Sets the height of the rectangle to the given @p height.
-    void setHeight(float height);
-    
-    /// Returns the depth of the rectangle
-    float depth() const ;
-    /// Sets the depth of the rectangle to the given @p depth.
-    void setDepth(float depth);
-    
     /// Returns whether the rectangle is empty. An empty rectangle has no volume.
     bool empty() const;
     
     /// Returns the volume of the rectangle.
     /// @note Equivalent to max(width(), 0) * max(height(), 0)* max(depth(), 0).
     float volume() const;
-    void setVolume(float volume);
-
-    float right() const;
-    float left() const;
-    float top() const;
-    float bottom() const;
-    float front() const;
-    float back() const;
-
-    float resolution() const;
-    void setResolution( float resolution);
-
-
-    void setLeft(float left);
-    void setRight(float right);
-    void setBottom(float bottom);
-    void setTop(float top);
-    void setBack(float back);
-    void setFront(float front);
     
-    Rectangle changeToPclCoordinateSystem() const;
-
-    /// compare ratio
+    /// compare volume
     bool operator<(const Rectangle & rect);
 
-private:
+protected:
 
     Eigen::Vector3f origin_;
-    Eigen::Vector3f diagonal_;
-//    Eigen::Quaternion quaternion_;
-    float width_;
-    float height_;
-    float depth_;
+    Eigen::Vector3f boxSizes_;
+    PointCloudPtr cloud_;
+    Eigen::Matrix4f tform_;
     float volume_;
-    float resolution_;//become useless
 };
 
 /// Serializes a rectangle to a stream.

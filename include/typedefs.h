@@ -33,6 +33,17 @@ typedef pcl::PointCloud<DescriptorType> Descriptors;
 typedef pcl::PointCloud<DescriptorType>::Ptr DescriptorsPtr;
 typedef pcl::PointCloud<DescriptorType>::ConstPtr DescriptorsConstPtr;
 
+
+static bool pointTypeIsInferior( PointType pl, PointType pr){
+    return pl.x < pr.x ||
+            (( pl.x == pr.x && pl.y < pr.y) ||
+             (( pl.y == pr.y && pl.z < pr.z)));
+}
+
+static bool pointTypeIsEqual( PointType pl, PointType pr, float epsilon = 0.001){
+    return abs( pl.x - pr.x) < epsilon && abs( pl.y - pr.y) < epsilon && abs( pl.z - pr.z) < epsilon;
+}
+
 //namespace FFLD
 //{
 //    //Read point cloud from a path

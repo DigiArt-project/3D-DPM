@@ -29,6 +29,7 @@
 //Other
 #include "typedefs.h"
 #include "tensor3d.h"
+#include "Rectangle.h"
 #include <boost/filesystem.hpp>
 #include <omp.h>
 
@@ -152,8 +153,9 @@ namespace FFLD
         
 //        private:
 
-        static Eigen::Matrix4f getNormalizeTransform(float* originalOrientation, float* orientation,
-                                                     const PointType translation = PointType(0,0,0));
+        static Eigen::Matrix4f getNormalizeTransform(float* orientationFrom, float* orientationTo,
+                                                     const Eigen::Vector3f origin,
+                                                     const Eigen::Vector3f translation = Eigen::Vector3f(0,0,0));
         
         std::vector<float> minMaxScaler(std::vector<float> data);
 
@@ -185,7 +187,7 @@ namespace FFLD
 
         // The corresponding positions of boxes descriptors in the space for each level
         std::vector<std::vector<PointCloudPtr > > keypoints_;//[lvl][box]
-        std::vector<std::vector<Eigen::Quaternionf > > q_;//[lvl][box]
+        std::vector<std::vector<Rectangle> > rectangles_;//[lvl][box]
 
         PointCloudPtr globalKeyPts;
         DescriptorsPtr globalDescriptors;

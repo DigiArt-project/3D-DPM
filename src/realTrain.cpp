@@ -34,7 +34,7 @@ struct Detection : public Rectangle
     int z;
     int lvl;
     int box;
-    Detection() : score(0), x(0), y(0), z(0), lvl(0), box(0)
+    Detection() : Rectangle(), score(0), x(0), y(0), z(0), lvl(0), box(0)
     {
     }
 
@@ -45,7 +45,7 @@ struct Detection : public Rectangle
 
     bool operator<(const Detection & detection) const
     {
-        return score > detection.score;
+        return score > detection.score && !(detection.score > score);   ;
     }
 };
 
@@ -272,14 +272,6 @@ public:
         // For each scale
         for (int lvl = 0; lvl < scores.size(); ++lvl) {
             const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
-            int offz = floor(pyramid.sceneOffset_(0)*scale);
-            int offy = floor(pyramid.sceneOffset_(1)*scale);
-            int offx = floor(pyramid.sceneOffset_(2)*scale);
-
-
-            cout<<"test:: offz = "<<offz<<endl;
-            cout<<"test:: offy = "<<offy<<endl;
-            cout<<"test:: offx = "<<offx<<endl;
 
             for (int box = 0; box < scores[lvl].size(); ++box) {
 
@@ -289,39 +281,33 @@ public:
                 PointType max;
                 pcl::getMinMax3D(*boxCloud, min, max);
 
-                const int depths = static_cast<int>(scores[lvl][box].depths());
-                const int rows = static_cast<int>(scores[lvl][box].rows());
-                const int cols = static_cast<int>(scores[lvl][box].cols());
+                const int depths = scores[lvl][box].depths();
+                const int rows = scores[lvl][box].rows();
+                const int cols = scores[lvl][box].cols();
 
-                cout<<"test:: for lvl "<<lvl<<" :"<<endl;
+//                cout<<"test:: for lvl "<<lvl<<" :"<<endl;
 
-                cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
-                cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
-                cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
+//                cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
+//                cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
+//                cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
 
                 if(scores[lvl][box].size() > 0){
                     ofstream out("conv.txt");
                     out << scores[lvl][box]();
-                }
 
-                cout << "test::detect limit z : " << offz << " / " << offz+depths<< endl;
 
-                float maxi = scores[lvl][box].max();
-                cout << "test::detect limit y : " << offy << " / " << offy+rows<< endl;
+    //                float maxi = scores[lvl][box].max();
 
-                PointCloudPtr scoreCloud(new PointCloudT());
-                scoreCloud->width    = scores[lvl].size();
-                scoreCloud->height   = 1;
-                scoreCloud->points.resize (scoreCloud->width * scoreCloud->height);
-                cout << "test::detect limit x : " << offx << " / " << offx+cols<< endl;
+    //                PointCloudPtr scoreCloud(new PointCloudT());
+    //                scoreCloud->width    = scores[lvl].size();
+    //                scoreCloud->height   = 1;
+    //                scoreCloud->points.resize (scoreCloud->width);
 
-                for (int z = 0; z < depths; ++z) {
-                    for (int y = 0; y < rows; ++y) {
-                        for (int x = 0; x < cols; ++x) {
-                            const double score = scores[lvl][box]()(z, y, x);
 
-    //                        PointType p = PointType();
-    //                        p.z = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).z;
+                        const double score = scores[lvl][box]()(0,0,0);
+
+        //                        PointType p = PointType();
+        //                        p.z = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).z;
     //                        p.y = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).y;
     //                        p.x = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).x;
     //                        p.r = score / maxi*255;
@@ -329,37 +315,31 @@ public:
     //                        p.b = score / maxi*255;
     //                        scoreCloud->at(x + y * cols + z * rows * cols) = p;
 
-                            cout<<"test:: scores = "<<score<<endl;
+                    cout<<"test:: scores = "<<score<<endl;
 
-                            if (score >= threshold) {
-                                Eigen::Vector3f origin(min.z + z * pyramid.resolutions()[lvl],
-                                                       min.y + y * pyramid.resolutions()[lvl],
-                                                       min.x + x * pyramid.resolutions()[lvl]);
-                                float w = sizes[argmaxes[lvl]()(z, y, x)].third * pyramid.resolutions()[lvl];
-                                float h = sizes[argmaxes[lvl]()(z, y, x)].second * pyramid.resolutions()[lvl];
-                                float d = sizes[argmaxes[lvl]()(z, y, x)].first * pyramid.resolutions()[lvl];
+                    if (score >= threshold) {
 
-                                Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvl]);//indices of the cube in the PC
+                        Rectangle bndbox = pyramid.rectangles_[lvl][box];
 
-                                cout<<"test:: detection bndbox = "<<bndbox<<endl;
+//                        cout<<"test:: detection bndbox = "<<bndbox<<endl;
 
-                                if (!bndbox.empty()){
-                                    detections.push_back(Detection(score, z, y, x, lvl, box, bndbox));
-                                    cout<<"test:: bndbox added to detections"<<endl;
-                                }
-
-                            }
+                        if (!bndbox.empty()){
+                            detections.push_back(Detection(score, 0, 0, 0, lvl, box, pyramid.rectangles_[lvl][box]));
+                            cout<<"test:: bndbox added to detections"<<endl;
                         }
-                    }
-                }
-    //            viewer.addPC(scoreCloud, 4, Eigen::Vector3i(255, 255, 255));
 
+                    }
+
+        //            viewer.addPC(scoreCloud, 4, Eigen::Vector3i(255, 255, 255));
+
+                }
             }
         }
 
         cout<<"test:: detections.size = "<<detections.size()<<endl;
         // Non maxima suppression
-        sort(detections.begin(), detections.end()/*, ascendingOrder*/);
+        std::sort(detections.begin(), detections.end()/*, ascendingOrder*/);
+        cout<<"test::sort done"<<endl;
 
         for (int i = 1; i < detections.size(); ++i){
             detections.resize(remove_if(detections.begin() + i, detections.end(),
@@ -388,37 +368,27 @@ public:
 
                 //draw each parts
                 for (int j = 0; j < positions[argmax].size(); ++j) {
-//                    cout<<"test:: zp = "<<positions[argmax][j][lvl]()(z, y, x)(0)<<endl;
-//                    cout<<"test:: yp = "<<positions[argmax][j][lvl]()(z, y, x)(1)<<endl;
-//                    cout<<"test:: xp = "<<positions[argmax][j][lvl]()(z, y, x)(2)<<endl;
-//                    cout<<"test:: lvlp = "<<positions[argmax][j][lvl]()(z, y, x)(3)<<endl;
 
                     const int zp = positions[argmax][j][lvl][box]()(z, y, x)(0);
                     const int yp = positions[argmax][j][lvl][box]()(z, y, x)(1);
                     const int xp = positions[argmax][j][lvl][box]()(z, y, x)(2);
                     const int lvlp = positions[argmax][j][lvl][box]()(z, y, x)(3);
 
-//                    cout<<"test:: positions[argmax][j][lvl]()(z, y, x) = "<<positions[argmax][j][lvl]()(z, y, x)<<endl;
-
-
-//                    const double scale = pow(2.0, static_cast<double>(zp) / pyramid.interval() + 2);
-//                    const double scale = 1 / pow(2.0, static_cast<double>(lvlp) / interval);
-
-
                     int pt_nb_y = pyramid.topology_[lvlp](1);
                     int pt_nb_x = pyramid.topology_[lvlp](2);
                     PointType p = pyramid.keypoints_[lvlp][box]->points[xp + yp * pt_nb_x + zp * pt_nb_y * pt_nb_x];
-                    Eigen::Vector3f origin(p.z, p.y, p.x);
-                    float w = mixture.models()[argmax].partSize().third * pyramid.resolutions()[lvlp];
-                    float h = mixture.models()[argmax].partSize().second * pyramid.resolutions()[lvlp];
-                    float d = mixture.models()[argmax].partSize().first * pyramid.resolutions()[lvlp];
+                    Eigen::Vector3f origin(0,0,0);
+                    Eigen::Vector3f boxSize(
+                                mixture.models()[argmax].partSize().third * pyramid.resolutions()[lvlp],
+                                mixture.models()[argmax].partSize().second * pyramid.resolutions()[lvlp],
+                                mixture.models()[argmax].partSize().first * pyramid.resolutions()[lvlp]);
 
-                    Rectangle bndbox( origin, d, h, w, pyramid.resolutions()[lvlp]);//indices of the cube in the PC
+                    Rectangle bndbox( origin, boxSize, pyramid.rectangles_[lvlp][box].transform());//indices of the cube in the PC
 
 
 //                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
             //TODO add rotation to drawing
-                    viewer.displayCubeLine(bndbox, Eigen::Vector3f(0,0,0), Vector3i(0,0,255));
+                    viewer.displayCubeLine(bndbox, Vector3i(0,0,255));
                 }
 
                 // Draw the root last
@@ -427,13 +397,13 @@ public:
                 int pt_nb_y = pyramid.topology_[lvl](1);
                 int pt_nb_x = pyramid.topology_[lvl](2);
                 PointType p = pyramid.keypoints_[lvl][box]->points[x + y * pt_nb_x + z * pt_nb_y * pt_nb_x];
-                Eigen::Vector3f origin(p.z, p.y, p.x);
-                float w = sizes[argmaxes[lvl]()(z, y, x)].third * pyramid.resolutions()[lvl];
-                float h = sizes[argmaxes[lvl]()(z, y, x)].second * pyramid.resolutions()[lvl];
-                float d = sizes[argmaxes[lvl]()(z, y, x)].first * pyramid.resolutions()[lvl];
-                Rectangle bbox( origin, d, h, w, pyramid.resolutions()[1]);
-                viewer.displayCubeLine(bbox, Eigen::Vector3f(pyramid.resolutions()[0],pyramid.resolutions()[0],pyramid.resolutions()[0]),
-                        Vector3i(0,255,255));
+                Eigen::Vector3f origin(0,0,0);
+                Eigen::Vector3f boxSize(
+                            sizes[argmaxes[lvl]()(z, y, x)].third * pyramid.resolutions()[lvl],
+                            sizes[argmaxes[lvl]()(z, y, x)].second * pyramid.resolutions()[lvl],
+                            sizes[argmaxes[lvl]()(z, y, x)].first * pyramid.resolutions()[lvl]);
+                Rectangle bbox( origin, boxSize, pyramid.rectangles_[lvl][box].transform());
+                viewer.displayCubeLine(bbox, Vector3i(0,255,255));
             }
 
         }
@@ -471,7 +441,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0/*.455*/, overlap=0.5;
+        float threshold=0.1, overlap=0.5;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -508,17 +478,20 @@ public:
         Vector3f originScene( minScene.z,
                                minScene.y,
                                minScene.x);
-        triple<float, float, float> sceneSize( maxScene.z-minScene.z,
-                                               maxScene.y-minScene.y,
-                                               maxScene.x-minScene.x);
-        Rectangle sceneRect(originScene, sceneSize.first, sceneSize.second, sceneSize.third, sceneResolution);
+        Vector3f sceneSize(maxScene.z-minScene.z,
+                           maxScene.y-minScene.y,
+                           maxScene.x-minScene.x);
+        Rectangle sceneRect(originScene, sceneSize);
         cout<<"sceneRect : "<<sceneRect<<endl;
 
         PointCloudPtr test (new PointCloudT(1,1,PointType()));
-        int boxNb = 570;//570;724
+        int boxNb = 4+2*12+8*12*7;//570;724//210;617
         test->points[0] = pyramid.globalKeyPts->points[boxNb];
         viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
         viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
+//        Rectangle rect = Rectangle();
+//        rect.setCloud(pyramid.keypoints_[1][boxNb]);
+        viewer.displayCubeLine(pyramid.rectangles_[1][boxNb]);
         cout<<"lrf : ";
         for(int i=0;i<9;++i){
             cout<<pyramid.globalDescriptors->points[boxNb].rf[i]<<" ";
@@ -902,12 +875,11 @@ public:
         destroyWindow("A_good_name");
     }
 
-
     void checkSHOTs(vector<string> pcNames){
 
         int lumi = 5;
         int rows = 150, cols = GSHOTPyramid::DescriptorSize;
-        int nbKeyPts = 2;
+        int nbKeyPts = 1;
         int nbKeyPtsX = nbKeyPts, nbKeyPtsY = nbKeyPts, nbKeyPtsZ = nbKeyPts;
         float rf[pcNames.size()*9];
         for(int p=0; p<pcNames.size();++p){
@@ -915,6 +887,8 @@ public:
                 rf[i+9*p] = 0;
             }
         }
+
+        PointCloudPtr keypoints (new PointCloudT (nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ,1,PointType()));
 
         for(int p=0; p<pcNames.size();++p){
             Mat img( rows, cols*nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ, CV_8UC3, cv::Scalar(100,0,0));
@@ -934,9 +908,8 @@ public:
             float descr_rad = std::max( (max.x - min.x) / (nbKeyPtsX + 1), std::max(
                                             (max.y - min.y) / (nbKeyPtsY + 1), (max.z - min.z) / (nbKeyPtsZ + 1)));
 
-            cout<<"descr_rad : "<<descr_rad<<endl;
+            cout<<"min : "<<min<<endl;
 
-            PointCloudPtr keypoints (new PointCloudT (nbKeyPtsX*nbKeyPtsY*nbKeyPtsZ,1,PointType()));
 
             for(int z=0;z<nbKeyPtsZ;++z){
                 for(int y=0;y<nbKeyPtsY;++y){
@@ -1043,12 +1016,9 @@ public:
         if(pcNames.size()>1){
             Matrix3f r0,r1;
             for(int i=0; i<3;++i){
-                float aux0 = rf[i*3] + rf[1+i*3] + rf[2+i*3];
-                float aux1 = rf[9+i*3] + rf[9+1+i*3] + rf[9+2+i*3];
-
                 for(int j=0; j<3;++j){
-                    r0(i,j) = rf[j+i*3]/*/aux0*/;
-                    r1(j,i) = rf[9+j+i*3]/*/aux1*/;
+                    r0(j,i) = rf[j+i*3];
+                    r1(j,i) = rf[9+j+i*3];
                 }
             }
             cout<<endl;
@@ -1056,27 +1026,59 @@ public:
 
             Matrix4f res;
             res.setIdentity ();
-            res.topLeftCorner (3, 3) = r1;
-            PointType trans = PointType();
-            trans.x = 1;
-            trans.y = 0;
-            trans.z = 0;
+            res.topLeftCorner (3, 3) = r0;
+            Vector3f origin( 0,0,0);
+            Vector3f trans( 1,0,1);
 
-            Matrix4f tf = GSHOTPyramid::getNormalizeTransform(rf, &rf[9], trans);
+            Matrix4f tf = GSHOTPyramid::getNormalizeTransform(rf, &rf[9], origin, trans);//from 1 to 2
 
-            cout<<"r0 : "<<endl<<r0<<endl;
-            cout<<"r1 : "<<endl<<tf*res<<endl;
+            cout<<"r1 : "<<endl<<r1<<endl;
+            cout<<"r0 : "<<endl<<tf*res<<endl;
 //            cout<<"rotation : "<<endl<<tf<<endl;
 
-            PointCloudPtr cloud( new PointCloudT);
-            if (readPointCloud(pcNames[1], cloud) == -1) {
+            PointCloudPtr cloud1( new PointCloudT);
+            if (readPointCloud(pcNames[0], cloud1) == -1) {
+                cout<<"test::couldnt open pcd file"<<endl;
+            }
+            PointCloudPtr cloud2( new PointCloudT);
+            if (readPointCloud(pcNames[1], cloud2) == -1) {
                 cout<<"test::couldnt open pcd file"<<endl;
             }
 
             PointCloudPtr rotatedCloud (new PointCloudT);
-            pcl::transformPointCloud (*cloud, *rotatedCloud, tf);
-            viewer.addPC( rotatedCloud);
+            pcl::transformPointCloud (*cloud1, *rotatedCloud, tf);
+            viewer.addPC( cloud1);
+            viewer.addPC( cloud2, 3, Eigen::Vector3i(0,0,255));
+            viewer.addPC( rotatedCloud, 3, Eigen::Vector3i(255, 0, 0));
+
         }
+    }
+
+    void checkIntersector(){
+
+        Eigen::Matrix4f transform1 = Eigen::Matrix4f::Identity();
+        Vector3f origin1(0,0,0);
+        Vector3f recSize1(2,2,2);
+        Rectangle rec1( origin1, recSize1, transform1);
+
+        Eigen::Matrix4f transform2 = Eigen::Matrix4f::Identity();
+        Vector3f origin2(0,0,1);
+        Vector3f recSize2(2,2,2);
+        Rectangle rec2( origin2, recSize2, transform2);
+
+        Intersector inter(rec1, 0.4);
+
+        double score = 0;
+        if( inter(rec2, &score)){
+            cout<<"Intersection true"<<endl;
+        }else{
+            cout<<"Intersection false"<<endl;
+        }
+        cout<<"Score : "<<score<<endl;
+
+        viewer.displayCubeLine(rec1);
+        viewer.displayCubeLine(rec2);
+        viewer.addPC(inter.intersectionCloud_);
     }
 
     float sceneResolution;
@@ -1092,7 +1094,7 @@ int main(){
     Test test;
 
 //    PointCloudPtr cloud( new PointCloudT);
-//    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd", cloud) == -1) {
+//    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd", cloud) == -1) {
 //        cout<<"test::couldnt open pcd file"<<endl;
 //    }
 //    Eigen::Affine3f transform = Eigen::Affine3f::Identity();
@@ -1102,9 +1104,14 @@ int main(){
 ////    transform.rotate (Eigen::AngleAxisf (3, Eigen::Vector3f::UnitY()));
 ////    transform.rotate (Eigen::AngleAxisf (-2.24, Eigen::Vector3f::UnitZ()));
 
+//    Eigen::Matrix4f tform;
+//    tform.setIdentity();
+////    tform.topLeftCorner (3, 3) = transform;
+//    Vector3f translation( 1,0,1);
+//    tform.topRightCorner(3, 1) = translation ;
 //    PointCloudPtr rotatedCloud (new PointCloudT);
-//    pcl::transformPointCloud (*cloud, *rotatedCloud, transform);
-//    pcl::io::savePCDFileASCII ("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd", *rotatedCloud);
+//    pcl::transformPointCloud (*cloud, *rotatedCloud, tform);
+//    pcl::io::savePCDFileASCII ("/home/ubuntu/3DDataset/3DDPM/chair/2rotChairTranslated.pcd", *rotatedCloud);
 
     // testSceneMiddle_compress
     // smallScene2
@@ -1118,22 +1125,22 @@ int main(){
 
 //    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
-    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
-               "tmp.txt");
+//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
+//               "tmp.txt");
 
     //smallSceneNN+/chair_part1_it1_weight15.txt
 
-
-    Eigen::Vector3f origin1( 0.415045, -0.00194225, 0.382699);
-    // absolute bndbox positions
-    Rectangle bndbox1( origin1, 0.742005, 1.05238, 0.681131,
-                      test.sceneResolution);
-    Eigen::Vector3f origin2( -1.16383, -0.0100944, 0.935017);
-    // absolute bndbox positions
-    Rectangle bndbox2( origin2, 0.743034, 1.06102, 0.719493,
-                      test.sceneResolution);
-    test.viewer.displayCubeLine(bndbox1);
-    test.viewer.displayCubeLine(bndbox2);
+    test.checkIntersector();
+//    Eigen::Vector3f origin1( 0.415045, -0.00194225, 0.382699);
+//    // absolute bndbox positions
+//    Rectangle bndbox1( origin1, 0.742005, 1.05238, 0.681131,
+//                      test.sceneResolution);
+//    Eigen::Vector3f origin2( -1.16383, -0.0100944, 0.935017);
+//    // absolute bndbox positions
+//    Rectangle bndbox2( origin2, 0.743034, 1.06102, 0.719493,
+//                      test.sceneResolution);
+//    test.viewer.displayCubeLine(bndbox1);
+//    test.viewer.displayCubeLine(bndbox2);
 
 
 
@@ -1143,7 +1150,7 @@ int main(){
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd");
 
 //    test.checkSHOTs({"/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd",
-//                     "/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd"});
+//                     "/home/ubuntu/3DDataset/3DDPM/chair/2rotChairTranslated.pcd"});
 
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");
@@ -1167,23 +1174,23 @@ int main(){
 
 //    test.viewer.addPC( subspace, 3);
 
-    Eigen::Vector3f boxCenter(0.331836, -0.733711, -1.28253);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
-    Eigen::Vector3f boxSize(0.694655, 1.24823, 0.808719);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-    Eigen::Matrix4f tform;
-    tform.setIdentity ();
-    tform.topLeftCorner (3, 3) = Eigen::Quaternionf (0.231075, 0.972684, -0.00420024, -0.0217461 ).toRotationMatrix();
+//    Eigen::Vector3f boxCenter(0.331836, -0.733711, -1.28253);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
+//    Eigen::Vector3f boxSize(0.694655, 1.24823, 0.808719);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+//    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+//    Eigen::Matrix4f tform;
+//    tform.setIdentity ();
+//    tform.topLeftCorner (3, 3) = Eigen::Quaternionf (0.231075, 0.972684, -0.00420024, -0.0217461 ).toRotationMatrix();
 
-    Eigen::Vector3i origin( floor( ( boxCenter(2) ) / test.sceneResolution),
-                            floor( ( boxCenter(1)) / test.sceneResolution),
-                            floor( ( boxCenter(0)) / test.sceneResolution));
-    // absolute bndbox positions
-    Rectangle bndbox( origin, ( boxSize(2)) / test.sceneResolution,
-                      ( boxSize(1)) / test.sceneResolution,
-            ( boxSize(0)) / test.sceneResolution,
-                      test.sceneResolution);
-    cout<<"bndbox : "<<bndbox<<endl;
-    test.viewer.displayCubeLine(bndbox);
+//    Eigen::Vector3i origin( floor( ( boxCenter(2) ) / test.sceneResolution),
+//                            floor( ( boxCenter(1)) / test.sceneResolution),
+//                            floor( ( boxCenter(0)) / test.sceneResolution));
+//    // absolute bndbox positions
+//    Rectangle bndbox( origin, ( boxSize(2)) / test.sceneResolution,
+//                      ( boxSize(1)) / test.sceneResolution,
+//            ( boxSize(0)) / test.sceneResolution,
+//                      test.sceneResolution);
+//    cout<<"bndbox : "<<bndbox<<endl;
+//    test.viewer.displayCubeLine(bndbox);
 
 //    PointCloudPtr cloud2( new PointCloudT (8,1,PointType()));
 //    PointType p = PointType();

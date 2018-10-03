@@ -136,34 +136,35 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
             Eigen::Vector3f origin(obbox[2], obbox[1], obbox[0]);
             Eigen::Vector3f sizes(obbox[5], obbox[4], obbox[3]);
 
-            Eigen::Matrix3f orientationTransform ( Eigen::Quaternion( obbox[9], obbox[6], obbox[7], obbox[8]));
-            Rectangle obndbox( origin, depth, row, col, orientationTransform, resolution);
-            Object obj( objName, Object::FRONTAL, false, false, obndbox);
+            Eigen::Matrix4f orientationTransform = Eigen::Matrix4f::Identity();
+            orientationTransform.topLeftCorner(3, 3) = Eigen::Quaternionf( obbox[9], obbox[6], obbox[7], obbox[8]).
+                    toRotationMatrix();
+            Rectangle obndbox( origin, sizes, orientationTransform);
 
-//            first = 0, last = 0;
-//            while ( ( (last = aabboxStr.find(" ", first)) != string::npos)){
-//                aabbox.push_back( stof( aabboxStr.substr( first, last - first)));
-//                ++last;
-//                first = last;
-//            }
-//            aabbox.push_back( stof( aabboxStr.substr( first, aabboxStr.length() - first)));
+            first = 0, last = 0;
+            while ( ( (last = aabboxStr.find(" ", first)) != string::npos)){
+                aabbox.push_back( stof( aabboxStr.substr( first, last - first)));
+                ++last;
+                first = last;
+            }
+            aabbox.push_back( stof( aabboxStr.substr( first, aabboxStr.length() - first)));
 
-//            if( aabbox.size() != 6){
-//                cerr<<"Xml aa bounding box is not correct : "<< aabbox.size() <<endl;
-//                return;
-//            }
-//            Eigen::Vector3f minPt(aabbox[2], aabbox[1], aabbox[0]);
-//            Eigen::Vector3f maxPt(aabbox[5], aabbox[4], aabbox[3]);
-////            Eigen::Vector3i origin( floor( minPt(0) / resolution),
-////                                    floor( minPt(1) / resolution),
-////                                    floor( minPt(2) / resolution));
-//            // absolute bndbox positions
-//            Rectangle aabndbox( minPt, maxPt(0)-minPt(0), maxPt(1)-minPt(1), maxPt(2)-minPt(2),
-//                              resolution);
+            if( aabbox.size() != 6){
+                cerr<<"Xml aa bounding box is not correct : "<< aabbox.size() <<endl;
+                return;
+            }
+            Eigen::Vector3f minPt(aabbox[2], aabbox[1], aabbox[0]);
+            Eigen::Vector3f maxPt(aabbox[5], aabbox[4], aabbox[3]);
+            Eigen::Vector3f aaBoxSizes(maxPt(0)-minPt(0), maxPt(1)-minPt(1), maxPt(2)-minPt(2));
 
-//            cout<<"Scene:: absolute chair bndbox : "<<bndbox<<endl;
+            // absolute bndbox positions
+            Rectangle aabndbox( minPt, aaBoxSizes);
 
-//            Object obj( objName, Object::FRONTAL, false, false, aabndbox);
+            cout<<"Scene:: absolute chair bndbox : "<<aabndbox<<endl;
+
+            Object obj( objName, Object::FRONTAL, false, false, aabndbox);
+//            Object obj( objName, Object::FRONTAL, false, false, obndbox);
+
 
             objects_.push_back( obj);
 
