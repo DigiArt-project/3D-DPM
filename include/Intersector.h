@@ -206,7 +206,7 @@ private:
 
         float t = planeNormal2.dot( planePt2 - origin1) / ( planeNormal2.dot( direction1));
 
-        if( t <= 0){
+        if( t <= 0 || t >= 1){
             return false;
         }
 

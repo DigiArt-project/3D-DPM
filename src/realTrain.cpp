@@ -1062,6 +1062,11 @@ public:
         Rectangle rec1( origin1, recSize1, transform1);
 
         Eigen::Matrix4f transform2 = Eigen::Matrix4f::Identity();
+        Matrix3f rotation;
+        rotation = AngleAxisf(1.57/2.0, Vector3f::UnitX())
+                  * AngleAxisf(0,  Vector3f::UnitY())
+                  * AngleAxisf(0, Vector3f::UnitZ());
+        transform2.topLeftCorner (3, 3) = rotation;
         Vector3f origin2(0,0,1);
         Vector3f recSize2(2,2,2);
         Rectangle rec2( origin2, recSize2, transform2);
