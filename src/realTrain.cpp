@@ -59,7 +59,7 @@ public:
     Test()
     {
 
-        sceneResolution = 0.2;//0.09/2.0;
+        sceneResolution = 0.15;//0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
     }
@@ -441,7 +441,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0.1, overlap=0.5;
+        float threshold=0, overlap=0.5;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -485,13 +485,13 @@ public:
         cout<<"sceneRect : "<<sceneRect<<endl;
 
         PointCloudPtr test (new PointCloudT(1,1,PointType()));
-        int boxNb = 4+2*12+8*12*7;//570;724//210;617
+        int boxNb = 5+3*12+5*12*7;
         test->points[0] = pyramid.globalKeyPts->points[boxNb];
         viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
         viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
 //        Rectangle rect = Rectangle();
 //        rect.setCloud(pyramid.keypoints_[1][boxNb]);
-        viewer.displayCubeLine(pyramid.rectangles_[1][boxNb]);
+//        viewer.displayCubeLine(pyramid.rectangles_[1][boxNb]);
         cout<<"lrf : ";
         for(int i=0;i<9;++i){
             cout<<pyramid.globalDescriptors->points[boxNb].rf[i]<<" ";
@@ -1057,16 +1057,21 @@ public:
     void checkIntersector(){
 
         Eigen::Matrix4f transform1 = Eigen::Matrix4f::Identity();
+        Matrix3f rotation1;
+        rotation1 = AngleAxisf(0, Vector3f::UnitX())
+                  * AngleAxisf(1.57/2.0,  Vector3f::UnitY())
+                  * AngleAxisf(0, Vector3f::UnitZ());
+        transform1.topLeftCorner (3, 3) = rotation1;
         Vector3f origin1(0,0,0);
         Vector3f recSize1(2,2,2);
         Rectangle rec1( origin1, recSize1, transform1);
 
         Eigen::Matrix4f transform2 = Eigen::Matrix4f::Identity();
-        Matrix3f rotation;
-        rotation = AngleAxisf(1.57/2.0, Vector3f::UnitX())
+        Matrix3f rotation2;
+        rotation2 = AngleAxisf(1.57/2.0, Vector3f::UnitX())
                   * AngleAxisf(0,  Vector3f::UnitY())
                   * AngleAxisf(0, Vector3f::UnitZ());
-        transform2.topLeftCorner (3, 3) = rotation;
+        transform2.topLeftCorner (3, 3) = rotation2;
         Vector3f origin2(0,0,1);
         Vector3f recSize2(2,2,2);
         Rectangle rec2( origin2, recSize2, transform2);
@@ -1133,9 +1138,9 @@ int main(){
 //    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
 //               "tmp.txt");
 
-    //smallSceneNN+/chair_part1_it1_weight15.txt
 
     test.checkIntersector();
+
 //    Eigen::Vector3f origin1( 0.415045, -0.00194225, 0.382699);
 //    // absolute bndbox positions
 //    Rectangle bndbox1( origin1, 0.742005, 1.05238, 0.681131,

@@ -123,7 +123,7 @@ public:
 
 #pragma omp parallel for //num_threads(omp_get_max_threads())
         for (int z = 0; z < res.depths(); ++z) {
- #pragma omp parallel for
+#pragma omp parallel for
             for (int y = 0; y < res.rows(); ++y) {
 #pragma omp parallel for
                 for (int x = 0; x < res.cols(); ++x) {

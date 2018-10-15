@@ -100,7 +100,7 @@ namespace FFLD
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
         GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filterSizes, int interval = 1,
-                     float starting_resolution = 0.05/*0.09/2.0*/, int thresh = 0, int nbOctave = 2);
+                     float starting_resolution = 0.05, int thresh = 0, int nbOctave = 2);
 
         /// Constructs a pyramid from a given point cloud data.
         /// @param[in] input The PointCloud data
