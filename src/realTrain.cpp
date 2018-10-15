@@ -59,7 +59,7 @@ public:
     Test()
     {
 
-        sceneResolution = 0.15;//0.09/2.0;
+        sceneResolution = 0.2;//0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
     }
@@ -191,7 +191,7 @@ public:
 
         int nbParts = 2;
         double C = 0.002, J = 2;
-        float boxOverlap = 0.5;
+        float boxOverlap = 0.1;
         int interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
@@ -1072,7 +1072,7 @@ public:
                   * AngleAxisf(0,  Vector3f::UnitY())
                   * AngleAxisf(0, Vector3f::UnitZ());
         transform2.topLeftCorner (3, 3) = rotation2;
-        Vector3f origin2(0,0,1);
+        Vector3f origin2(0,-0.2,1);
         Vector3f recSize2(2,2,2);
         Rectangle rec2( origin2, recSize2, transform2);
 
@@ -1133,13 +1133,13 @@ int main(){
 ////               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
 
-//    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
 //    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
 //               "tmp.txt");
 
 
-    test.checkIntersector();
+//    test.checkIntersector();//to improve
 
 //    Eigen::Vector3f origin1( 0.415045, -0.00194225, 0.382699);
 //    // absolute bndbox positions

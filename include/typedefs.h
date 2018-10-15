@@ -40,7 +40,7 @@ static bool pointTypeIsInferior( PointType pl, PointType pr){
              (( pl.y == pr.y && pl.z < pr.z)));
 }
 
-static bool pointTypeIsEqual( PointType pl, PointType pr, float epsilon = 0.001){
+static bool pointTypeIsEqual( PointType pl, PointType pr, float epsilon = 0.01){
     return abs( pl.x - pr.x) < epsilon && abs( pl.y - pr.y) < epsilon && abs( pl.z - pr.z) < epsilon;
 }
 

@@ -54,21 +54,20 @@ public:
 //        intersectionCloud->width = 3;
 //        intersectionCloud->height = 1;
 //        intersectionCloud->points.resize( 3);
-        vector<int> ptsIndicesRec;
-        vector<int> ptsIndicesRef;
-        getIntersectionPts( rect.cloud(), ptsIndicesRec, ptsIndicesRef);
+        vector<int> ptsIndices = {0,1,2,4,7,5,3,6};//{0,5,3,6};
+//        getIntersectionPts( rect.cloud(), ptsIndicesRec, ptsIndicesRef);
 //        cout<<"Intersector:: getIntersectionPts done"<<endl;
-        cout<<"Intersector:: ptsIndicesRec.size() : "<<ptsIndicesRec.size()<<endl;
-        cout<<"Intersector:: ptsIndicesRef.size() : "<<ptsIndicesRef.size()<<endl;
+//        cout<<"Intersector:: ptsIndicesRec.size() : "<<ptsIndicesRec.size()<<endl;
+//        cout<<"Intersector:: ptsIndicesRef.size() : "<<ptsIndicesRef.size()<<endl;
 
 
-        vector<PointType> ptsIntersectionRec = computeIntersectionPtsAt( rect.cloud(), ptsIndicesRec,
+        vector<PointType> ptsIntersectionRec = computeIntersectionPtsAt( rect.cloud(), ptsIndices,
                                                                          reference_.cloud());
-        cout<<"Intersector:: ptsIntersectionRec.size() : "<<ptsIntersectionRec.size()<<endl;
+//        cout<<"Intersector:: ptsIntersectionRec.size() : "<<ptsIntersectionRec.size()<<endl;
 
-        vector<PointType> ptsIntersectionRef = computeIntersectionPtsAt( reference_.cloud(), ptsIndicesRef,
+        vector<PointType> ptsIntersectionRef = computeIntersectionPtsAt( reference_.cloud(), ptsIndices,
                                                                          rect.cloud());
-        cout<<"Intersector:: ptsIntersectionRef.size() : "<<ptsIntersectionRef.size()<<endl;
+//        cout<<"Intersector:: ptsIntersectionRef.size() : "<<ptsIntersectionRef.size()<<endl;
 
         //Remove duplicates
         vector<PointType> ptsIntersection = ptsIntersectionRec;
@@ -81,30 +80,29 @@ public:
             return false;
         }
 
-        cout<<"Intersector:: ptsIntersection.size() before remove duplicates : "<<ptsIntersection.size()<<endl;
+//        cout<<"Intersector:: ptsIntersection.size() before remove duplicates : "<<ptsIntersection.size()<<endl;
 
-//        sort( ptsIntersection.begin(), ptsIntersection.end(), pointTypeIsInferior);
+        sort( ptsIntersection.begin(), ptsIntersection.end(), pointTypeIsInferior);
 
-//        vector<PointType>::iterator it;
-//        for( it = ptsIntersection.begin(); it != ptsIntersection.end()-1; /*++it*/){
-//            if( pointTypeIsEqual( *it, *(it+1))){
-//                it = ptsIntersection.erase( it);
-//            } else{
-//                ++it;
-//            }
-//        }
+        vector<PointType>::iterator it;
+        for( it = ptsIntersection.begin(); it != ptsIntersection.end()-1; /*++it*/){
+            if( pointTypeIsEqual( *it, *(it+1))){
+                it = ptsIntersection.erase( it);
+            } else{
+                ++it;
+            }
+        }
 
 
         PointCloudPtr intersectionCloud(
                             new PointCloudT( ptsIntersection.size(), 1, PointType()));
-        cout<<"Intersector:: ptsIntersection.size() after remove duplicates : "<<ptsIntersection.size()<<endl;
+//        cout<<"Intersector:: ptsIntersection.size() after remove duplicates : "<<ptsIntersection.size()<<endl;
 
 
         for( int i = 0; i < ptsIntersection.size(); ++i){
-            cout<<"Intersector:: i : "<<i<<endl;
+//            cout<<"Intersector:: i : "<<i<<endl;
             intersectionCloud->points[i] = ptsIntersection[i];
         }
-        cout<<"Intersector:: intersectionCloud->size() : "<<intersectionCloud->size()<<endl;
 
         //Not thread safe, check thread access !!!!!!!!!!
         float intersectionVolume = 0;
@@ -119,8 +117,9 @@ public:
 //            cout<<"Intersector:: reconstruct cHull done"<<endl;
 
             intersectionVolume = cHull.getTotalVolume();
+            cout<<"Intersector:: intersectionCloud->size() : "<<intersectionCloud->size()<<endl;
             cout<<"Intersector:: intersectionVolume : "<<intersectionVolume<<endl;
-            cout<<"Intersector:: cubeVolume : "<<cubeVolume<<endl;
+//            cout<<"Intersector:: cubeVolume : "<<cubeVolume<<endl;
 
             for(int i=0; i<intersectionCloud->size();++i){
                 cout<<"Pt["<<i<<"] : "<<intersectionCloud->points[i].x<<" / "
@@ -144,8 +143,8 @@ public:
             const float referenceVolume = reference_.volume();
             const float unionVolume = referenceVolume + cubeVolume - intersectionVolume;
 //            std::cout<<"intersectionVolume : "<<intersectionVolume<<std::endl;
-            std::cout<<"unionVolume * threshold_ : "<<unionVolume * threshold_<<std::endl;
-            std::cout<<"unionVolume : "<<unionVolume<<std::endl;
+//            std::cout<<"unionVolume * threshold_ : "<<unionVolume * threshold_<<std::endl;
+//            std::cout<<"unionVolume : "<<unionVolume<<std::endl;
 
             if (intersectionVolume > unionVolume * threshold_ && unionVolume) {
                 if (score)
@@ -258,7 +257,7 @@ private:
         cout<<endl;
         center /= facePts.size();
         float sum1 = abs(p.x - center(0)) + abs(p.y - center(1)) + abs(p.z - center(2));
-        float sum2 = abs(1-center(0)) + abs(1-center(1)) + abs(1-center(2));
+        float sum2 = abs(center(0)) + abs(center(1)) + abs(center(2));
 
         cout<<"center : "<<endl<<center<<endl;
         cout<<"pt to add : "<<p<<endl;
@@ -271,6 +270,36 @@ private:
         return false;
     }
 
+    bool belongToCube( PointType p, PointCloudPtr cloud1, vector<Eigen::Vector3f> directions1,
+                       int index1, vector<int> adjacentPts1, float epsilon = 0.001) const{
+
+        Eigen::Vector3f pt( p.x, p.y, p.z);
+        Eigen::Vector3f pIndex1( cloud1->points[index1].x, cloud1->points[index1].y, cloud1->points[index1].z);
+        cout<<"pt = "<<pt.transpose()<<endl;
+        cout<<"pIndex1 = "<<pIndex1<<endl;
+
+
+        for( int i = 0; i < directions1.size(); ++i){
+            Eigen::Vector3f pAdj1(  cloud1->points[adjacentPts1[i]].x,
+                                    cloud1->points[adjacentPts1[i]].y,
+                                    cloud1->points[adjacentPts1[i]].z);
+            float res = directions1[i].dot( pt);
+
+            cout<<"pAdj1 = "<<pAdj1.transpose()<<endl;
+            cout<<"directions1[i] = "<<directions1[i].transpose()<<endl;
+            cout<<"res = "<<res<<endl;
+            cout<<"limLow = "<<directions1[i].dot( pIndex1)<<endl;
+            cout<<"limHigh = "<<directions1[i].dot( pAdj1)<<endl;
+
+            if( res + epsilon < directions1[i].dot( pIndex1) || res > directions1[i].dot( pAdj1) + epsilon){
+//                cout<<"belongToCube = false"<<endl;
+                return false;
+            }
+        }
+//        cout<<"belongToCube = true"<<endl;
+        return true;
+    }
+
     bool findIntersection( Eigen::Vector3f origin1, Eigen::Vector3f direction1,
                            Eigen::Vector3f planePt2, Eigen::Vector3f planeNormal2, PointType* p) const{
 
@@ -281,14 +310,13 @@ private:
 
         float t = planeNormal2.dot( planePt2 - origin1) / ( planeNormal2.dot( direction1));
 
-        if( t <= 0 || t >= 1){
+        if( t < 0 || t > 1){
             return false;
         }
 
         cout<<"findIntersection num : "<<planeNormal2.dot( planePt2 - origin1)<<endl;
         cout<<"findIntersection den : "<<den<<endl;
         cout<<"findIntersection planePt2 - origin1 : "<<planePt2 - origin1<<endl;
-
         cout<<"findIntersection t : "<<t<<endl;
         cout<<"findIntersection origin1 : "<<origin1<<endl;
         cout<<"findIntersection direction1 : "<<direction1<<endl;
@@ -314,12 +342,16 @@ private:
                                       cloud1->points[index1].z);
             vector<int> adjacentPts1 = getAdjacentPts(index1);
 
+            vector<Eigen::Vector3f> directions1(adjacentPts1.size());//size = 3
+            for( int i = 0; i < adjacentPts1.size(); ++i){
+                directions1[i] = Eigen::Vector3f( cloud1->points[adjacentPts1[i]].x - cloud1->points[index1].x,
+                                cloud1->points[adjacentPts1[i]].y - cloud1->points[index1].y,
+                                cloud1->points[adjacentPts1[i]].z - cloud1->points[index1].z);
+            }
+
             for( int i = 0; i < adjacentPts1.size(); ++i){
 
-                Eigen::Vector3f direction1(
-                            cloud1->points[adjacentPts1[i]].x - cloud1->points[index1].x,
-                            cloud1->points[adjacentPts1[i]].y - cloud1->points[index1].y,
-                            cloud1->points[adjacentPts1[i]].z - cloud1->points[index1].z);
+                Eigen::Vector3f direction1 = directions1[i];
 
                 //for each face of the cube of cloud2, findIntersection with cube of cloud1
                 for( int j = 0; j < 2; ++j){
@@ -329,17 +361,15 @@ private:
                                               cloud2->points[index2].z);
                     vector<int> adjacentPts2 = getAdjacentPts(index2);
 
+                    vector<Eigen::Vector3f> directions2(adjacentPts2.size());//size = 3
+                    for( int i = 0; i < adjacentPts2.size(); ++i){
+                        directions2[i] = Eigen::Vector3f( cloud2->points[adjacentPts2[i]].x - cloud2->points[index2].x,
+                                        cloud2->points[adjacentPts2[i]].y - cloud2->points[index2].y,
+                                        cloud2->points[adjacentPts2[i]].z - cloud2->points[index2].z);
+                    }
+
                     for( int k = 0; k < adjacentPts2.size(); ++k){//size = 3
 
-//                        Eigen::Vector3f u(
-//                                    cloud2->points[adjacentPts2[k]].x - cloud2->points[index2].x,
-//                                    cloud2->points[adjacentPts2[k]].y - cloud2->points[index2].y,
-//                                    cloud2->points[adjacentPts2[k]].z - cloud2->points[index2].z);
-//                        Eigen::Vector3f v(
-//                                    cloud2->points[adjacentPts2[(k+1)%adjacentPts2.size()]].x - cloud2->points[index2].x,
-//                                    cloud2->points[adjacentPts2[(k+1)%adjacentPts2.size()]].y - cloud2->points[index2].y,
-//                                    cloud2->points[adjacentPts2[(k+1)%adjacentPts2.size()]].z - cloud2->points[index2].z);
-//                        Eigen::Vector3f planeNormal2 = u.cross(v);
                         Eigen::Vector3f planeNormal2(
                                     cloud2->points[index2].x - cloud2->points[adjacentPts2[k]].x,
                                     cloud2->points[index2].y - cloud2->points[adjacentPts2[k]].y,
@@ -347,17 +377,19 @@ private:
 
 
                         if( findIntersection( origin1, direction1, planePt2, planeNormal2, p)){
-                            if( belongToFace(*p, cloud2, index2, adjacentPts2[(k+1)%adjacentPts2.size()],
-                                             adjacentPts2[(k+2)%adjacentPts2.size()])){
+//                            if( belongToFace(*p, cloud2, index2, adjacentPts2[(k+1)%adjacentPts2.size()],
+//                                             adjacentPts2[(k+2)%adjacentPts2.size()])){
+                            if( belongToCube(*p, cloud2, directions2, index2, adjacentPts2)){
                                 res.push_back(*p);
-                                cout<<"add intersection pt : "<<*p<<endl;
+//                                cout<<"add intersection pt : "<<*p<<endl;
 
-    //                            cout<<"origin pt : "<<cloud1->points[index1]<<endl;
-    //                            cout<<"planeNormal2 : "<<planeNormal2.transpose()<<endl;
-    //                            cout<<"direction1 : "<<direction1.transpose()<<endl;
+//                                cout<<"origin pt1 : "<<cloud1->points[index1]<<endl;
+//                                cout<<"origin pt2 : "<<cloud2->points[index2]<<endl;
+//                                cout<<"planeNormal2 : "<<planeNormal2.transpose()<<endl;
+//                                cout<<"direction1 : "<<direction1.transpose()<<endl;
 
-    //                            cout<<"originIsInclude score : "<<planeNormal2.dot( direction1)<<endl;
-                                if( planeNormal2.dot( direction1) >= 0){
+//                                cout<<"originIsInclude score : "<<planeNormal2.dot( direction1)<<endl;
+                                if( belongToCube(cloud1->points[index1], cloud2, directions2, index2, adjacentPts2) /*&& planeNormal2.dot( direction1) <= 2*/){
                                     originIsInclude = true;
                                 }
                             }
@@ -366,7 +398,7 @@ private:
                 }
             }
             if(originIsInclude){
-                cout<<"add origin pt : "<<cloud1->points[index1]<<endl;
+//                cout<<"add origin pt : "<<cloud1->points[index1]<<endl;
                 res.push_back(cloud1->points[index1]);
             }
         }
