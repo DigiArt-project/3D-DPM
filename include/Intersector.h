@@ -121,11 +121,11 @@ public:
             cout<<"Intersector:: intersectionVolume : "<<intersectionVolume<<endl;
 //            cout<<"Intersector:: cubeVolume : "<<cubeVolume<<endl;
 
-            for(int i=0; i<intersectionCloud->size();++i){
-                cout<<"Pt["<<i<<"] : "<<intersectionCloud->points[i].x<<" / "
-                   <<intersectionCloud->points[i].y<<" / "
-                  <<intersectionCloud->points[i].z<<endl;
-            }
+//            for(int i=0; i<intersectionCloud->size();++i){
+//                cout<<"Pt["<<i<<"] : "<<intersectionCloud->points[i].x<<" / "
+//                   <<intersectionCloud->points[i].y<<" / "
+//                  <<intersectionCloud->points[i].z<<endl;
+//            }
         }
 
         *intersectionCloud_ = *intersectionCloud;
@@ -275,8 +275,8 @@ private:
 
         Eigen::Vector3f pt( p.x, p.y, p.z);
         Eigen::Vector3f pIndex1( cloud1->points[index1].x, cloud1->points[index1].y, cloud1->points[index1].z);
-        cout<<"pt = "<<pt.transpose()<<endl;
-        cout<<"pIndex1 = "<<pIndex1<<endl;
+//        cout<<"pt = "<<pt.transpose()<<endl;
+//        cout<<"pIndex1 = "<<pIndex1<<endl;
 
 
         for( int i = 0; i < directions1.size(); ++i){
@@ -285,11 +285,11 @@ private:
                                     cloud1->points[adjacentPts1[i]].z);
             float res = directions1[i].dot( pt);
 
-            cout<<"pAdj1 = "<<pAdj1.transpose()<<endl;
-            cout<<"directions1[i] = "<<directions1[i].transpose()<<endl;
-            cout<<"res = "<<res<<endl;
-            cout<<"limLow = "<<directions1[i].dot( pIndex1)<<endl;
-            cout<<"limHigh = "<<directions1[i].dot( pAdj1)<<endl;
+//            cout<<"pAdj1 = "<<pAdj1.transpose()<<endl;
+//            cout<<"directions1[i] = "<<directions1[i].transpose()<<endl;
+//            cout<<"res = "<<res<<endl;
+//            cout<<"limLow = "<<directions1[i].dot( pIndex1)<<endl;
+//            cout<<"limHigh = "<<directions1[i].dot( pAdj1)<<endl;
 
             if( res + epsilon < directions1[i].dot( pIndex1) || res > directions1[i].dot( pAdj1) + epsilon){
 //                cout<<"belongToCube = false"<<endl;
@@ -314,14 +314,14 @@ private:
             return false;
         }
 
-        cout<<"findIntersection num : "<<planeNormal2.dot( planePt2 - origin1)<<endl;
-        cout<<"findIntersection den : "<<den<<endl;
-        cout<<"findIntersection planePt2 - origin1 : "<<planePt2 - origin1<<endl;
-        cout<<"findIntersection t : "<<t<<endl;
-        cout<<"findIntersection origin1 : "<<origin1<<endl;
-        cout<<"findIntersection direction1 : "<<direction1<<endl;
-        cout<<"findIntersection planePt2 : "<<planePt2<<endl;
-        cout<<"findIntersection planeNormal2 : "<<planeNormal2<<endl;
+//        cout<<"findIntersection num : "<<planeNormal2.dot( planePt2 - origin1)<<endl;
+//        cout<<"findIntersection den : "<<den<<endl;
+//        cout<<"findIntersection planePt2 - origin1 : "<<planePt2 - origin1<<endl;
+//        cout<<"findIntersection t : "<<t<<endl;
+//        cout<<"findIntersection origin1 : "<<origin1<<endl;
+//        cout<<"findIntersection direction1 : "<<direction1<<endl;
+//        cout<<"findIntersection planePt2 : "<<planePt2<<endl;
+//        cout<<"findIntersection planeNormal2 : "<<planeNormal2<<endl;
 
         p->x = origin1(0) + direction1(0) * t;
         p->y = origin1(1) + direction1(1) * t;

@@ -38,20 +38,22 @@ struct Detection : public Rectangle
     {
     }
 
-    Detection(GSHOTPyramid::Scalar score, int z, int y, int x, int lvl, int box, Rectangle bndbox) : Rectangle(bndbox),
+    Detection(Rectangle bndbox, GSHOTPyramid::Scalar score, int z, int y, int x, int lvl, int box) : Rectangle(bndbox),
     score(score), x(x), y(y), z(z), lvl(lvl), box(box)
     {
     }
 
     bool operator<(const Detection & detection) const
     {
-        return score > detection.score && !(detection.score > score);   ;
+        return detection.score < score && !( score < detection.score);
+    }
+};
+struct AscendingOrder{
+    bool operator()( const struct Detection score1, const struct Detection score2) const{
+        return score2.score < score1.score && !( score1.score < score2.score);
     }
 };
 
-bool ascendingOrder( struct Detection score1, struct Detection score2){
-    return score2 < score1;
-}
 
 class Test{
 public:
@@ -251,10 +253,12 @@ public:
 
     void detect(const Mixture & mixture, int interval, const GSHOTPyramid & pyramid,
                 double threshold, double overlap, ostream & out,
-                const string & images, vector<Detection> & detections, const Scene scene,
+                const string & images, vector<Detection> & detections2, const Scene scene,
                 Object::Name name = Object::CHAIR)
     {
         // Compute the scores
+        vector<Detection> detections;
+
         vector<vector<Tensor3DF> >scores;
         vector<Mixture::Indices> argmaxes;
         vector<vector<vector<vector<Model::Positions> > > >positions;
@@ -276,20 +280,20 @@ public:
             for (int box = 0; box < scores[lvl].size(); ++box) {
 
 
-                const PointCloudConstPtr boxCloud = pyramid.keypoints_[lvl][box];
-                PointType min;
-                PointType max;
-                pcl::getMinMax3D(*boxCloud, min, max);
+//                const PointCloudConstPtr boxCloud = pyramid.keypoints_[lvl][box];
+//                PointType min;
+//                PointType max;
+//                pcl::getMinMax3D(*boxCloud, min, max);
 
                 const int depths = scores[lvl][box].depths();
                 const int rows = scores[lvl][box].rows();
                 const int cols = scores[lvl][box].cols();
 
-//                cout<<"test:: for lvl "<<lvl<<" :"<<endl;
+                cout<<"test:: for lvl "<<lvl<<" :"<<endl;
 
-//                cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
-//                cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
-//                cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
+                cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
+                cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
+                cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
 
                 if(scores[lvl][box].size() > 0){
                     ofstream out("conv.txt");
@@ -304,7 +308,7 @@ public:
     //                scoreCloud->points.resize (scoreCloud->width);
 
 
-                        const double score = scores[lvl][box]()(0,0,0);
+                    const double score = scores[lvl][box]()(0,0,0);
 
         //                        PointType p = PointType();
         //                        p.z = pyramid.keypoints_[1]->at(x + y * cols + z * rows * cols).z;
@@ -321,10 +325,10 @@ public:
 
                         Rectangle bndbox = pyramid.rectangles_[lvl][box];
 
-//                        cout<<"test:: detection bndbox = "<<bndbox<<endl;
+                        cout<<"test:: detection bndbox = "<<bndbox<<endl;
 
                         if (!bndbox.empty()){
-                            detections.push_back(Detection(score, 0, 0, 0, lvl, box, pyramid.rectangles_[lvl][box]));
+                            detections.push_back(Detection(bndbox, score, 0, 0, 0, lvl, box));
                             cout<<"test:: bndbox added to detections"<<endl;
                         }
 
@@ -338,8 +342,24 @@ public:
 
         cout<<"test:: detections.size = "<<detections.size()<<endl;
         // Non maxima suppression
-        std::sort(detections.begin(), detections.end()/*, ascendingOrder*/);
+        std::sort(detections.begin(), detections.end(), AscendingOrder());
+//        for(int i=0; i<detections.size();++i){
+//            cout<<"score Detect : "<<detections[i].rec.cloud()->size()<<endl;
+//        }
         cout<<"test::sort done"<<endl;
+
+//        vector<Detection>::iterator it;
+//        for (it = detections.begin()+1; it != detections.end(); /*++it*/){
+//            cout<<"Detect size : "<<detections.size()<<endl;
+//            Intersector inter(*(it-1), overlap, true);
+//            if( inter(*it)){
+//                cout<<"erase"<<endl;
+//                it = detections.erase(it);
+//                cout<<"erase done"<<endl;
+//            } else{
+//                ++it;
+//            }
+//        }
 
         for (int i = 1; i < detections.size(); ++i){
             detections.resize(remove_if(detections.begin() + i, detections.end(),
@@ -1138,6 +1158,28 @@ int main(){
 //    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
 //               "tmp.txt");
 
+
+//    Vector3f origin(0,0,0);
+//    Vector3f recSize(5,5,5);
+//    Rectangle rec( origin, recSize);
+//    vector<Detection> detections;
+//    for(int i = 0; i < 1000; ++i){
+//        detections.push_back( Detection(rec, 5, 0,0,0,1,1));
+//    }
+
+//    std::sort(detections.begin(), detections.end());
+//    vector<Detection>::iterator it;
+//    for (it = detections.begin()+1; it != detections.end(); /*++it*/){
+//        cout<<"Detect size : "<<detections.size()<<endl;
+//        Intersector inter(*(it-1), 0.5, true);
+//        if( inter(*it)){
+//            cout<<"erase"<<endl;
+//            it = detections.erase(it);
+//            cout<<"erase done"<<endl;
+//        } else{
+//            ++it;
+//        }
+//    }
 
 //    test.checkIntersector();//to improve
 

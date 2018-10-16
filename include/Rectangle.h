@@ -66,7 +66,7 @@ public:
 	/// Constructs a rectangle with coordinates (@p x, @p y) and the given @p width and @p height.
     Rectangle(Eigen::Vector3f origin, Eigen::Vector3f boxSizes, Eigen::Matrix4f tform = Eigen::Matrix4f::Identity());
 
-//    ~Rectangle();
+//    virtual ~Rectangle();
 
     ///Correspond to the top left corner of the rectangle
 	/// Returns the x-coordinate of the rectangle.
