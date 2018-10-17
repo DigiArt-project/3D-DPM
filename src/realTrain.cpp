@@ -191,10 +191,10 @@ public:
 
     void train( string dataFolder){
 
-        int nbParts = 2;
+        int nbParts = 0;
         double C = 0.002, J = 2;
-        float boxOverlap = 0.1;
-        int interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 2000;
+        float boxOverlap = 0.25;
+        int interval = 1, nbIterations = 10, nbDatamine = 8, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
 
@@ -291,9 +291,9 @@ public:
 
                 cout<<"test:: for lvl "<<lvl<<" :"<<endl;
 
-                cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
-                cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
-                cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
+//                cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
+//                cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
+//                cout<<"test:: scores[lvl].cols() = "<<cols<<endl;
 
                 if(scores[lvl][box].size() > 0){
                     ofstream out("conv.txt");
@@ -328,7 +328,7 @@ public:
                         cout<<"test:: detection bndbox = "<<bndbox<<endl;
 
                         if (!bndbox.empty()){
-                            detections.push_back(Detection(bndbox, score, 0, 0, 0, lvl, box));
+                            detections.push_back(Detection(pyramid.rectangles_[lvl][box], score, 0, 0, 0, lvl, box));
                             cout<<"test:: bndbox added to detections"<<endl;
                         }
 
@@ -383,7 +383,7 @@ public:
                 const int argmax = argmaxes[lvl]()(z, y, x);
 
 //                cout<<"test:: argmax = "<<argmax<<endl;
-                cout<<"test:: detection score = "<<detections[i].score<<endl;
+                cout<<"test:: detection score = "<<detections[i].score<<" for box : "<<detections[i].box<<endl;
 
 
                 //draw each parts
@@ -394,6 +394,8 @@ public:
                     const int xp = positions[argmax][j][lvl][box]()(z, y, x)(2);
                     const int lvlp = positions[argmax][j][lvl][box]()(z, y, x)(3);
 
+//                    cout<<"test: part position : "<<zp<<" "<<yp<<" "<<xp<<" "<<lvlp<<endl;
+
                     int pt_nb_y = pyramid.topology_[lvlp](1);
                     int pt_nb_x = pyramid.topology_[lvlp](2);
                     PointType p = pyramid.keypoints_[lvlp][box]->points[xp + yp * pt_nb_x + zp * pt_nb_y * pt_nb_x];
@@ -403,12 +405,19 @@ public:
                                 mixture.models()[argmax].partSize().second * pyramid.resolutions()[lvlp],
                                 mixture.models()[argmax].partSize().first * pyramid.resolutions()[lvlp]);
 
-                    Rectangle bndbox( origin, boxSize, pyramid.rectangles_[lvlp][box].transform());//indices of the cube in the PC
+                    /////////
+                    Matrix4f trans = pyramid.rectangles_[lvl][box].transform();
+                    trans.topRightCorner(3, 1) += Vector3f(xp * pyramid.resolutions()[lvlp],
+                                                           yp * pyramid.resolutions()[lvlp],
+                                                           zp * pyramid.resolutions()[lvlp]);
+                    /////////
+
+                    Rectangle bndbox( origin, boxSize, trans);//indices of the cube in the PC
 
 
 //                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
             //TODO add rotation to drawing
-                    viewer.displayCubeLine(bndbox, Vector3i(0,0,255));
+                    viewer.displayCubeLine(bndbox, Vector3i(100,0,255));
                 }
 
                 // Draw the root last
@@ -505,7 +514,7 @@ public:
         cout<<"sceneRect : "<<sceneRect<<endl;
 
         PointCloudPtr test (new PointCloudT(1,1,PointType()));
-        int boxNb = 5+3*12+5*12*7;
+        int boxNb = 700;//5+3*12+5*12*7;
         test->points[0] = pyramid.globalKeyPts->points[boxNb];
         viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
         viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
@@ -1153,10 +1162,12 @@ int main(){
 ////               "/media/ubuntu/DATA/3DDataset/Cat51_normalized/monster_truck/full/");
 
 
-    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+    ///train and test not working if run in serie because of PointCloudPtr in Rectangle
+    /// change it to PointCloudT if you want to solve it
+//    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
-//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
-//               "tmp.txt");
+    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
+               "tmp.txt");
 
 
 //    Vector3f origin(0,0,0);
@@ -1226,12 +1237,50 @@ int main(){
 
 //    test.viewer.addPC( subspace, 3);
 
-//    Eigen::Vector3f boxCenter(0.331836, -0.733711, -1.28253);//0.382699, -0.00194225, 0.415045);//0.415045, -0.00194225, 0.382699);
-//    Eigen::Vector3f boxSize(0.694655, 1.24823, 0.808719);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-//    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
-//    Eigen::Matrix4f tform;
-//    tform.setIdentity ();
-//    tform.topLeftCorner (3, 3) = Eigen::Quaternionf (0.231075, 0.972684, -0.00420024, -0.0217461 ).toRotationMatrix();
+//    Eigen::Vector3f boxCenter(0.382699, -0.00194225, 0.415045);
+//    Eigen::Vector3f boxSize(1.06383, 1.05044, 1.15705);
+//    Eigen::Vector3f size(boxSize(0) - boxCenter(0), boxSize(1) - boxCenter(1), boxSize(2) - boxCenter(2));
+
+////    Eigen::Vector3f pose(0/*.996802*/, 0, -0/*.0799147*/);//1.06383, 1.05044, 1.15705);//1.15705, 1.05044, 1.06383);
+////    Eigen::Matrix4f tform;
+////    tform.setIdentity ();
+////    tform.topLeftCorner (3, 3) = Eigen::Quaternionf (0.231075, 0.972684, -0.00420024, -0.0217461 ).toRotationMatrix();
+
+//    PointCloudPtr keyPt( new PointCloudT(1, 1, PointType()));
+//    PointType p = PointType();
+//    p.x = boxCenter(0) + (boxSize(0) - boxCenter(0))/2.0;
+//    p.y = boxCenter(1) + (boxSize(1) - boxCenter(1))/2.0;
+//    p.z = boxCenter(2) + (boxSize(2) - boxCenter(2))/2.0;
+
+//    keyPt->points[0] = p;
+//    DescriptorsPtr descriptors (new Descriptors());
+//    SurfaceNormalsPtr normals (new SurfaceNormals());
+
+//    pcl::NormalEstimationOMP<PointType,NormalType> norm_est;
+//    norm_est.setKSearch (8);
+//    norm_est.setInputCloud (cloud);
+//    norm_est.compute (*normals);
+
+//    float descr_rad = (size(0)+size(1)+size(2))/3.0;
+
+//    pcl::SHOTEstimationOMP<PointType, NormalType, DescriptorType> descr_est;
+//    descr_est.setRadiusSearch (descr_rad);
+//    descr_est.setInputCloud (keyPt);
+//    descr_est.setInputNormals (normals);
+//    descr_est.setSearchSurface (cloud);
+//    descr_est.compute (*descriptors);
+
+//    float rf[9];
+//    cout<<"mean rf : ";
+//    for(int j=0;j<9;++j){
+//        for(int i=0;i<descriptors->size();++i){
+//            if (!pcl_isnan(descriptors->points[i].rf[j])){
+//                rf[j] = descriptors->points[i].rf[j];
+//            }
+//        }
+//        cout<<rf[j]<<" ";
+//    }
+//    cout<<endl;
 
 //    Eigen::Vector3i origin( floor( ( boxCenter(2) ) / test.sceneResolution),
 //                            floor( ( boxCenter(1)) / test.sceneResolution),

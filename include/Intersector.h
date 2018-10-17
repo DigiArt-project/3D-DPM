@@ -82,7 +82,7 @@ public:
 
 //        cout<<"Intersector:: ptsIntersection.size() before remove duplicates : "<<ptsIntersection.size()<<endl;
 
-        sort( ptsIntersection.begin(), ptsIntersection.end(), pointTypeIsInferior);
+        sort( ptsIntersection.begin(), ptsIntersection.end(), PointTypeIsInferior());
 
         vector<PointType>::iterator it;
         for( it = ptsIntersection.begin(); it != ptsIntersection.end()-1; /*++it*/){
@@ -117,8 +117,8 @@ public:
 //            cout<<"Intersector:: reconstruct cHull done"<<endl;
 
             intersectionVolume = cHull.getTotalVolume();
-            cout<<"Intersector:: intersectionCloud->size() : "<<intersectionCloud->size()<<endl;
-            cout<<"Intersector:: intersectionVolume : "<<intersectionVolume<<endl;
+//            cout<<"Intersector:: intersectionCloud->size() : "<<intersectionCloud->size()<<endl;
+//            cout<<"Intersector:: intersectionVolume : "<<intersectionVolume<<endl;
 //            cout<<"Intersector:: cubeVolume : "<<cubeVolume<<endl;
 
 //            for(int i=0; i<intersectionCloud->size();++i){

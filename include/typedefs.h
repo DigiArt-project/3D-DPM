@@ -34,11 +34,11 @@ typedef pcl::PointCloud<DescriptorType>::Ptr DescriptorsPtr;
 typedef pcl::PointCloud<DescriptorType>::ConstPtr DescriptorsConstPtr;
 
 
-static bool pointTypeIsInferior( PointType pl, PointType pr){
-    return pl.x < pr.x ||
-            (( pl.x == pr.x && pl.y < pr.y) ||
-             (( pl.y == pr.y && pl.z < pr.z)));
-}
+struct PointTypeIsInferior{
+    bool operator()( const PointType& pl, const PointType& pr) const{
+        return pl.x < pr.x || ( pl.x == pr.x && pl.y < pr.y) || ( pl.x == pr.x && pl.y == pr.y && pl.z < pr.z);
+    }
+};
 
 static bool pointTypeIsEqual( PointType pl, PointType pr, float epsilon = 0.01){
     return abs( pl.x - pr.x) < epsilon && abs( pl.y - pr.y) < epsilon && abs( pl.z - pr.z) < epsilon;

@@ -157,11 +157,15 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 
 
             for (int i = 0; i < negatives.size(); ++i){
+                cout<<"Mix::train old negatives["<<i<<"].score : "<<
+                   negatives[i].first.parts()[0].deformation(4)<<endl;
+                cout<<"Mix::train negatives["<<i<<"].first.parts()[0].deformation(4) : "<<
+                   negatives[i].first.parts()[0].deformation(4)<<endl;
                 negatives[i].first.parts()[0].deformation(4) =
                                      models_[negatives[i].second].dot(negatives[i].first);
                 cout<<"Mix::train negatives["<<i<<"].first.parts()[0].deformation(4) : "<<
                    negatives[i].first.parts()[0].deformation(4)<<endl;
-                if (negatives[i].first.parts()[0].deformation(4) > -1){
+                if (negatives[i].first.parts()[0].deformation(4) > -1.1){
                     cout<<"Mix::train j : "<<j<<" / i :"<<i << endl;
                     negatives[j] = pair<Model, int>( negatives[i].first, negatives[i].second);
                     cout<<"Mix::train keep hard negative" << endl;
@@ -411,7 +415,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             for (int lvl = 0; lvl < pyramid.levels().size(); ++lvl) {
                 const double scale = 1 / pow(2.0, static_cast<double>(lvl) / interval);
 
-                cout << "Mix::posLatentSearch scale : " << scale << endl;
+                cout << "Mix::posLatentSearch lvl : " << lvl << endl;
                 for (int box = 0; box < pyramid.levels()[lvl].size(); ++box) {
 
                     int rows = 0;
@@ -461,7 +465,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                                 double inter = 0.0;
 
                                 if (intersector(bndbox, &inter)) {
-    //                                        cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection << endl;
+                                    cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
+                                         << " at box : " << box << endl;
                                     if (inter > intersection) {
     //                                            cout<<"Mix::PosLatentSearch try box orig : "<<bndbox.getOriginCoordinate()<<endl;
     //                                            cout<<"Mix::PosLatentSearch try box diago : "<<bndbox.getDiagonalCoordinate()<<endl;
@@ -480,6 +485,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             double inter = 0.0;
 
                             if(intersector(bndbox, &inter)){
+                                cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
+                                     << " at box : " << box << endl;
                                 if (inter > intersection) {
                                     intersection = inter;
                                 }
@@ -489,7 +496,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                         }
 
 
-                        if ((intersection >= maxInter) && (zero_ || (scores[lvl][box]()(0,0,0) > maxScore))) {
+                        if ((intersection >= maxInter) /*&& (zero_ || (scores[lvl][box]()(0,0,0) > maxScore))*/) {
                             argModel = model;
                             argBox = box;
                             argX = 0;
@@ -580,7 +587,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         for (int k = 0; k < scenes[i].objects().size(); ++k)
             if (scenes[i].objects()[k].name() == name)
                 positive = true;
-//cout<<"Mix::negLatentSearch not found = "<<positive<<endl;
+
         if (positive)
             continue;
 
@@ -719,53 +726,49 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
     //                }
                 }
 
+                if(depths*rows*cols > 0){
 
-                for (int z = 0; z < depths; ++z) {
-                    for (int y = 0; y < rows; ++y) {
-                        for (int x = 0; x < cols; ++x) {
+                    if (!zero_) cout<<"Neg:: score = "<<scores[lvl][box]()(0,0,0)<<endl;
 
-                            const int argmax = zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);
+                    const int argmax = 0;/* zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);*/
 
-                            if (zero_ || (scores[lvl][box]()(z, y, x) > -1)) {
-                                if (!zero_) cout<<"Neg:: score = "<<scores[lvl][box]()(z, y, x)<<endl;
-                                Model sample;
+                    if (zero_ || (scores[lvl][box]()(0,0,0) > -1)) {
+                        Model sample;
 
-                                models_[argmax].initializeSample(pyramid, box, z, y, x, lvl, sample,
-                                                                 zero_ ? 0 : &positions[argmax]);
-                                if (!sample.empty()) {
+                        models_[argmax].initializeSample(pyramid, box, 0,0,0, lvl, sample,
+                                                         zero_ ? 0 : &positions[argmax]);
+                        if (!sample.empty()) {
 
-                                    // Store all the information about the sample in the offset and
-                                    // deformation of its root
-                                    sample.parts()[0].offset(0) = i;
-                                    sample.parts()[0].offset(1) = lvl;
-                                    sample.parts()[0].offset(2) = 0;
-                                    sample.parts()[0].offset(3) = 0;
-                                    sample.parts()[0].deformation(0) = z;
-                                    sample.parts()[0].deformation(1) = y;
-                                    sample.parts()[0].deformation(2) = x;
-                                    sample.parts()[0].deformation(3) = argmax;
-                                    sample.parts()[0].deformation(4) = zero_ ? 0.0 : scores[lvl][box]()(z, y, x);
-                                    sample.parts()[0].deformation(5) = 0;
-                                    sample.parts()[0].deformation(6) = 0;
-                                    sample.parts()[0].deformation(7) = 0;
+                            // Store all the information about the sample in the offset and
+                            // deformation of its root
+                            sample.parts()[0].offset(0) = i;
+                            sample.parts()[0].offset(1) = lvl;
+                            sample.parts()[0].offset(2) = box;
+                            sample.parts()[0].offset(3) = 0;
+                            sample.parts()[0].deformation(0) = 0;
+                            sample.parts()[0].deformation(1) = 0;
+                            sample.parts()[0].deformation(2) = 0;
+                            sample.parts()[0].deformation(3) = argmax;
+                            sample.parts()[0].deformation(4) = zero_ ? 0.0 : scores[lvl][box]()(0,0,0);
+                            sample.parts()[0].deformation(5) = 0;
+                            sample.parts()[0].deformation(6) = 0;
+                            sample.parts()[0].deformation(7) = 0;
 
 
-                                    // Look if the same sample was already sampled
-                                    while ((j < nbCached) && (negatives[j].first < sample))
-                                        ++j;
+                            // Look if the same sample was already sampled
+                            while ((j < nbCached) && (negatives[j].first < sample))
+                                ++j;
 
-                                    if (!zero_) cout<<"Neg:: j = "<<j<<endl;
-                                    // Make sure not to put the same sample twice
-                                    if ((j >= nbCached) || !(negatives[j].first == sample)) {
-                                        cout<<"Mix::negLatentSearch add new sample with score "
-                                           <<sample.parts()[0].deformation(4)<<endl;
+                            if (!zero_) cout<<"Neg:: j = "<<j<<endl;
+                            // Make sure not to put the same sample twice
+                            if ((j >= nbCached) || !(negatives[j].first == sample)) {
+                                cout<<"Mix::negLatentSearch add new sample with score "
+                                   <<sample.parts()[0].deformation(4)<<endl;
 
-                                        negatives.push_back(make_pair(sample, argmax));
+                                negatives.push_back(make_pair(sample, argmax));
 
-                                        if (negatives.size() == maxNegatives)
-                                            return;
-                                    }
-                                }
+                                if (negatives.size() == maxNegatives)
+                                    return;
                             }
                         }
                     }

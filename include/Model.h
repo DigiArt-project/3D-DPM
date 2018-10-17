@@ -145,7 +145,7 @@ public:
 	
 	/// Multiplies the filters, deformation costs, and bias of the fixed sample by @p a.
 	/// @note Do not use with models, only with fixed samples.
-	Model & operator*=(double a);
+    Model & operator*=(double a);
 	
     /// Computes an in-place 3D quadratic distance transform.
 	/// @param[in,out] matrix Matrix to tranform in-place.

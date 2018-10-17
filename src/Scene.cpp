@@ -106,7 +106,7 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
 
             className = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("text"));
             if( !xmlStrcmp(className, reinterpret_cast<const xmlChar *>("chair"))){
-//                cout<<"Scene:: found a chair"<<endl;
+                cout<<"Scene:: found a chair"<<endl;
                 objName = Object::CHAIR;
             } else{
                 objName = Object::AEROPLANE;
@@ -121,25 +121,25 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
 
 
             size_t first = 0, last = 0;
-            while ( ( (last = obboxStr.find(" ", last)) != string::npos)){
-                obbox.push_back( stof( obboxStr.substr( first, last - first)));
-                ++last;
-                first = last;
-            }
-            obbox.push_back( stof( obboxStr.substr( first, obboxStr.length() - first)));
+//            while ( ( (last = obboxStr.find(" ", last)) != string::npos)){
+//                obbox.push_back( stof( obboxStr.substr( first, last - first)));
+//                ++last;
+//                first = last;
+//            }
+//            obbox.push_back( stof( obboxStr.substr( first, obboxStr.length() - first)));
 
-            if( obbox.size() != 10){
-                cerr<<"Xml oriented bounding box is not correct"<<endl;
-                return;
-            }
+//            if( obbox.size() != 10){
+//                cerr<<"Xml oriented bounding box is not correct"<<endl;
+//                return;
+//            }
 
-            Eigen::Vector3f origin(obbox[2], obbox[1], obbox[0]);
-            Eigen::Vector3f sizes(obbox[5], obbox[4], obbox[3]);
+//            Eigen::Vector3f origin(obbox[2], obbox[1], obbox[0]);
+//            Eigen::Vector3f sizes(obbox[5], obbox[4], obbox[3]);
 
-            Eigen::Matrix4f orientationTransform = Eigen::Matrix4f::Identity();
-            orientationTransform.topLeftCorner(3, 3) = Eigen::Quaternionf( obbox[9], obbox[6], obbox[7], obbox[8]).
-                    toRotationMatrix();
-            Rectangle obndbox( origin, sizes, orientationTransform);
+//            Eigen::Matrix4f orientationTransform = Eigen::Matrix4f::Identity();
+//            orientationTransform.topLeftCorner(3, 3) = Eigen::Quaternionf( obbox[9], obbox[6], obbox[7], obbox[8]).
+//                    toRotationMatrix();
+//            Rectangle obndbox( origin, sizes, orientationTransform);
 
             first = 0, last = 0;
             while ( ( (last = aabboxStr.find(" ", first)) != string::npos)){
@@ -160,7 +160,8 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
             // absolute bndbox positions
             Rectangle aabndbox( minPt, aaBoxSizes);
 
-            cout<<"Scene:: absolute chair bndbox : "<<aabndbox<<endl;
+
+            if(objName == Object::CHAIR) cout<<"Scene:: absolute chair bndbox : "<<aabndbox<<endl;
 
             Object obj( objName, Object::FRONTAL, false, false, aabndbox);
 //            Object obj( objName, Object::FRONTAL, false, false, obndbox);

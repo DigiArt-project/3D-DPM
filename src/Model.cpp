@@ -341,227 +341,6 @@ void Model::initializeParts(int nbParts, triple<int, int, int> partSize/*, GSHOT
 
 }
 
-//void Model::initializeParts(int nbParts, triple<int, int, int> partSize)
-//{
-//    GSHOTPyramid::Cell nullCell;
-//    nullCell.setZero( GSHOTPyramid::DescriptorSize);
-//	// The model stay unmodified if any of the parameter is invalid
-//    if (empty() || (nbParts <= 0) || (partSize.first <= 0) || (partSize.second <= 0) || (partSize.third <= 0)) {
-//		cerr << "Attempting to initialize parts in an empty model" << endl;
-//		return;
-//	}
-	
-//	// Upsample the root filter by a factor 2 using bicubic interpolation
-//    const GSHOTPyramid::Level & root = parts_[0].filter;
-	
-
-//    GSHOTPyramid::Level root2x = GSHOTPyramid::Level(2 * root.depths(), 2 * root.rows(), 2 * root.cols());
-//    root2x().setConstant( nullCell);
-	
-//
-//    // Bicubic interpolation matrix for x = y = z = 0.25
-//    const double bicubic[4][4][4] =
-//	{
-//        {
-//            { 0.004943847656,-0.060974121094,-0.015930175781, 0.001647949219},
-//            {-0.060974121094, 0.752014160156, 0.196472167969,-0.020324707031},
-//            {-0.015930175781, 0.196472167969, 0.051330566406,-0.005310058594},
-//            { 0.001647949219,-0.020324707031,-0.005310058594, 0.000549316406}
-//        },
-//        {
-//            { 0.004943847656,-0.060974121094,-0.015930175781, 0.001647949219},
-//            {-0.060974121094, 0.752014160156, 0.196472167969,-0.020324707031},
-//            {-0.015930175781, 0.196472167969, 0.051330566406,-0.005310058594},
-//            { 0.001647949219,-0.020324707031,-0.005310058594, 0.000549316406}
-//        },
-//        {
-//            { 0.004943847656,-0.060974121094,-0.015930175781, 0.001647949219},
-//            {-0.060974121094, 0.752014160156, 0.196472167969,-0.020324707031},
-//            {-0.015930175781, 0.196472167969, 0.051330566406,-0.005310058594},
-//            { 0.001647949219,-0.020324707031,-0.005310058594, 0.000549316406}
-//        },
-//        {
-//            { 0.004943847656,-0.060974121094,-0.015930175781, 0.001647949219},
-//            {-0.060974121094, 0.752014160156, 0.196472167969,-0.020324707031},
-//            {-0.015930175781, 0.196472167969, 0.051330566406,-0.005310058594},
-//            { 0.001647949219,-0.020324707031,-0.005310058594, 0.000549316406}
-//        }
-//	};
-	
-//    for (int z = 0; z < root.depths(); ++z) {
-//        for (int y = 0; y < root.rows(); ++y) {
-//            for (int x = 0; x < root.cols(); ++x) {
-//                for (int i = 0; i < 4; ++i) {
-//                    for (int j = 0; j < 4; ++j) {
-//                        for (int k = 0; k < 4; ++k) {
-//                            const int z2 = min(max(z + i - 2, 0), static_cast<int>(root.depths()) - 1);
-//                            const int z1 = min(max(z + i - 1, 0), static_cast<int>(root.depths()) - 1);
-//                            const int y2 = min(max(y + j - 2, 0), static_cast<int>(root.rows()) - 1);
-//                            const int y1 = min(max(y + j - 1, 0), static_cast<int>(root.rows()) - 1);
-//                            const int x2 = min(max(x + k - 2, 0), static_cast<int>(root.cols()) - 1);
-//                            const int x1 = min(max(x + k - 1, 0), static_cast<int>(root.cols()) - 1);
-
-//                            root2x()(z * 2, y * 2    , x * 2    ) += bicubic[3 - i][3 - j][3 - k] * root()(z2, y2, x2);
-//                            root2x()(z * 2, y * 2    , x * 2 + 1) += bicubic[3 - i][3 - j][    k] * root()(z2, y2, x1);
-//                            root2x()(z * 2, y * 2 + 1, x * 2    ) += bicubic[3 - i][    j][3 - k] * root()(z2, y1, x2);
-//                            root2x()(z * 2, y * 2 + 1, x * 2 + 1) += bicubic[3 - i][    j][    k] * root()(z2, y1, x1);
-
-//                            root2x()(z * 2 + 1, y * 2    , x * 2    ) += bicubic[    i][3 - j][3 - k] * root()(z1, y2, x2);
-//                            root2x()(z * 2 + 1, y * 2    , x * 2 + 1) += bicubic[    i][3 - j][    k] * root()(z1, y2, x1);
-//                            root2x()(z * 2 + 1, y * 2 + 1, x * 2    ) += bicubic[    i][    j][3 - k] * root()(z1, y1, x2);
-//                            root2x()(z * 2 + 1, y * 2 + 1, x * 2 + 1) += bicubic[    i][    j][    k] * root()(z1, y1, x1);
-//                        }
-//                    }
-//                }
-//            }
-//		}
-//	}
-	
-//	// Compute the energy of each cell
-//    Tensor3D<GSHOTPyramid::Scalar> energy(root2x.depths(), root2x.rows(), root2x.cols());
-	
-//    for (int z = 0; z < root2x.depths(); ++z) {
-//        for (int y = 0; y < root2x.rows(); ++y) {
-//            for (int x = 0; x < root2x.cols(); ++x) {
-//                root2x()(z, y, x).cwiseMax(0);
-
-//                energy()(z, y, x) = 0;0000000000000000000000000000000000000000
-
-//                for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-//                    energy()(z, y, x) += root2x()(z, y, x)(i) * root2x()(z, y, x)(i);
-//            }
-//        }
-//	}
-	
-//	// Assign each part greedily to the region of maximum energy
-//	parts_.resize(nbParts + 1);
-	
-//	for (int i = 0; i < nbParts; ++i) {
-//		double maxEnergy = 0.0;
-//		int argX = 0;
-//		int argY = 0;
-//        int argZ = 0;
-		
-//        for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
-//            for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
-//                for (int x = 0; x <= energy.cols() - partSize.third; ++x) {
-//                    const double e = energy.block(z, y, x, partSize.first, partSize.second, partSize.third).sum();
-
-//                    if (e > maxEnergy) {
-//                        maxEnergy = e;
-//                        argX = x;
-//                        argY = y;
-//                        argZ = z;
-//                    } (*convolutions)[0][0].isZero() : 1
-//                }
-//            }
-//		}
-		
-//		// Initialize the part
-//        parts_[i + 1].filter = root2x.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third);
-//        parts_[i + 1].offset(0) = argZ;
-//		parts_[i + 1].offset(1) = argY;
-//        parts_[i + 1].offset(2) = argX;
-		
-//		// Set the energy of the part to zero
-//        energy.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third)().setZero();
-//	}
-	
-//	// Retry 10 times from randomized starting points
-//	double bestCover = 0.0;
-//	vector<Part> best(parts_); // The best so far is the current one
-	
-//	for (int i = 0; i < 10; ++i) {
-//		vector<Part> tmp(parts_); // Try from the current one
-		
-//		// Remove a part at random and look for the best place to put it
-//		for (int j = 0; j < 100 * nbParts; ++j) {
-//			// Recompute the energy
-//            for (int z = 0; z < root2x.depths(); ++z) {
-//                for (int y = 0; y < root2x.rows(); ++y) {
-//                    for (int x = 0; x < root2x.cols(); ++x) {
-//                        energy()(z, y, x) = 0;
-
-//                        for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-//                            energy()(z, y, x) += root2x()(z, y, x)(i) * root2x()(z, y, x)(i);
-//                    }
-//                }
-//			}
-			
-//			// Select a part at random
-//			const int part = rand() % nbParts;
-			
-//			// Zero out the energy covered by the other parts
-//			for (int k = 0; k < nbParts; ++k)
-//				if (k != part)
-//                    energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize.first,
-//                                 partSize.second, partSize.third)().setZero();
-			
-//			// Find the region of maximum energy
-//			double maxEnergy = 0.0;
-//			int argX = 0;
-//			int argY = 0;
-//            int argZ = 0;
-			
-//            for (int z = 0; z <= energy.depths() - partSize.first; ++z) {
-//                for (int y = 0; y <= energy.rows() - partSize.second; ++y) {
-//                    for (int x = 0; x <= energy.cols() - partSize.third; ++x) {
-//                        const double e = energy.block(z, y, x,partSize.first,partSize.second,partSize.third).sum();
-
-//                        if (e > maxEnergy) {
-//                            maxEnergy = e;
-//                            argX = x;
-//                            argY = y;
-//                            argZ = z;
-//                        }
-//                    }
-//				}
-//			}
-			
-//			// Initialize the part
-//            tmp[part + 1].filter = root2x.block(argZ, argY, argX, partSize.first, partSize.second, partSize.third);
-//            tmp[part + 1].offset(0) = argZ;
-//			tmp[part + 1].offset(1) = argY;
-//            tmp[part + 1].offset(2) = argX;
-//		}
-		
-//		// Compute the energy covered by this part arrangement
-//		double cover = 0.0;
-		
-//		// Recompute the energy
-//        for (int z = 0; z < root2x.depths(); ++z) {
-//            for (int y = 0; y < root2x.rows(); ++y) {
-//                for (int x = 0; x < root2x.cols(); ++x) {
-//                    energy()(z, y, x) = 0;
-
-//                    for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-//                        energy()(z, y, x) += root2x()(z, y, x)(i) * root2x()(z, y, x)(i);
-//                }
-//            }
-//		}
-		
-//		for (int j = 0; j < nbParts; ++j) {
-//			// Add the energy of the part
-//            cover += energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
-//                                  partSize.second, partSize.third).sum();
-			
-//			// Set the energy of the part to zero
-//            energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2), partSize.first,
-//                         partSize.second, partSize.third)().setZero();
-//		}
-		
-//		if (cover > bestCover) {
-//			bestCover = cover;
-//			best = tmp;
-//		}
-//	}
-//    parts_ = best;
-//    parts_.swap(best);
-	
-//	// Initialize the deformations
-//	for (int i = 0; i < nbParts; ++i)
-//        parts_[i + 1].deformation << -0.01, 0.0, -0.01, 0.0, -0.01, 0.0, -0.01, 0.0;
-//}
 
 void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y, int x, int lvl, Model & sample,
                              const vector<vector<vector<Positions> > > *positions) const
@@ -924,22 +703,22 @@ double Model::dot(const Model & sample) const
             return numeric_limits<double>::quiet_NaN();
         }
 
-        GSHOTPyramid::Level f1 = parts_[i].filter.agglomerate();
-        GSHOTPyramid::Level f2 = sample.parts_[i].filter.agglomerate();
+//        GSHOTPyramid::Level f1 = parts_[i].filter.agglomerate();
+//        GSHOTPyramid::Level f2 = sample.parts_[i].filter.agglomerate();
 
-        for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){;
-            d += f1()(0,0,0)(j) * f2()(0,0,0)(j);
-        }
-
-//        for (int z = 0; z < parts_[i].filter.depths(); ++z){
-//            for (int y = 0; y < parts_[i].filter.rows(); ++y){
-//                for (int x = 0; x < parts_[i].filter.cols(); ++x){
-//                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
-//                        d += parts_[i].filter()(z, y, x)(j) * sample.parts_[i].filter()(z, y, x)(j);
-//                    }
-//                }
-//            }
+//        for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){;
+//            d += f1()(0,0,0)(j) * f2()(0,0,0)(j);
 //        }
+
+        for (int z = 0; z < parts_[i].filter.depths(); ++z){
+            for (int y = 0; y < parts_[i].filter.rows(); ++y){
+                for (int x = 0; x < parts_[i].filter.cols(); ++x){
+                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
+                        d += parts_[i].filter()(z, y, x)(j) * sample.parts_[i].filter()(z, y, x)(j);
+                    }
+                }
+            }
+        }
 
         if (i){
             for (int j = 0; j < parts_[i].deformation.size(); ++j){
@@ -1020,14 +799,22 @@ Model & Model::operator-=(const Model & sample)
 
 Model & Model::operator*=(double a)
 {
-//	for (int i = 0; i < parts_.size(); ++i) {
-//        GSHOTPyramid::Map(parts_[i].filter) *= a;
-//		parts_[i].deformation *= a;
-//	}
+    for (int i = 0; i < parts_.size(); ++i) {
+        for (int z = 0; z < parts_[i].filter.depths(); ++z){
+            for (int y = 0; y < parts_[i].filter.rows(); ++y){
+                for (int x = 0; x < parts_[i].filter.cols(); ++x){
+                    for (int j = 0; j < GSHOTPyramid::DescriptorSize; ++j){
+                        parts_[i].filter()(z, y, x)(j) *= a;
+                    }
+                }
+            }
+        }
+        parts_[i].deformation *= a;
+    }
 
-//	bias_ *= a;
+    bias_ *= a;
 	
-	return *this;
+    return *this;
 }
 
 // y = EDT result
