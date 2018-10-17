@@ -191,10 +191,10 @@ public:
 
     void train( string dataFolder){
 
-        int nbParts = 0;
+        int nbParts = 2;
         double C = 0.002, J = 2;
         float boxOverlap = 0.25;
-        int interval = 1, nbIterations = 10, nbDatamine = 8, maxNegSample = 2000;
+        int interval = 1, nbIterations = 2, nbDatamine = 3, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
 
@@ -423,16 +423,19 @@ public:
                 // Draw the root last
 //                cout<<"test:: root bndbox = "<<detections[i]<<endl;
 
-                int pt_nb_y = pyramid.topology_[lvl](1);
-                int pt_nb_x = pyramid.topology_[lvl](2);
-                PointType p = pyramid.keypoints_[lvl][box]->points[x + y * pt_nb_x + z * pt_nb_y * pt_nb_x];
+
                 Eigen::Vector3f origin(0,0,0);
                 Eigen::Vector3f boxSize(
                             sizes[argmaxes[lvl]()(z, y, x)].third * pyramid.resolutions()[lvl],
                             sizes[argmaxes[lvl]()(z, y, x)].second * pyramid.resolutions()[lvl],
                             sizes[argmaxes[lvl]()(z, y, x)].first * pyramid.resolutions()[lvl]);
                 Rectangle bbox( origin, boxSize, pyramid.rectangles_[lvl][box].transform());
-                viewer.displayCubeLine(bbox, Vector3i(0,255,255));
+                if( i < 2){
+                    viewer.displayCubeLine(bbox, Vector3i(255,0,0));
+                }else{
+                    viewer.displayCubeLine(bbox, Vector3i(0,255,255));
+                }
+
             }
 
         }
@@ -470,7 +473,7 @@ public:
 
 
         int interval = 1;
-        float threshold=0, overlap=0.5;
+        float threshold=0, overlap=0.1;
         PointCloudPtr cloud( new PointCloudT);
         if (readPointCloud(sceneName, cloud) == -1) {
             cout<<"test::couldnt open pcd file"<<endl;
@@ -514,7 +517,7 @@ public:
         cout<<"sceneRect : "<<sceneRect<<endl;
 
         PointCloudPtr test (new PointCloudT(1,1,PointType()));
-        int boxNb = 700;//5+3*12+5*12*7;
+        int boxNb = 700;//5+3*12+5*12*7;//700;449
         test->points[0] = pyramid.globalKeyPts->points[boxNb];
         viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
         viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
@@ -1164,7 +1167,7 @@ int main(){
 
     ///train and test not working if run in serie because of PointCloudPtr in Rectangle
     /// change it to PointCloudT if you want to solve it
-//    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
     test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
                "tmp.txt");
@@ -1261,7 +1264,7 @@ int main(){
 //    norm_est.setInputCloud (cloud);
 //    norm_est.compute (*normals);
 
-//    float descr_rad = (size(0)+size(1)+size(2))/3.0;
+//    float descr_rad = std::min(size(0), std::min(size(1),size(2)));
 
 //    pcl::SHOTEstimationOMP<PointType, NormalType, DescriptorType> descr_est;
 //    descr_est.setRadiusSearch (descr_rad);

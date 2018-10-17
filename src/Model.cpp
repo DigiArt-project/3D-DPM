@@ -580,9 +580,12 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 //            ofstream out(name.str().c_str());
 //            out << (*convolutions)[0][lvl]();
 //        }
-        // For each part
-        for (int i = 0; i < nbParts; ++i) {
-            for (int box = 0; box < pyramid.levels()[lvl].size(); ++box){
+        for (int box = 0; box < pyramid.levels()[lvl].size(); ++box){
+            cout<<"Model::conv score start : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
+
+            // For each part
+            for (int i = 0; i < nbParts; ++i) {
+
 
                 // Transform the part one octave below
 
@@ -624,6 +627,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
                                 (zr < (*convolutions)[i + 1][lvl - interval][box].depths())) {
 
                                 (*convolutions)[0][lvl][box]()(z, y, x) += (*convolutions)[i + 1][lvl - interval][box]()(zr, yr, xr);
+                                cout<<"Model::conv score : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
 
                                 if (positions){
                                     (*positions)[i][lvl][box]()(z, y, x) <<
@@ -647,7 +651,12 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
                 }
                 if (positions)
                     (*positions)[i][lvl - interval][box] = Positions();
+
+
             }
+            cout<<"Model::conv score end : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
+//            (*convolutions)[0][lvl][box]()(0,0,0) /=  nbFilters;
+            cout<<"Model::conv score final : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
 
         }
 
@@ -935,6 +944,7 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 //    cout<<"Model::DT3D begin min : "<<copy.min()<<endl;
 
 
+    ///TODO : doesnt matter ???
     const int weightDepths = 5;
     const int weightRows   = 5;
     const int weightCols   = 5;
