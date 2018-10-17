@@ -28,67 +28,67 @@ Rectangle::Rectangle() : origin_( 0, 0, 0), boxSizes_(0, 0, 0), /*cloud_( new Po
 //    p.z = 0;
 //    p.y = 0;
 //    p.x = 0;
-//    cloud_->at(0) = p;
-//    cloud_->at(1) = p;
-//    cloud_->at(2) = p;
-//    cloud_->at(3) = p;
-//    cloud_->at(4) = p;
-//    cloud_->at(5) = p;
-//    cloud_->at(6) = p;
-//    cloud_->at(7) = p;
+//    cloud_.at(0) = p;
+//    cloud_.at(1) = p;
+//    cloud_.at(2) = p;
+//    cloud_.at(3) = p;
+//    cloud_.at(4) = p;
+//    cloud_.at(5) = p;
+//    cloud_.at(6) = p;
+//    cloud_.at(7) = p;
 }
 
 Rectangle::Rectangle(const Rectangle& rect)
     : origin_( rect.origin_), boxSizes_(rect.boxSizes_), cloud_( rect.cloud_),
       tform_( rect.tform_), volume_(rect.volume_)
 {
-//    for(int i = 0; i < rect.cloud_->size(); ++i){
-//        cloud_->points[i] = rect.cloud_->points[i];
+//    for(int i = 0; i < rect.cloud_.size(); ++i){
+//        cloud_.points[i] = rect.cloud_.points[i];
 //    }
 }
 
 Rectangle::Rectangle(Eigen::Vector3f origin, Eigen::Vector3f boxSizes, Eigen::Matrix4f tform) :
-    origin_( origin), boxSizes_(boxSizes), cloud_( new PointCloudT (8,1,PointType())),
+    origin_( origin), boxSizes_(boxSizes), cloud_( 8,1,PointType()),
     tform_(tform)
 {
     volume_ = boxSizes_(0) * boxSizes_(1) * boxSizes_(2);
 
-    PointCloudPtr cloud (new PointCloudT(8,1,PointType()));
+    PointCloudT cloud (8,1,PointType());
     PointType p = PointType();
     p.z = origin(0);
     p.y = origin(1);
     p.x = origin(2);
-    cloud->at(0) = p;
+    cloud.at(0) = p;
     p.z = origin(0)+boxSizes(0);
     p.y = origin(1);
     p.x = origin(2);
-    cloud->at(1) = p;
+    cloud.at(1) = p;
     p.z = origin(0);
     p.y = origin(1)+boxSizes(1);
     p.x = origin(2);
-    cloud->at(2) = p;
+    cloud.at(2) = p;
     p.z = origin(0)+boxSizes(0);
     p.y = origin(1)+boxSizes(1);
     p.x = origin(2);
-    cloud->at(3) = p;
+    cloud.at(3) = p;
     p.z = origin(0);
     p.y = origin(1);
     p.x = origin(2)+boxSizes(2);
-    cloud->at(4) = p;
+    cloud.at(4) = p;
     p.z = origin(0)+boxSizes(0);
     p.y = origin(1);
     p.x = origin(2)+boxSizes(2);
-    cloud->at(5) = p;
+    cloud.at(5) = p;
     p.z = origin(0);
     p.y = origin(1)+boxSizes(1);
     p.x = origin(2)+boxSizes(2);
-    cloud->at(6) = p;
+    cloud.at(6) = p;
     p.z = origin(0)+boxSizes(0);
     p.y = origin(1)+boxSizes(1);
     p.x = origin(2)+boxSizes(2);
-    cloud->at(7) = p;
+    cloud.at(7) = p;
 
-    pcl::transformPointCloud (*cloud, *cloud_, tform);
+    pcl::transformPointCloud (cloud, cloud_, tform);
 
 }
 
@@ -119,12 +119,12 @@ float Rectangle::size( int i) const
     return boxSizes_(i);
 }
 
-PointCloudPtr Rectangle::cloud() const{
+PointCloudT Rectangle::cloud() const{
     return cloud_;
 }
 
 PointType Rectangle::cloud( int index) const{
-    return cloud_->points[index];
+    return cloud_.points[index];
 }
 
 //void Rectangle::setCloud( PointCloudPtr cloud){

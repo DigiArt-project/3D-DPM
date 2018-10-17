@@ -655,7 +655,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
             }
             cout<<"Model::conv score end : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
-//            (*convolutions)[0][lvl][box]()(0,0,0) /=  nbFilters;
+            (*convolutions)[0][lvl][box]()(0,0,0) /=  nbFilters;
             cout<<"Model::conv score final : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
 
         }

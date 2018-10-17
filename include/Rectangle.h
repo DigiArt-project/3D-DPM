@@ -78,7 +78,7 @@ public:
 
     float size( int i) const;
 
-    PointCloudPtr cloud() const;
+    PointCloudT cloud() const;
 
     PointType cloud( int index) const;
 
@@ -100,7 +100,7 @@ protected:
 
     Eigen::Vector3f origin_;
     Eigen::Vector3f boxSizes_;
-    PointCloudPtr cloud_;
+    PointCloudT cloud_;
     Eigen::Matrix4f tform_;
     float volume_;
 };
