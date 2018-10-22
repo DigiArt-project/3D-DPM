@@ -21,7 +21,7 @@
 using namespace FFLD;
 using namespace std;
 
-Rectangle::Rectangle() : origin_( 0, 0, 0), boxSizes_(0, 0, 0), /*cloud_( new PointCloudT (8,1,PointType())),*/
+Rectangle::Rectangle() : origin_( 0, 0, 0), boxSizes_(0, 0, 0), cloud_( 8,1,PointType()),
     tform_(Eigen::Matrix4f::Identity()), volume_(0)
 {
 //    PointType p = PointType();
@@ -39,12 +39,12 @@ Rectangle::Rectangle() : origin_( 0, 0, 0), boxSizes_(0, 0, 0), /*cloud_( new Po
 }
 
 Rectangle::Rectangle(const Rectangle& rect)
-    : origin_( rect.origin_), boxSizes_(rect.boxSizes_), cloud_( rect.cloud_),
+    : origin_( rect.origin_), boxSizes_(rect.boxSizes_), cloud_( rect.cloud_.size(),1,PointType()),// rect.cloud_),
       tform_( rect.tform_), volume_(rect.volume_)
 {
-//    for(int i = 0; i < rect.cloud_.size(); ++i){
-//        cloud_.points[i] = rect.cloud_.points[i];
-//    }
+    for(int i = 0; i < rect.cloud_.size(); ++i){
+        cloud_.points[i] = rect.cloud_.points[i];
+    }
 }
 
 Rectangle::Rectangle(Eigen::Vector3f origin, Eigen::Vector3f boxSizes, Eigen::Matrix4f tform) :

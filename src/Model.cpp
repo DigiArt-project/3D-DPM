@@ -742,7 +742,7 @@ double Model::dot(const Model & sample) const
 double Model::norm() const{
 
     if( parts_.size() < 1){
-        return 0.0;
+        return GSHOTPyramid::TensorMap(parts_[0].filter).squaredNorm();
     } else{
         double n = GSHOTPyramid::TensorMap(parts_[0].filter).squaredNorm();
 
@@ -751,7 +751,7 @@ double Model::norm() const{
 
 
             for(int j = 0; j < parts_[i].deformation.size(); ++j){
-                n += parts_[i].deformation(j) * parts_[i].deformation(j);
+                n += 10 * parts_[i].deformation(j) * parts_[i].deformation(j);
             }
         }
         return sqrt(n);
@@ -945,9 +945,9 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 
 
     ///TODO : doesnt matter ???
-    const int weightDepths = 5;
-    const int weightRows   = 5;
-    const int weightCols   = 5;
+    const int weightDepths = 0;
+    const int weightRows   = 0;
+    const int weightCols   = 0;
 //    const int weightDepths = depths;
 //    const int weightRows   = rows;
 //    const int weightCols   = cols;

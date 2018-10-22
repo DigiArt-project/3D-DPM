@@ -131,6 +131,8 @@ public:
 //                    Type tensorMean = agglomerateBlock(z, y, x, filter.depths(), filter.rows(), filter.cols())()(0,0,0) /
 //                            Scalar(filter.size());
 
+                    Scalar tensorNorm = block(z,y,x,filter.depths(), filter.rows(), filter.cols()).lvlSquaredNorm();
+                    if(!tensorNorm) tensorNorm = 1;
 
 //                    Type squaredNormTensor;
 //                    Type squaredNormFilter;
@@ -158,8 +160,8 @@ public:
                             }
                         }
                     }
-                    res()(z, y, x) /= filterNorm;
-//                    res()(z, y, x) /= /*sqrt*/(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
+                    res()(z, y, x) /= filterNorm /** tensorNorm*/;
+//                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
                 }
             }
         }
@@ -434,12 +436,12 @@ public:
             for (int j = 0; j < rows(); ++j) {
                 for (int k = 0; k < cols(); ++k) {
                     for (int l = 0; l < 352; ++l) {
-                        res += tensor(i, j, k)(l) * tensor(i, j, k)(l);
+                        res += tensor(i, j, k)(l) * tensor(i, j, k)(l);/* * tensor(i, j, k)(l)*/;
                     }
                 }
             }
         }
-        return sqrt(res);
+        return sqrt(res);//pow(res, 1/3.0);
     }
 
     Type squaredNorm() const{

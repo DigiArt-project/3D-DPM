@@ -35,8 +35,8 @@ public:
 	/// @param[in] felzenszwalb Use Felzenszwalb's criterion instead of the Pascal one (area of
 	/// intersection over area of second rectangle). Useful to remove small detections inside bigger
 	/// ones.
-	Intersector(const Rectangle & reference, double threshold = 0.5, bool felzenszwalb = false) :
-    reference_(reference), threshold_(threshold), felzenszwalb_(felzenszwalb),
+    Intersector(const PointCloudT & reference, const float refVolume, double threshold = 0.5, bool felzenszwalb = false) :
+    reference_(reference), refVolume_(refVolume), threshold_(threshold), felzenszwalb_(felzenszwalb),
       intersectionCloud_(new PointCloudT())
     {
 	}
@@ -44,7 +44,7 @@ public:
 	/// Tests for the intersection between a given rectangle and the reference.
 	/// @param[in] rect The rectangle to intersect with the reference.
 	/// @param[out] score The score of the intersection.
-	bool operator()(const Rectangle & rect, double * score = 0) const
+    bool operator()(const PointCloudT & rect, const float rectVolume, double * score = 0) const
 	{
         if (score)
             *score = 0.0;
@@ -61,12 +61,12 @@ public:
 //        cout<<"Intersector:: ptsIndicesRef.size() : "<<ptsIndicesRef.size()<<endl;
 
 
-        vector<PointType> ptsIntersectionRec = computeIntersectionPtsAt( rect.cloud(), ptsIndices,
-                                                                         reference_.cloud());
+        vector<PointType> ptsIntersectionRec = computeIntersectionPtsAt( rect, ptsIndices,
+                                                                         reference_);
 //        cout<<"Intersector:: ptsIntersectionRec.size() : "<<ptsIntersectionRec.size()<<endl;
 
-        vector<PointType> ptsIntersectionRef = computeIntersectionPtsAt( reference_.cloud(), ptsIndices,
-                                                                         rect.cloud());
+        vector<PointType> ptsIntersectionRef = computeIntersectionPtsAt( reference_, ptsIndices,
+                                                                         rect);
 //        cout<<"Intersector:: ptsIntersectionRef.size() : "<<ptsIntersectionRef.size()<<endl;
 
         //Remove duplicates
@@ -106,7 +106,7 @@ public:
 
         //Not thread safe, check thread access !!!!!!!!!!
         float intersectionVolume = 0;
-        const float cubeVolume = rect.volume();
+        const float cubeVolume = rectVolume;
         if( intersectionCloud->size() > 3){
             pcl::ConvexHull<PointType> cHull;
             pcl::PointCloud<PointType> cHullCloud;
@@ -140,8 +140,7 @@ public:
             }
         }
         else {
-            const float referenceVolume = reference_.volume();
-            const float unionVolume = referenceVolume + cubeVolume - intersectionVolume;
+            const float unionVolume = refVolume_ + cubeVolume - intersectionVolume;
             std::cout<<"intersectionVolume : "<<intersectionVolume<<std::endl;
             std::cout<<"unionVolume * threshold_ : "<<unionVolume * threshold_<<std::endl;
             std::cout<<"unionVolume : "<<unionVolume<<std::endl;
@@ -163,23 +162,23 @@ public:
 
 private:
 
-    void getIntersectionPts( PointCloudPtr rectCloud, vector<int>& ptsIndicesRec,
-                                      vector<int>& ptsIndicesRef) const{
-        PointType minRec;
-        PointType maxRec;
-        pcl::getMinMax3D(*rectCloud, minRec, maxRec);
-        PointType minRef;
-        PointType maxRef;
-        pcl::getMinMax3D(reference_.cloud(), minRef, maxRef);
+//    void getIntersectionPts( PointCloudPtr rectCloud, vector<int>& ptsIndicesRec,
+//                                      vector<int>& ptsIndicesRef) const{
+//        PointType minRec;
+//        PointType maxRec;
+//        pcl::getMinMax3D(*rectCloud, minRec, maxRec);
+//        PointType minRef;
+//        PointType maxRef;
+//        pcl::getMinMax3D(reference_.cloud(), minRef, maxRef);
 
-        Eigen::Vector4f startRec( minRec.x, minRec.y, minRec.z, 1);
-        Eigen::Vector4f endRec( maxRec.x, maxRec.y, maxRec.z, 1);
-        Eigen::Vector4f startRef( minRef.x, minRef.y, minRef.z, 1);
-        Eigen::Vector4f endRef( maxRef.x, maxRef.y, maxRef.z, 1);
+//        Eigen::Vector4f startRec( minRec.x, minRec.y, minRec.z, 1);
+//        Eigen::Vector4f endRec( maxRec.x, maxRec.y, maxRec.z, 1);
+//        Eigen::Vector4f startRef( minRef.x, minRef.y, minRef.z, 1);
+//        Eigen::Vector4f endRef( maxRef.x, maxRef.y, maxRef.z, 1);
 
-        pcl::getPointsInBox(*rectCloud, startRef, endRef, ptsIndicesRec);
-        pcl::getPointsInBox(reference_.cloud(), startRec, endRec, ptsIndicesRef);
-    }
+//        pcl::getPointsInBox(*rectCloud, startRef, endRef, ptsIndicesRec);
+//        pcl::getPointsInBox(reference_.cloud(), startRec, endRec, ptsIndicesRef);
+//    }
 
     vector<int> getAdjacentPts(int index) const{
         vector<int> adjacentPts(3);
@@ -211,64 +210,64 @@ private:
         return adjacentPts;
     }
 
-    vector<int> getFacePts( int index1, int index2, int index3) const{
-        vector<int> res(4);
-        res[0] = index1;//= 0 or 7
-        res[1] = index2;
-        res[2] = index3;
-//        if( index1 == 0){
-//            res[3] = index2+index3;
-////            if( ( index2 == 1 && index3 == 2) || ( index2 == 2 && index3 == 1)){
-////                res[3] = 3;
-////            }
-////            if( ( index2 == 1 && index3 == 4) || ( index2 == 4 && index3 == 1)){
-////                res[3] = 5;
-////            }
-////            if( ( index2 == 4 && index3 == 2) || ( index2 == 2 && index3 == 4)){
-////                res[3] = 6;
-////            }
-//        } else{//index1 == 7
-//            res[3] = index2+index3-index1;
+//    vector<int> getFacePts( int index1, int index2, int index3) const{
+//        vector<int> res(4);
+//        res[0] = index1;//= 0 or 7
+//        res[1] = index2;
+//        res[2] = index3;
+////        if( index1 == 0){
+////            res[3] = index2+index3;
+//////            if( ( index2 == 1 && index3 == 2) || ( index2 == 2 && index3 == 1)){
+//////                res[3] = 3;
+//////            }
+//////            if( ( index2 == 1 && index3 == 4) || ( index2 == 4 && index3 == 1)){
+//////                res[3] = 5;
+//////            }
+//////            if( ( index2 == 4 && index3 == 2) || ( index2 == 2 && index3 == 4)){
+//////                res[3] = 6;
+//////            }
+////        } else{//index1 == 7
+////            res[3] = index2+index3-index1;
+////        }
+//        res[3] = index2+index3-index1;
+//        return res;
+//    }
+
+//    bool belongToFace( PointType p, PointCloudPtr cloud, int index1, int index2, int index3) const{
+//        vector<int> facePts = getFacePts( index1, index2, index3);
+//        Eigen::Vector3f center(0,0,0);
+//        Eigen::Vector3f val(0,0,0);
+
+//        cout<<"facePts : ";
+//        for( int i = 0; i < facePts.size(); ++i){
+//            cout<<facePts[i]<<" / ";
+//            center(0) += cloud->points[facePts[i]].x;
+//            center(1) += cloud->points[facePts[i]].y;
+//            center(2) += cloud->points[facePts[i]].z;
+//            val(0) += cloud->points[facePts[i]].x;
+//            val(1) += cloud->points[facePts[i]].y;
+//            val(2) += cloud->points[facePts[i]].z;
 //        }
-        res[3] = index2+index3-index1;
-        return res;
-    }
+//        cout<<endl;
+//        cout<<"facePts : ";
+//        for( int i = 0; i < facePts.size(); ++i){
+//            cout<<cloud->points[facePts[i]]<<" / "<<endl;
+//        }
+//        cout<<endl;
+//        center /= facePts.size();
+//        float sum1 = abs(p.x - center(0)) + abs(p.y - center(1)) + abs(p.z - center(2));
+//        float sum2 = abs(center(0)) + abs(center(1)) + abs(center(2));
 
-    bool belongToFace( PointType p, PointCloudPtr cloud, int index1, int index2, int index3) const{
-        vector<int> facePts = getFacePts( index1, index2, index3);
-        Eigen::Vector3f center(0,0,0);
-        Eigen::Vector3f val(0,0,0);
+//        cout<<"center : "<<endl<<center<<endl;
+//        cout<<"pt to add : "<<p<<endl;
+//        cout<<"sum1 : "<<sum1<<endl;
+//        cout<<"sum2 : "<<sum2<<endl;
 
-        cout<<"facePts : ";
-        for( int i = 0; i < facePts.size(); ++i){
-            cout<<facePts[i]<<" / ";
-            center(0) += cloud->points[facePts[i]].x;
-            center(1) += cloud->points[facePts[i]].y;
-            center(2) += cloud->points[facePts[i]].z;
-            val(0) += cloud->points[facePts[i]].x;
-            val(1) += cloud->points[facePts[i]].y;
-            val(2) += cloud->points[facePts[i]].z;
-        }
-        cout<<endl;
-        cout<<"facePts : ";
-        for( int i = 0; i < facePts.size(); ++i){
-            cout<<cloud->points[facePts[i]]<<" / "<<endl;
-        }
-        cout<<endl;
-        center /= facePts.size();
-        float sum1 = abs(p.x - center(0)) + abs(p.y - center(1)) + abs(p.z - center(2));
-        float sum2 = abs(center(0)) + abs(center(1)) + abs(center(2));
-
-        cout<<"center : "<<endl<<center<<endl;
-        cout<<"pt to add : "<<p<<endl;
-        cout<<"sum1 : "<<sum1<<endl;
-        cout<<"sum2 : "<<sum2<<endl;
-
-        if( sum1 <= sum2){
-            return true;
-        }
-        return false;
-    }
+//        if( sum1 <= sum2){
+//            return true;
+//        }
+//        return false;
+//    }
 
     bool belongToCube( PointType p, PointCloudT cloud1, vector<Eigen::Vector3f> directions1,
                        int index1, vector<int> adjacentPts1, float epsilon = 0.001) const{
@@ -406,7 +405,8 @@ private:
 
     }
 
-	Rectangle reference_;
+    PointCloudT reference_;
+    float refVolume_;
 	double threshold_;
 	bool felzenszwalb_;
 };

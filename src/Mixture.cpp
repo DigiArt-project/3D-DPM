@@ -397,7 +397,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 //            cout<<"Mix::PosLatentSearch absolute positive box orig : "<<scenes[i].objects()[j].bndbox().getOriginCoordinate()<<endl;
 //            cout<<"Mix::PosLatentSearch absolute positive box diago : "<<scenes[i].objects()[j].bndbox().getDiagonalCoordinate()<<endl;
 //            cout<<"Mix::PosLatentSearch relative positive aabbox : "<<aabox<<endl;
-            const Intersector intersector(scenes[i].objects()[j].bndbox(), overlap);
+            const Intersector intersector(scenes[i].objects()[j].bndbox().cloud(),
+                                          scenes[i].objects()[j].bndbox().volume(), overlap);
 
 //            cout<<"Pos scenes[i].objects()[j].bndbox() : "<<scenes[i].objects()[j].bndbox()<<endl;
 
@@ -464,7 +465,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                                 double inter = 0.0;
 
-                                if (intersector(bndbox, &inter)) {
+                                if (intersector(bndbox.cloud(), bndbox.volume(), &inter)) {
                                     cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
                                          << " at box : " << box << endl;
                                     if (inter > intersection) {
@@ -484,7 +485,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                             double inter = 0.0;
 
-                            if(intersector(bndbox, &inter)){
+                            if(intersector(bndbox.cloud(), bndbox.volume(), &inter)){
                                 cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
                                      << " at box : " << box << endl;
                                 if (inter > intersection) {
@@ -496,7 +497,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                         }
 
 
-                        if ((intersection >= maxInter) /*&& (zero_ || (scores[lvl][box]()(0,0,0) > maxScore))*/) {
+                        if ((intersection >= maxInter) && (zero_ || (scores[lvl][box]()(0,0,0) > maxScore))) {
                             argModel = model;
                             argBox = box;
                             argX = 0;

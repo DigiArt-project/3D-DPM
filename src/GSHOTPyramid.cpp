@@ -67,7 +67,9 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
 //    float orientationFrom[9] = {1,0,0,0,1,0,0,0,1};
 //    float orientationFrom[9] = {-0.118525, 0.931382, 0.344209, -0.992036, -0.125949, -0.000797627, 0.0426101, -0.341563, 0.938893};//{1,0,0,0,1,0,0,0,1};
 //    float orientationFrom[9] = {-0.132104, -0.589017, 0.79725, -0.0987371, 0.808118, 0.580686, -0.986306, -0.00200695, -0.164914};
-    float orientationFrom[9] = {-0.066743, -0.782449, 0.619128, -0.0411484, 0.622142, 0.781822, -0.996921, 0.0267051, -0.0737201};
+    float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
+
+
     resolution = starting_resolution * 2;
 
     globalKeyPts = computeKeyptsWithThresh(subspace, resolution, min, max, filterSizes, thresh);
@@ -120,7 +122,7 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
 
         //TODO check translation
             Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
-                                                              globalDescriptors->points[i].rf,
+                                                              orientationFrom,//globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
 //        Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
 //            cout << "GSHOTPyr::constructor rotation : "<<endl<<transform<<endl;
