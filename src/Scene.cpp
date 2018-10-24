@@ -101,11 +101,12 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
             xmlChar *className;
             xmlChar *obboxChar;
             xmlChar *aabboxChar;
+            xmlChar *localPoseChar;
             Object::Name objName;
 
 
             className = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("text"));
-            if( !xmlStrcmp(className, reinterpret_cast<const xmlChar *>("chair"))){
+            if( !xmlStrcmp(className, reinterpret_cast<const xmlChar *>("bed"))){
                 cout<<"Scene:: found a chair"<<endl;
                 objName = Object::CHAIR;
             } else{
@@ -113,33 +114,36 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
             }
             obboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("obbox"));
             aabboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("aabbox"));
+            localPoseChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("local_pose"));
 
             vector<float> obbox;
             vector<float> aabbox;
+            vector<float> localPose;
             string obboxStr = (char *) obboxChar;
             string aabboxStr = (char *) aabboxChar;
+            string localPoseStr = (char *) localPoseChar;
 
 
             size_t first = 0, last = 0;
-//            while ( ( (last = obboxStr.find(" ", last)) != string::npos)){
-//                obbox.push_back( stof( obboxStr.substr( first, last - first)));
-//                ++last;
-//                first = last;
-//            }
-//            obbox.push_back( stof( obboxStr.substr( first, obboxStr.length() - first)));
+            while ( ( (last = obboxStr.find(" ", last)) != string::npos)){
+                obbox.push_back( stof( obboxStr.substr( first, last - first)));
+                ++last;
+                first = last;
+            }
+            obbox.push_back( stof( obboxStr.substr( first, obboxStr.length() - first)));
 
-//            if( obbox.size() != 10){
-//                cerr<<"Xml oriented bounding box is not correct"<<endl;
-//                return;
-//            }
+            if( obbox.size() != 10){
+                cerr<<"Xml oriented bounding box is not correct"<<endl;
+                return;
+            }
 
-//            Eigen::Vector3f origin(obbox[2], obbox[1], obbox[0]);
-//            Eigen::Vector3f sizes(obbox[5], obbox[4], obbox[3]);
+            Eigen::Vector3f origin(obbox[2], obbox[1], obbox[0]);
+            Eigen::Vector3f sizes(obbox[5], obbox[4], obbox[3]);
 
-//            Eigen::Matrix4f orientationTransform = Eigen::Matrix4f::Identity();
-//            orientationTransform.topLeftCorner(3, 3) = Eigen::Quaternionf( obbox[9], obbox[6], obbox[7], obbox[8]).
-//                    toRotationMatrix();
-//            Rectangle obndbox( origin, sizes, orientationTransform);
+            Eigen::Matrix4f orientationTransform = Eigen::Matrix4f::Identity();
+            orientationTransform.topLeftCorner(3, 3) = Eigen::Quaternionf( obbox[9], obbox[6], obbox[7], obbox[8]).
+                    toRotationMatrix();
+            Rectangle obndbox( origin, sizes, orientationTransform);
 
             first = 0, last = 0;
             while ( ( (last = aabboxStr.find(" ", first)) != string::npos)){
@@ -169,6 +173,19 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
 
             objects_.push_back( obj);
 
+            first = 0, last = 0;
+            while ( ( (last = localPoseStr.find(" ", first)) != string::npos)){
+                localPose.push_back( stof( localPoseStr.substr( first, last - first)));
+                ++last;
+                first = last;
+            }
+            localPose.push_back( stof( localPoseStr.substr( first, localPoseStr.length() - first)));
+
+            if( localPose.size() != 4){
+                cerr<<"Xml local pose is not correct : "<< localPose.size() <<endl;
+                return;
+            }
+            localPose_.push_back( Eigen::Vector4f(localPose[0], localPose[1], localPose[2], localPose[3]));
         }
         cur = cur->next;
     }
@@ -237,6 +254,10 @@ const vector<Object> & Scene::objects() const
 void Scene::setObjects(const vector<Object> &objects)
 {
 	objects_ = objects;
+}
+
+const std::vector<Eigen::Vector4f> & Scene::localPose() const{
+    return localPose_;
 }
 
 float Scene::resolution() const{

@@ -90,6 +90,9 @@ public:
 	/// Sets the list of objects present in the scene.
 	void setObjects(const std::vector<Object> & objects);
 
+    /// Returns the list of objects present in the scene.
+    const std::vector<Eigen::Vector4f> & localPose() const;
+
     float resolution() const;
 	
 private:
@@ -102,6 +105,7 @@ private:
     float resolution_;
     std::string pcFileName_;
 	std::vector<Object> objects_;
+    std::vector<Eigen::Vector4f> localPose_;
 };
 
 /// Serializes a scene to a stream.

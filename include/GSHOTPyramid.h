@@ -99,7 +99,7 @@ namespace FFLD
         /// @param[in] pad Amount of horizontal, vertical and depth zero padding (in cells).
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filterSizes, int interval = 1,
+        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i filterSizes, int interval = 1,
                      float starting_resolution = 0.05, int thresh = 0, int nbOctave = 2);
 
         /// Constructs a pyramid from a given point cloud data.
@@ -164,7 +164,7 @@ namespace FFLD
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
         
         PointCloudPtr computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, PointType min, PointType max,
-                                              triple<int, int, int> filterSizes, int thresh);
+                                              Eigen::Vector3i filterSizes, int thresh);
 
         // Method creating the keypoint grid using the min/max values of the input
         /*static */PointCloudPtr
@@ -192,7 +192,7 @@ namespace FFLD
         PointCloudPtr globalKeyPts;
         DescriptorsPtr globalDescriptors;
 
-        triple<int, int, int> filterSizes_;
+        Eigen::Vector3i filterSizes_;
 
         Eigen::Vector3i sceneOffset_;
     };

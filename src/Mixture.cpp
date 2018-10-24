@@ -45,7 +45,7 @@ cached_(false), zero_(true)
 	}
 	
 	// Compute the root filters' sizes using Felzenszwalb's heuristic
-    const vector<triple<int, int, int> > sizes = FilterSizes(nbComponents, scenes, name, interval);
+    const vector<Vector3i> sizes = FilterSizes(nbComponents, scenes, name, interval);
 	
 	// Early return in case the root filters' sizes could not be determined
     if (sizes.size() != nbComponents){
@@ -79,34 +79,34 @@ vector<Model> & Mixture::models()
 	return models_;
 }
 
-triple<int, int, int> Mixture::minSize() const
+Vector3i Mixture::minSize() const
 {
-    triple<int, int, int> size(0, 0, 0);
+    Vector3i size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
 		
 		for (int i = 1; i < models_.size(); ++i) {
-			size.first = min(size.first, models_[i].rootSize().first);
-			size.second = min(size.second, models_[i].rootSize().second);
-            size.third = min(size.third, models_[i].rootSize().third);
+            size(0) = min(size(0), models_[i].rootSize()(0));
+            size(1) = min(size(1), models_[i].rootSize()(1));
+            size(2) = min(size(2), models_[i].rootSize()(2));
 		}
 	}
 	
 	return size;
 }
 
-triple<int, int, int> Mixture::maxSize() const
+Vector3i Mixture::maxSize() const
 {
-    triple<int, int, int> size(0, 0, 0);
+    Vector3i size(0, 0, 0);
 	
 	if (!models_.empty()) {
 		size = models_[0].rootSize();
 		
 		for (int i = 1; i < models_.size(); ++i) {
-			size.first = max(size.first, models_[i].rootSize().first);
-			size.second = max(size.second, models_[i].rootSize().second);
-            size.third = max(size.third, models_[i].rootSize().third);
+            size(0) = max(size(0), models_[i].rootSize()(0));
+            size(1) = max(size(1), models_[i].rootSize()(1));
+            size(2) = max(size(2), models_[i].rootSize()(2));
 		}
 	}
 	
@@ -153,33 +153,33 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
             // Remove easy samples (keep hard ones)
             int j = 0;
             cout<<"Mix::train datamine : "<<datamine<<endl;
-            cout<<"Mix:: negatives.size1 : "<<negatives.size()<<" / j : "<<j<<endl;
+//            cout<<"Mix:: negatives.size1 : "<<negatives.size()<<" / j : "<<j<<endl;
 
 
             for (int i = 0; i < negatives.size(); ++i){
-                cout<<"Mix::train old negatives["<<i<<"].score : "<<
-                   negatives[i].first.parts()[0].deformation(4)<<endl;
-                cout<<"Mix::train negatives["<<i<<"].first.parts()[0].deformation(4) : "<<
-                   negatives[i].first.parts()[0].deformation(4)<<endl;
+//                cout<<"Mix::train old negatives["<<i<<"].score : "<<
+//                   negatives[i].first.parts()[0].deformation(4)<<endl;
+//                cout<<"Mix::train negatives["<<i<<"].first.parts()[0].deformation(4) : "<<
+//                   negatives[i].first.parts()[0].deformation(4)<<endl;
                 negatives[i].first.parts()[0].deformation(4) =
                                      models_[negatives[i].second].dot(negatives[i].first);
-                cout<<"Mix::train negatives["<<i<<"].first.parts()[0].deformation(4) : "<<
-                   negatives[i].first.parts()[0].deformation(4)<<endl;
+//                cout<<"Mix::train negatives["<<i<<"].first.parts()[0].deformation(4) : "<<
+//                   negatives[i].first.parts()[0].deformation(4)<<endl;
                 if (negatives[i].first.parts()[0].deformation(4) > -1.1){
-                    cout<<"Mix::train j : "<<j<<" / i :"<<i << endl;
+//                    cout<<"Mix::train j : "<<j<<" / i :"<<i << endl;
                     negatives[j] = pair<Model, int>( negatives[i].first, negatives[i].second);
-                    cout<<"Mix::train keep hard negative" << endl;
+//                    cout<<"Mix::train keep hard negative" << endl;
                     ++j;
                 }
             }
-            cout<<"Mix::train j : "<<j<<endl;
+//            cout<<"Mix::train j : "<<j<<endl;
 
             negatives.resize(j);
 
             // Sample new hard negatives
             negLatentSearch(scenes, name, pad, interval, maxNegatives, negatives);
 
-            cout<<"Mix:: negatives.size2 : "<<negatives.size()<<" / j : "<<j<<endl;
+//            cout<<"Mix:: negatives.size2 : "<<negatives.size()<<" / j : "<<j<<endl;
             //////
             // Stop if there are no new hard negatives
             if (datamine && (negatives.size() == j)){
@@ -226,7 +226,11 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 void Mixture::initializeParts(int nbParts/*, triple<int, int, int> partSize*/)
 {
     for (int i = 0; i < models_.size(); ++i) {
-        models_[i].initializeParts(nbParts, models_[i].rootSize());
+        Vector3i partSize(models_[i].rootSize()(0)*2*0.8/(nbParts),
+                          models_[i].rootSize()(1)*2*0.8/(nbParts),
+                          models_[i].rootSize()(2)*2*0.8/(nbParts));
+        cout<<"initParts : "<<partSize<<endl;
+        models_[i].initializeParts(nbParts, partSize);
 	}
 	
 	// The filters definitely changed
@@ -358,8 +362,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 			return;
 		}
 		
-        int maxFilterSizes = max( models_[0].rootSize().first, max( models_[0].rootSize().second,
-                models_[0].rootSize().third));
+        int maxFilterSizes = max( models_[0].rootSize()(0), max( models_[0].rootSize()(1),
+                models_[0].rootSize()(2)));
         triple<int, int, int> filterSizes(maxFilterSizes,maxFilterSizes,maxFilterSizes);
 
         cout << "Mix::posLatentSearch maxFilterSizes : " << maxFilterSizes << endl;
@@ -400,7 +404,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             const Intersector intersector(scenes[i].objects()[j].bndbox().cloud(),
                                           scenes[i].objects()[j].bndbox().volume(), overlap);
 
-//            cout<<"Pos scenes[i].objects()[j].bndbox() : "<<scenes[i].objects()[j].bndbox()<<endl;
+            cout<<"Pos scenes["<<i<<"].objects()[j].bndbox() : "<<scenes[i].objects()[j].bndbox()<<endl;
 
             // The model, level, position, score, and intersection of the best example
             int argModel = -1;
@@ -429,9 +433,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                         cols = scores[lvl][box].cols();
                     }
                     else if (lvl >= interval) {
-                        depths = pyramid.levels()[lvl][box].depths() - static_cast<int>(maxSize().first*scale) + 1;
-                        rows = pyramid.levels()[lvl][box].rows() - static_cast<int>(maxSize().second*scale) + 1;
-                        cols = pyramid.levels()[lvl][box].cols() - static_cast<int>(maxSize().third*scale)+ 1;
+                        depths = pyramid.levels()[lvl][box].depths() - static_cast<int>(maxSize()(0)*scale) + 1;
+                        rows = pyramid.levels()[lvl][box].rows() - static_cast<int>(maxSize()(1)*scale) + 1;
+                        cols = pyramid.levels()[lvl][box].cols() - static_cast<int>(maxSize()(2)*scale)+ 1;
                     }
 
 //                    cout << "Mix::posLatentSearch depths scene = " << depths << endl;
@@ -461,13 +465,13 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                                 Rectangle bndbox = pyramid.rectangles_[lvl][box];
 
-    //                            cout<<"Pos:: bndbox : "<<bndbox<<endl;
 
                                 double inter = 0.0;
 
                                 if (intersector(bndbox.cloud(), bndbox.volume(), &inter)) {
-                                    cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
-                                         << " at box : " << box << endl;
+//                                    cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
+//                                         << " at box : " << box << endl;
+//                                    cout << "Mix::posLatentSearch bbox : " << bndbox << endl;
                                     if (inter > intersection) {
     //                                            cout<<"Mix::PosLatentSearch try box orig : "<<bndbox.getOriginCoordinate()<<endl;
     //                                            cout<<"Mix::PosLatentSearch try box diago : "<<bndbox.getDiagonalCoordinate()<<endl;
@@ -486,8 +490,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             double inter = 0.0;
 
                             if(intersector(bndbox.cloud(), bndbox.volume(), &inter)){
-                                cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
-                                     << " at box : " << box << endl;
+//                                cout << "Mix::posLatentSearch intersector score : " << inter << " / " <<  intersection
+//                                     << " at box : " << box << endl;
+//                                cout << "Mix::posLatentSearch bbox : " << bndbox << endl;
                                 if (inter > intersection) {
                                     intersection = inter;
                                 }
@@ -507,7 +512,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                             if (!zero_){
                                 maxScore = scores[lvl][box]()(0,0,0);
-                                cout << "Mix::posLatentSearch set maxScore = " << maxScore<< endl;
+//                                cout << "Mix::posLatentSearch set maxScore = " << maxScore<< endl;
                             }
 
                             maxInter = intersection;
@@ -519,8 +524,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name, E
             cout << "maxInter : " << maxInter << " >= overlap :" << overlap << endl;
 
             if (maxInter >= overlap) {
-                cout << "Mix:PosLatentSearch found a positive sample at : "
-                     << argZ << " " << argY << " " << argX << " / " << pyramid.resolutions()[argLvl] << endl;
+//                cout << "Mix:PosLatentSearch found a positive sample at : "
+//                     << argZ << " " << argY << " " << argX << " / " << pyramid.resolutions()[argLvl] << endl;
                 cout << "Mix:PosLatentSearch found at : "
                      << pyramid.rectangles_[argLvl][argBox]
                      << " for box : " << argBox << endl;
@@ -601,8 +606,8 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
         }
 
 
-        int maxFilterSizes = max( models_[0].rootSize().first, max( models_[0].rootSize().second,
-                models_[0].rootSize().third));
+        int maxFilterSizes = max( models_[0].rootSize()(0), max( models_[0].rootSize()(1),
+                models_[0].rootSize()(2)));
         triple<int, int, int> filterSizes(maxFilterSizes,maxFilterSizes,maxFilterSizes);
 
         const GSHOTPyramid pyramid(cloud, models_[0].rootSize(), interval, scenes[i].resolution());
@@ -689,9 +694,9 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                 }
                 else if (lvl >= interval) {
-                    depths = static_cast<int>(pyramid.levels()[lvl][box].depths()) - maxSize().first*scale + 1;
-                    rows = static_cast<int>(pyramid.levels()[lvl][box].rows()) - maxSize().second*scale + 1;
-                    cols = static_cast<int>(pyramid.levels()[lvl][box].cols()) - maxSize().third*scale + 1;
+                    depths = static_cast<int>(pyramid.levels()[lvl][box].depths()) - maxSize()(0)*scale + 1;
+                    rows = static_cast<int>(pyramid.levels()[lvl][box].rows()) - maxSize()(1)*scale + 1;
+                    cols = static_cast<int>(pyramid.levels()[lvl][box].cols()) - maxSize()(2)*scale + 1;
 
     //                for (int z = 0; z < depths; ++z) {
     //                    for (int y = 0; y < rows; ++y) {
@@ -729,7 +734,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 
                 if(depths*rows*cols > 0){
 
-                    if (!zero_) cout<<"Neg:: score = "<<scores[lvl][box]()(0,0,0)<<endl;
+//                    if (!zero_) cout<<"Neg:: score = "<<scores[lvl][box]()(0,0,0)<<endl;
 
                     const int argmax = 0;/* zero_ ? (rand() % models_.size()) : argmaxes[lvl]()(z, y, x);*/
 
@@ -760,11 +765,11 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
                             while ((j < nbCached) && (negatives[j].first < sample))
                                 ++j;
 
-                            if (!zero_) cout<<"Neg:: j = "<<j<<endl;
+//                            if (!zero_) cout<<"Neg:: j = "<<j<<endl;
                             // Make sure not to put the same sample twice
                             if ((j >= nbCached) || !(negatives[j].first == sample)) {
-                                cout<<"Mix::negLatentSearch add new sample with score "
-                                   <<sample.parts()[0].deformation(4)<<endl;
+//                                cout<<"Mix::negLatentSearch add new sample with score "
+//                                   <<sample.parts()[0].deformation(4)<<endl;
 
                                 negatives.push_back(make_pair(sample, argmax));
 
@@ -1054,26 +1059,61 @@ void Mixture::convolve(const GSHOTPyramid & pyramid,
 
 }
 
-std::vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
+Matrix3f Mixture::getRotation(Vector4f orientationFrom, Vector4f orientationTo){
+
+    Matrix3f rotation ;/*= orientationTo * orientationFrom.inverse();*/
+
+    cout<<"orientationFrom : "<<orientationFrom.transpose()<<endl;
+    cout<<"orientationTo : "<<orientationTo.transpose()<<endl;
+
+    cout<<"transform : "<<endl<<rotation<<endl;
+
+    return rotation;
+}
+
+vector<Vector3i> Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
                                              Object::Name name, int interval)
 {
 	// Early return in case the filters or the dataset are empty
     if ((nbComponents <= 0) || scenes.empty()){
         cerr<<"nbComponents <= 0 or scenes.empty()"<<endl;
-        return std::vector<triple<int, int, int> >();
+        return vector<Vector3i>();
     }
 
     const float scale = 1 / pow(2.0, interval);
 	// Sort the aspect ratio of all the (non difficult) samples
     vector<Rectangle> rects;
-	
+//    Eigen::Vector4f baseLocalPose;
+
+//    for (int i = 0; i < scenes.size(); ++i) {
+//        for (int j = 0; j < scenes[i].objects().size(); ++j) {
+//            const Object & obj = scenes[i].objects()[j];
+
+//            if ((obj.name() == name) && !obj.difficult()){
+//                baseLocalPose = scenes[i].localPose()[j];
+//                cout<<"Mixture::baseLocalPose : "<<baseLocalPose<<endl;
+//                break;
+//            }
+//        }
+//        if( baseLocalPose != Eigen::Vector4f()){
+//            break;
+//        }
+//    }
+
 	for (int i = 0; i < scenes.size(); ++i) {
 		for (int j = 0; j < scenes[i].objects().size(); ++j) {
 			const Object & obj = scenes[i].objects()[j];
 			
             if ((obj.name() == name) && !obj.difficult()){
+//                Vector3f sizes = getNormalizeTransform( scenes[i].localPose()[j], baseLocalPose) * obj.bndbox().size();
+//                Rectangle bndbox( obj.bndbox().origin(), sizes);
+//                rects.push_back( bndbox);
+//                cout<<"Mixture::FilterSizes rects before norm : "<<obj.bndbox()<<endl;
+//                cout<<"Mixture::FilterSizes rects after norm : "<<bndbox<<endl;
+
                 rects.push_back( obj.bndbox());
                 cout<<"Mixture::FilterSizes rects : "<<obj.bndbox()<<endl;
+
             }
 		}
 	}
@@ -1081,7 +1121,7 @@ std::vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const
 	// Early return if there is no object
     if (rects.empty()){
         cerr<<"rects.empty()"<<endl;
-        return std::vector<triple<int, int, int> >();
+        return vector<Vector3i>();
     }
 	
 	// Sort the aspect ratio of all the samples
@@ -1090,7 +1130,7 @@ std::vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const
 	
 	// For each mixture model
     vector<int> references(nbComponents+1);
-    std::vector<triple<int, int, int> > sizes(nbComponents);
+    vector<Vector3i> sizes(nbComponents);
 
     for (int i = 0; i <= nbComponents; ++i){
         references[i] = rects.size() * i / nbComponents;
@@ -1109,9 +1149,9 @@ std::vector<triple<int, int, int> > Mixture::FilterSizes(int nbComponents, const
 
         cout<<"Mixture::FilterSizes boxSize : "<<endl<<boxSize<<endl;
 
-        sizes[i].first = ceil( boxSize(0) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
-        sizes[i].second = ceil( boxSize(1) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
-        sizes[i].third = ceil( boxSize(2) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
+        sizes[i](0) = ceil( boxSize(0) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
+        sizes[i](1) = ceil( boxSize(1) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
+        sizes[i](2) = ceil( boxSize(2) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
     }
 	
 	return sizes;

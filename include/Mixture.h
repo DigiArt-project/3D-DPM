@@ -56,10 +56,10 @@ public:
 	std::vector<Model> & models();
 	
 	/// Returns the minimum root filter size (<tt>rows x cols</tt>).
-    triple<int, int, int> minSize() const;
+    Eigen::Vector3i minSize() const;
 	
 	/// Returns the maximum root filter size (<tt>rows x cols</tt>).
-    triple<int, int, int> maxSize() const;
+    Eigen::Vector3i maxSize() const;
 	
 	/// Trains the mixture.
 	/// @param[in] scenes Scenes to use for training.
@@ -99,6 +99,8 @@ public:
 
 	
 //private:
+    static Eigen::Matrix3f getRotation(Eigen::Vector4f orientationFrom, Eigen::Vector4f orientationTo);
+
     // Extracts all the positives
 	void posLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
                          Eigen::Vector3i pad, int interval, double overlap,
@@ -121,7 +123,7 @@ public:
                   vector<vector<vector<vector<Model::Positions> > > > *positions = 0) const;
 	
 	// Computes the size of the roots of the models
-    static std::vector<triple<int, int, int> > FilterSizes(int nbComponents,
+    static std::vector<Eigen::Vector3i> FilterSizes(int nbComponents,
 														 const std::vector<Scene> & scenes,
                                                          Object::Name name, int interval);
 	

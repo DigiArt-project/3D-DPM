@@ -63,8 +63,8 @@ public:
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of all the parts (<tt>rows x cols</tt>).
 	/// @note The model will be empty if any of the parameter is invalid.
-    explicit Model(triple<int, int, int> rootSize, int nbParts = 0,
-                   triple<int, int, int> partSize = triple<int, int, int>(0, 0, 0));
+    explicit Model(Eigen::Vector3i rootSize, int nbParts = 0,
+                   Eigen::Vector3i partSize = Eigen::Vector3i(0, 0, 0));
 	
 	/// Constructs a model from a list of parts and a bias.
 	explicit Model(const std::vector<Part> & parts, double bias = 0.0);
@@ -86,18 +86,18 @@ public:
 	
 	/// Returns the size of the root (<tt>rows x cols</tt>).
 	/// @note Equivalent to std::pair<int, int>(parts()[0].rows(), parts()[0].cols()).
-    triple<int, int, int> rootSize() const;
+    Eigen::Vector3i rootSize() const;
 	
 	/// Returns the size of the parts (<tt>rows x cols</tt>).
 	/// @note Equivalent to make_pair(parts()[1].rows(), parts()[1].cols()) if the model has parts.
-    triple<int, int, int> partSize() const;
+    Eigen::Vector3i partSize() const;
 	
 	/// Initializes the specidied number of parts from the root.
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
 	/// @note The model stay unmodified if any of the parameter is invalid.
 	/// @note The parts are always initialized at twice the root resolution.
-    void initializeParts(int nbParts, triple<int, int, int> partSize);
+    void initializeParts(int nbParts, Eigen::Vector3i partSize);
 	
 	/// Initializes a training sample with fixed latent variables from a specified position in
 	/// a pyramid of features.

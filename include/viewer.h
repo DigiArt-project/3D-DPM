@@ -59,7 +59,7 @@ public:
         ++id;
     }
 
-    void displayAxis( float* rf, pcl::PointXYZ origin = pcl::PointXYZ(0,0,0), float ratio = 1){
+    void displayAxis( float* rf, pcl::PointXYZ origin = pcl::PointXYZ(0,0,0), float ratio = 1, int ptSize = 1){
         viewer->addLine(origin, pcl::PointXYZ(origin.x+rf[0]/ratio,
                                               origin.y+rf[1]/ratio,
                                               origin.z+rf[2]/ratio), 255,0,0, std::to_string(id).append(":l1"));
@@ -69,6 +69,9 @@ public:
         viewer->addLine(origin, pcl::PointXYZ(origin.x+rf[6]/ratio,
                                               origin.y+rf[7]/ratio,
                                               origin.z+rf[8]/ratio), 0,0,255, std::to_string(id).append(":l3"));
+        viewer->setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH , ptSize, std::to_string(id).append(":l1"));
+        viewer->setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, ptSize, std::to_string(id).append(":l2"));
+        viewer->setShapeRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, ptSize, std::to_string(id).append(":l3"));
         ++id;
     }
 

@@ -151,13 +151,14 @@ bool Rectangle::operator<(const Rectangle & rect){
 
 ostream & FFLD::operator<<(ostream & os, const Rectangle & rect)
 {
-    return os << rect.origin(0) << ' ' << rect.origin()(1) << ' ' << rect.origin()(2) << ' '
+    os << rect.origin(0) << ' ' << rect.origin()(1) << ' ' << rect.origin()(2) << ' '
               << rect.size(0) << ' ' << rect.size(1) << ' ' << rect.size(2) << ' ';
     for(int i=0; i< rect.transform().rows(); ++i){
         for(int j=0; j< rect.transform().cols(); ++j){
             os << rect.transform()(i,j) << ' ';
         }
     }
+    return os;
 }
 
 istream & FFLD::operator>>(istream & is, Rectangle & rect)

@@ -194,10 +194,10 @@ public:
 
     void train( string dataFolder){
 
-        int nbParts = 1;
+        int nbParts = 2;
         double C = 0.002, J = 2;
-        float boxOverlap = 0.25;
-        int interval = 1, nbIterations = 10, nbDatamine = 3, maxNegSample = 2000;
+        float boxOverlap = 0.5;
+        int interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
 
@@ -236,7 +236,7 @@ public:
         Mixture mixture( nbComponents, scenes, Object::CHAIR, interval);
 
 
-        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/2,
+        mixture.train(scenes, Object::CHAIR, Eigen::Vector3i( 3,3,3), interval, nbIterations/nbIterations,
                       nbDatamine, 2000, C, J, boxOverlap);
 
         cout<<"test::trained Root"<<endl;
@@ -265,12 +265,12 @@ public:
         vector<vector<Tensor3DF> >scores;
         vector<Mixture::Indices> argmaxes;
         vector<vector<vector<vector<Model::Positions> > > >positions;
-        int nb = 6;
+        int nb = 3;
 
         mixture.computeScores( pyramid, scores, argmaxes, &positions);
 
         // Cache the size of the models
-        vector<triple<int, int, int> > sizes(mixture.models().size());
+        vector<Vector3i> sizes(mixture.models().size());
 
         for (int i = 0; i < sizes.size(); ++i)
             sizes[i] = mixture.models()[i].rootSize();
@@ -292,7 +292,7 @@ public:
                 const int rows = scores[lvl][box].rows();
                 const int cols = scores[lvl][box].cols();
 
-                cout<<"test:: for lvl "<<lvl<<" :"<<endl;
+//                cout<<"test:: for lvl "<<lvl<<" :"<<endl;
 
 //                cout<<"test:: scores[lvl].depths() = "<<depths<<endl;
 //                cout<<"test:: scores[lvl].rows() = "<<rows<<endl;
@@ -322,7 +322,7 @@ public:
     //                        p.b = score / maxi*255;
     //                        scoreCloud->at(x + y * cols + z * rows * cols) = p;
 
-                    cout<<"test:: scores = "<<score<<endl;
+//                    cout<<"test:: scores = "<<score<<endl;
 
                     if (score >= threshold) {
 
@@ -330,7 +330,7 @@ public:
 
                         if (!bndbox.empty()){
                             detections.push_back(Detection(pyramid.rectangles_[lvl][box], score, 0, 0, 0, lvl, box));
-                            cout<<"test:: bndbox added to detections"<<endl;
+                            cout<<"test:: bndbox added to detections : "<<pyramid.rectangles_[lvl][box]<<endl;
                         }
 
                     }
@@ -406,14 +406,11 @@ public:
 
 //                    cout<<"test: part position : "<<zp<<" "<<yp<<" "<<xp<<" "<<lvlp<<endl;
 
-//                    int pt_nb_y = pyramid.topology_[lvlp](1);
-//                    int pt_nb_x = pyramid.topology_[lvlp](2);
-//                    PointType p = pyramid.keypoints_[lvlp][box]->points[xp + yp * pt_nb_x + zp * pt_nb_y * pt_nb_x];
                     Eigen::Vector3f origin(0,0,0);
                     Eigen::Vector3f boxSize(
-                                mixture.models()[argmax].partSize().third * pyramid.resolutions()[lvlp],
-                                mixture.models()[argmax].partSize().second * pyramid.resolutions()[lvlp],
-                                mixture.models()[argmax].partSize().first * pyramid.resolutions()[lvlp]);
+                                mixture.models()[argmax].partSize()(0) * pyramid.resolutions()[lvlp],
+                                mixture.models()[argmax].partSize()(1) * pyramid.resolutions()[lvlp],
+                                mixture.models()[argmax].partSize()(2) * pyramid.resolutions()[lvlp]);
 
                     /////////
                     Matrix4f trans = pyramid.rectangles_[lvl][box].transform();
@@ -423,11 +420,10 @@ public:
 
                     cout<<"trans part : "<<Vector3f(xp * pyramid.resolutions()[lvlp],
                                                     yp * pyramid.resolutions()[lvlp],
-                                                    zp * pyramid.resolutions()[lvlp])<<endl;
+                                                    zp * pyramid.resolutions()[lvlp]).transpose()<<endl;
                     /////////
 
                     Rectangle bndbox( origin, boxSize, trans);//indices of the cube in the PC
-
 
 //                    cout<<"test:: part bndbox to draw = "<<bndbox<<endl;
             //TODO add rotation to drawing
@@ -440,11 +436,11 @@ public:
 
                 Eigen::Vector3f origin(0,0,0);
                 Eigen::Vector3f boxSize(
-                            sizes[argmaxes[lvl]()(z, y, x)].third * pyramid.resolutions()[lvl],
-                            sizes[argmaxes[lvl]()(z, y, x)].second * pyramid.resolutions()[lvl],
-                            sizes[argmaxes[lvl]()(z, y, x)].first * pyramid.resolutions()[lvl]);
-                Rectangle bbox( origin, boxSize, pyramid.rectangles_[lvl][box].transform());
-                if( i < 4){
+                            sizes[argmaxes[lvl]()(z, y, x)](2) * pyramid.resolutions()[lvl],
+                            sizes[argmaxes[lvl]()(z, y, x)](1) * pyramid.resolutions()[lvl],
+                            sizes[argmaxes[lvl]()(z, y, x)](0) * pyramid.resolutions()[lvl]);
+                Rectangle bbox( pyramid.rectangles_[lvl][box]);
+                if( i < 1){
                     viewer.displayCubeLine(bbox, Vector3i(255,0,0));
                 }else{
                     viewer.displayCubeLine(bbox, Vector3i(0,255,255));
@@ -511,8 +507,8 @@ public:
             // You can either apply transform_1 or transform_2; they are the same
         pcl::transformPointCloud (*cloud, *sceneCloud, transform);
 
-        int maxFilterSizes = max( mixture.models()[0].rootSize().first, max( mixture.models()[0].rootSize().second,
-                mixture.models()[0].rootSize().third));
+        int maxFilterSizes = max( mixture.models()[0].rootSize()(0), max( mixture.models()[0].rootSize()(1),
+                mixture.models()[0].rootSize()(2)));
         triple<int, int, int> filterSizes(maxFilterSizes,maxFilterSizes,maxFilterSizes);
 
         const GSHOTPyramid pyramid(sceneCloud, mixture.models()[0].rootSize(), interval, sceneResolution);
@@ -530,21 +526,45 @@ public:
         Rectangle sceneRect(originScene, sceneSize);
         cout<<"sceneRect : "<<sceneRect<<endl;
 
-//        PointCloudPtr test (new PointCloudT(1,1,PointType()));
-//        int boxNb = 700;//5+3*12+5*12*7;//700;449
-//        test->points[0] = pyramid.globalKeyPts->points[boxNb];
-//        viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
-//        viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
-////        Rectangle rect = Rectangle();
-////        rect.setCloud(pyramid.keypoints_[1][boxNb]);
-////        viewer.displayCubeLine(pyramid.rectangles_[1][boxNb]);
-//        cout<<"lrf : ";
-//        for(int i=0;i<9;++i){
-//            cout<<pyramid.globalDescriptors->points[boxNb].rf[i]<<" ";
-//        }
-//        cout<<endl;
-//        viewer.addPC( pyramid.globalKeyPts, 2, Eigen::Vector3i(255, 255, 255));
-//        viewer.displayAxis(pyramid.globalDescriptors->points[boxNb].rf);
+        PointCloudPtr test (new PointCloudT(1,1,PointType()));
+        int boxNb = 145;//5+3*12+5*12*7;//700;449//403;145;43
+        test->points[0] = pyramid.globalKeyPts->points[boxNb];
+        viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
+        viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
+        cout<<"lrf : ";
+        for(int i=0;i<9;++i){
+            cout<<pyramid.globalDescriptors->points[boxNb].rf[i]<<" ";
+        }
+        cout<<endl;
+        viewer.addPC( pyramid.globalKeyPts, 2, Eigen::Vector3i(255, 255, 255));
+        viewer.displayAxis(pyramid.globalDescriptors->points[boxNb].rf, pcl::PointXYZ(
+                               pyramid.globalKeyPts->points[boxNb].x,
+                               pyramid.globalKeyPts->points[boxNb].y,
+                               pyramid.globalKeyPts->points[boxNb].z), 1, 3);
+//403
+//        Rectangle gt(Vector3f(-0.366322, -0.026236, 1.4847),
+//                     Vector3f(2.1372, 0.970795, 1.95954));
+//        Matrix4f foundTf;
+//        foundTf << 1, -1.18945e-07, 2.7022e-07, 1.6,
+//                -4.03597e-07, 1, 4.16345e-07, -0.2,
+//                -3.50863e-07, -1.21055e-07, 1, -0.599999,
+//                0, 0, 0, 1;
+//        Rectangle found(Vector3f(0, 0, 0), Vector3f(2.4, 1.2, 2), foundTf);
+//145
+//        Rectangle gt(Vector3f(-1.11654, 0.0177803, -2.77334),
+//                     Vector3f(2.19162, 0.916826, 1.86966));
+//        Matrix4f foundTf;
+//        foundTf << 0.999939, 0.0110815, 0.000865999, -2.80763,
+//                0.0110319, -0.979809, -0.199633, 1.41641,
+//                -0.00136375, 0.19963, -0.97987, 0.85743,
+//                0, 0, 0, 1;
+//        Rectangle found(Vector3f(0, 0, 0), Vector3f(2.4, 1.2, 2), foundTf);
+//        viewer.displayCubeLine(gt, Vector3i(255,255,0));
+//        viewer.displayCubeLine(found, Vector3i(0,255,255));
+
+
+
+
         ofstream out("tmpTest.txt");
         vector<Detection> detections;
         Scene scene( /*originScene, /*sceneSize.first, sceneSize.second, sceneSize.third,*/ sceneName, {});
@@ -560,7 +580,7 @@ public:
 
         cout<<"test:: model bias = "<<mixture.models()[0].bias()<<endl;
 
-        viewer.addPC( sceneCloud, 3);
+        viewer.addPC( subspace, 3);
 
 //        viewer.displayCubeLine(sceneRect);
 //        Rectangle rootBox(Vector3i(mixture.models()[0].parts()[0].offset(0),
@@ -925,7 +945,7 @@ public:
 
         int lumi = 5;
         int rows = 150, cols = GSHOTPyramid::DescriptorSize;
-        int nbKeyPts = 1;
+        int nbKeyPts = 3;
         int nbKeyPtsX = nbKeyPts, nbKeyPtsY = nbKeyPts, nbKeyPtsZ = nbKeyPts;
         float rf[pcNames.size()*9];
         for(int p=0; p<pcNames.size();++p){
@@ -986,40 +1006,40 @@ public:
             descr_est.compute (*descriptors);
 
     ///Display concatenate descriptor
-            for(int y=0;y<rows;++y){
-                for(int x=0;x<cols;++x){
-                    for(int i=0;i<descriptors->size();++i){
-                        Vec3b color = img.at<Vec3b>(Point(x+i*cols,y));
-                        if (pcl_isnan(descriptors->points[i].descriptor[x])){
-                            descriptors->points[i].descriptor[x] = 0;
-                        }
-                        if( descriptors->points[i].descriptor[x] > maxi) maxi = descriptors->points[i].descriptor[x];
-                        float desc = descriptors->points[i].descriptor[x];
-                        color[0] = lumi*desc*desc*255;
-                        color[1] = color[0];
-                        color[2] = color[0];
-                        img.at<Vec3b>(Point(x+i*cols,y)) = color;
-                    }
-                }
-            }
+//            for(int y=0;y<rows;++y){
+//                for(int x=0;x<cols;++x){
+//                    for(int i=0;i<descriptors->size();++i){
+//                        Vec3b color = img.at<Vec3b>(Point(x+i*cols,y));
+//                        if (pcl_isnan(descriptors->points[i].descriptor[x])){
+//                            descriptors->points[i].descriptor[x] = 0;
+//                        }
+//                        if( descriptors->points[i].descriptor[x] > maxi) maxi = descriptors->points[i].descriptor[x];
+//                        float desc = descriptors->points[i].descriptor[x];
+//                        color[0] = lumi*desc*desc*255;
+//                        color[1] = color[0];
+//                        color[2] = color[0];
+//                        img.at<Vec3b>(Point(x+i*cols,y)) = color;
+//                    }
+//                }
+//            }
 
-            for(int y=rows-6;y<rows;++y){
-                for(int x=0;x<cols;++x){
-                    for(int i=0;i<descriptors->size();++i){
-                        Vec3b color = img.at<Vec3b>(Point(x,y));
-                        if(i%2==0){
-                            color[2] = 255;//r
-                            color[1] = 0;//g
-                            color[0] = 0;//b
-                        }else {
-                            color[0] = 0;//r
-                            color[1] = 255;//g
-                            color[2] = 0;//b
-                        }
-                        img.at<Vec3b>(Point(x+i*cols,y)) = color;
-                    }
-                }
-            }
+//            for(int y=rows-6;y<rows;++y){
+//                for(int x=0;x<cols;++x){
+//                    for(int i=0;i<descriptors->size();++i){
+//                        Vec3b color = img.at<Vec3b>(Point(x,y));
+//                        if(i%2==0){
+//                            color[2] = 255;//r
+//                            color[1] = 0;//g
+//                            color[0] = 0;//b
+//                        }else {
+//                            color[0] = 0;//r
+//                            color[1] = 255;//g
+//                            color[2] = 0;//b
+//                        }
+//                        img.at<Vec3b>(Point(x+i*cols,y)) = color;
+//                    }
+//                }
+//            }
     ///
 
             cout<<"mean rf : ";
@@ -1038,12 +1058,12 @@ public:
 
             cout<<"maxi descriptor value = "<<maxi<<endl;
 
-//            for(int i=0;i<descriptors->size();++i){
-//                viewer.displayAxis(descriptors->points[i].rf, pcl::PointXYZ(keypoints->points[i].x,
-//                                                                       keypoints->points[i].y,
-//                                                                       keypoints->points[i].z), descriptors->size());
-//            }
-//            viewer.displayAxis(rf+9*p);
+            for(int i=0;i<descriptors->size();++i){
+                viewer.displayAxis(descriptors->points[i].rf, pcl::PointXYZ(keypoints->points[i].x+p,
+                                                                       keypoints->points[i].y,
+                                                                       keypoints->points[i].z+p), descriptors->size());
+            }
+            viewer.displayAxis(rf+9*p,pcl::PointXYZ(p,0,p));
 
 
 //            viewer.addPC( cloud);
@@ -1055,8 +1075,8 @@ public:
                 return;    // Unsuccessful.
             }
 
-            string name = "img";
-            imwrite( name.append(to_string(p)).append(".jpg"), img );
+//            string name = "img";
+//            imwrite( name.append(to_string(p)).append(".jpg"), img );
         }
 
 
@@ -1076,9 +1096,10 @@ public:
 
             Matrix4f res;
             res.setIdentity ();
-            res.topLeftCorner (3, 3) = r0;
+//            res.topLeftCorner (3, 3) = r0;
             Vector3f origin( 0,0,0);
             Vector3f trans( 1,0,1);
+            res.topRightCorner(3, 1) = trans;
 
             Matrix4f tf = GSHOTPyramid::getNormalizeTransform(rf, &rf[9], origin, trans);//from 1 to 2
 
@@ -1096,50 +1117,87 @@ public:
             }
 
             PointCloudPtr rotatedCloud (new PointCloudT);
-            pcl::transformPointCloud (*cloud1, *rotatedCloud, tf);
+//            pcl::transformPointCloud (*cloud1, *rotatedCloud, tf);
+            pcl::transformPointCloud (*cloud2, *rotatedCloud, res);
             viewer.addPC( cloud1);
-            viewer.addPC( cloud2, 3, Eigen::Vector3i(0,0,255));
+//            viewer.addPC( cloud2, 3, Eigen::Vector3i(0,0,255));
             viewer.addPC( rotatedCloud, 3, Eigen::Vector3i(255, 0, 0));
-            viewer.displayAxis(rf);
-            viewer.displayAxis(&rf[9], pcl::PointXYZ(1,0,1));
+            viewer.displayAxis(rf, pcl::PointXYZ(0,0,0), 1, 5);
+            viewer.displayAxis(&rf[9], pcl::PointXYZ(1,0,1), 1, 5);
         }
     }
 
     void checkIntersector(){
 
-        Eigen::Matrix4f transform1 = Eigen::Matrix4f::Identity();
-        Matrix3f rotation1;
-        rotation1 = AngleAxisf(0, Vector3f::UnitX())
-                  * AngleAxisf(1.57/2.0,  Vector3f::UnitY())
-                  * AngleAxisf(0, Vector3f::UnitZ());
-        transform1.topLeftCorner (3, 3) = rotation1;
-        Vector3f origin1(0,0,0);
-        Vector3f recSize1(2,2,2);
-        Rectangle rec1( origin1, recSize1, transform1);
+//        Eigen::Matrix4f transform1 = Eigen::Matrix4f::Identity();
+//        Matrix3f rotation1;
+//        rotation1 = AngleAxisf(0, Vector3f::UnitX())
+//                  * AngleAxisf(1.57/2.0,  Vector3f::UnitY())
+//                  * AngleAxisf(0, Vector3f::UnitZ());
+//        transform1.topLeftCorner (3, 3) = rotation1;
+//        Vector3f origin1(0,0,0);
+//        Vector3f recSize1(2,2,2);
+//        Rectangle rec1( origin1, recSize1, transform1);
 
-        Eigen::Matrix4f transform2 = Eigen::Matrix4f::Identity();
-        Matrix3f rotation2;
-        rotation2 = AngleAxisf(1.57/2.0, Vector3f::UnitX())
-                  * AngleAxisf(0,  Vector3f::UnitY())
-                  * AngleAxisf(0, Vector3f::UnitZ());
-        transform2.topLeftCorner (3, 3) = rotation2;
-        Vector3f origin2(0,-0.2,1);
-        Vector3f recSize2(2,2,2);
-        Rectangle rec2( origin2, recSize2, transform2);
+//        Eigen::Matrix4f transform2 = Eigen::Matrix4f::Identity();
+//        Matrix3f rotation2;
+//        rotation2 = AngleAxisf(1.57/2.0, Vector3f::UnitX())
+//                  * AngleAxisf(0,  Vector3f::UnitY())
+//                  * AngleAxisf(0, Vector3f::UnitZ());
+//        transform2.topLeftCorner (3, 3) = rotation2;
+//        Vector3f origin2(0,-0.2,1);
+//        Vector3f recSize2(2,2,2);
+//        Rectangle rec2( origin2, recSize2, transform2);
 
-        Intersector inter(rec1.cloud(), rec1.volume(), 0.4);
+
+
+        Rectangle gt(Vector3f(-0.366322, -0.026236, 1.4847),
+                     Vector3f(2.1372, 0.970795, 1.95954));
+        Matrix4f foundTf;
+        foundTf << 1, -1.18945e-07, 2.7022e-07, 1.6,
+                -4.03597e-07, 1, 4.16345e-07, -0.2,
+                -3.50863e-07, -1.21055e-07, 1, -0.599999,
+                0, 0, 0, 1;
+        Rectangle found(Vector3f(0, 0, 0), Vector3f(2.4, 1.2, 2), foundTf);
+
+
+
+
+
+        Intersector inter(gt.cloud(), gt.volume(), 0.4);
 
         double score = 0;
-        if( inter(rec2.cloud(), rec2.volume(), &score)){
+        if( inter(found.cloud(), found.volume(), &score)){
             cout<<"Intersection true"<<endl;
         }else{
             cout<<"Intersection false"<<endl;
         }
         cout<<"Score : "<<score<<endl;
 
-        viewer.displayCubeLine(rec1);
-        viewer.displayCubeLine(rec2);
+        viewer.displayCubeLine(gt, Vector3i(255,255,0));
+        viewer.displayCubeLine(found, Vector3i(0,255,255));
         viewer.addPC(inter.intersectionCloud_);
+    }
+
+    void checkBox( string dataFolder, string sceneName){
+
+        string xmlExtension = ".xml", pcExtension = ".ply";
+        string filePath = dataFolder + sceneName + "/" + sceneName;
+
+        PointCloudPtr cloud( new PointCloudT);
+        if (readPointCloud(filePath + pcExtension, cloud) == -1) {
+            cout<<"test::couldnt open pc file"<<endl;
+        }
+        viewer.addPC(cloud);
+
+        Scene scene( filePath + xmlExtension, filePath + pcExtension, sceneResolution);
+
+        for (int j = 0; j < scene.objects().size(); ++j) {
+            if (scene.objects()[j].name() == Object::CHAIR){
+                viewer.displayCubeLine( scene.objects()[j].bndbox());
+            }
+        }
+
     }
 
     float sceneResolution;
@@ -1186,13 +1244,14 @@ int main(){
 
     ///train and test not working if run in serie because of PointCloudPtr in Rectangle
     /// change it to PointCloudT if you want to solve it
-//    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
-//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/021/021.ply",
-//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/045/045.ply",
-    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",
+    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/021/021.ply",//145
+//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/234/234.ply",//43
+//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",//403
                "tmp.txt");
 
+//    test.checkBox("/media/ubuntu/DATA/3DDataset/sceneNN+/","021");
 
 //    Vector3f origin(0,0,0);
 //    Vector3f recSize(5,5,5);
@@ -1230,14 +1289,14 @@ int main(){
 //    test.viewer.displayCubeLine(bndbox2);
 
 
-
-//    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd");
+//    test.checkSHOT("/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply");
+//    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_7_normalize.ply");
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd");
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/upSideDownChair.pcd");
 //    test.checkSHOT("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd");
 
 //    test.checkSHOTs({"/home/ubuntu/3DDataset/3DDPM/chair/faceChair.pcd",
-//                     "/home/ubuntu/3DDataset/3DDPM/chair_normalized/chair_7_normalize.ply"});
+//                     "/home/ubuntu/3DDataset/3DDPM/chair/sideChair.pcd"});
 
 
 //    test.checkImages("/home/ubuntu/3DDataset/3DDPM/table/");

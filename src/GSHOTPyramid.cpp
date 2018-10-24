@@ -10,11 +10,11 @@ using namespace std;
 
 const int GSHOTPyramid::DescriptorSize;
 
-GSHOTPyramid::GSHOTPyramid() : pad_( Eigen::Vector3i(0, 0, 0)), interval_(0)
+GSHOTPyramid::GSHOTPyramid() : pad_( Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
-GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filterSizes,
+GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Vector3i filterSizes,
 //                           originalOrientation,
                            int interval, float starting_resolution, int thresh,
                            int nbOctave):
@@ -64,18 +64,22 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
     sampling.setRadiusSearch (starting_resolution);
     sampling.filter(*subspace);
 
+//    float orientationFrom[9] = {0,0,1,1,0,0,0,1,0};
 //    float orientationFrom[9] = {1,0,0,0,1,0,0,0,1};
 //    float orientationFrom[9] = {-0.118525, 0.931382, 0.344209, -0.992036, -0.125949, -0.000797627, 0.0426101, -0.341563, 0.938893};//{1,0,0,0,1,0,0,0,1};
 //    float orientationFrom[9] = {-0.132104, -0.589017, 0.79725, -0.0987371, 0.808118, 0.580686, -0.986306, -0.00200695, -0.164914};
-    float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
-
+//chair    float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
+    //bed using min filterSize for GSHOT, works good when direction is correct but can be easily wrong
+//    float orientationFrom[9] = {-0.131707, -0.139466, 0.981429, 0.941407, 0.292508, 0.167903, -0.310492, 0.946038, 0.0927687};
+    //bed using mean filterSize for GSHOT, orientation more robust but less accurate
+    float orientationFrom[9] = {-0.330336, 0.0100554, 0.94381, 0.897447, 0.313065, 0.310774, -0.292348, 0.949679, -0.112441};
 
     resolution = starting_resolution * 2;
 
     globalKeyPts = computeKeyptsWithThresh(subspace, resolution, min, max, filterSizes, thresh);
     globalDescriptors = compute_descriptor(subspace, globalKeyPts,
-                                           std::min(filterSizes.first, std::min(filterSizes.second, filterSizes.third))*resolution);
-//                                        (filterSizes.first+filterSizes.second+filterSizes.third)*resolution/3.0);
+//                                           std::min(filterSizes(0), std::min(filterSizes(1), filterSizes(2)))*resolution);
+                                        filterSizes.sum()*resolution/3.0);
 
     for(int i=0;i<levels_.size();++i){
         levels_[i].resize( globalKeyPts->size());
@@ -92,18 +96,18 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
     vector<PointCloudPtr> boxKeyPts(2);//[lvl]
     PointType boxStart = PointType();
     PointType boxEnd = PointType();
-    boxEnd.x = filterSizes.third*starting_resolution * 2;
-    boxEnd.y = filterSizes.second*starting_resolution * 2;
-    boxEnd.z = filterSizes.first*starting_resolution * 2;
+    boxEnd.x = filterSizes(2)*starting_resolution * 2;
+    boxEnd.y = filterSizes(1)*starting_resolution * 2;
+    boxEnd.z = filterSizes(0)*starting_resolution * 2;
     PointCloudPtr tmp = compute_keypoints(starting_resolution, boxStart, boxEnd, 0);
     boxKeyPts[0] = tmp;
     tmp = compute_keypoints(resolution, boxStart, boxEnd, 1);
     boxKeyPts[1] = tmp;
 
     Vector3f origin(0,0,0);
-    Vector3f recSize(filterSizes.first * starting_resolution * 2,
-                     filterSizes.second * starting_resolution * 2,
-                     filterSizes.third * starting_resolution * 2);
+    Vector3f recSize(filterSizes(0) * starting_resolution * 2,
+                     filterSizes(1) * starting_resolution * 2,
+                     filterSizes(2) * starting_resolution * 2);
 
     int cpt = 0;
     //for each boxes i
@@ -111,18 +115,18 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, triple<int, int, int> filt
     for( int i = 0; i < globalDescriptors->size(); ++i){
 
         Vector3f boxOrigin(
-                    filterSizes.third * starting_resolution * 2 / 2.0,
-                    filterSizes.second * starting_resolution * 2 / 2.0,
-                    filterSizes.first * starting_resolution * 2 / 2.0);
+                    filterSizes(2) * starting_resolution * 2 / 2.0,
+                    filterSizes(1) * starting_resolution * 2 / 2.0,
+                    filterSizes(0) * starting_resolution * 2 / 2.0);
         //translation from low front left anchor (0,0,0)
         Vector3f translation(
-                    globalKeyPts->points[i].x - filterSizes.third * starting_resolution * 2 / 2.0,
-                    globalKeyPts->points[i].y - filterSizes.second * starting_resolution * 2 / 2.0,
-                    globalKeyPts->points[i].z - filterSizes.first * starting_resolution * 2 / 2.0);
+                    globalKeyPts->points[i].x - filterSizes(2) * starting_resolution * 2 / 2.0,
+                    globalKeyPts->points[i].y - filterSizes(1) * starting_resolution * 2 / 2.0,
+                    globalKeyPts->points[i].z - filterSizes(0) * starting_resolution * 2 / 2.0);
 
         //TODO check translation
             Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
-                                                              orientationFrom,//globalDescriptors->points[i].rf,
+                                                              globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
 //        Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
 //            cout << "GSHOTPyr::constructor rotation : "<<endl<<transform<<endl;
@@ -343,17 +347,12 @@ GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, i
 
 PointCloudPtr
 GSHOTPyramid::computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, PointType min, PointType max,
-                                      triple<int, int, int> filterSizes, int thresh){
+                                      Vector3i filterSizes, int thresh){
 
-    int pt_nb_x = ceil((max.x-min.x)/grid_reso+1)-filterSizes.third;
-    int pt_nb_y = ceil((max.y-min.y)/grid_reso+1)-filterSizes.second;
-    int pt_nb_z = ceil((max.z-min.z)/grid_reso+1)-filterSizes.first;
+    int pt_nb_x = ceil((max.x-min.x)/grid_reso+1)-filterSizes(2);
+    int pt_nb_y = ceil((max.y-min.y)/grid_reso+1)-filterSizes(1);
+    int pt_nb_z = ceil((max.z-min.z)/grid_reso+1)-filterSizes(0);
     
-    cout<<"pt_nb_x : "<<pt_nb_x<<endl;
-    cout<<"pt_nb_y : "<<pt_nb_y<<endl;
-
-//    PointCloudPtr keypoints (new PointCloudT (pt_nb,1,PointType()));
-
     PointCloudPtr keypoints (new PointCloudT());
     keypoints->width    = 0;
     keypoints->height   = 1;
@@ -364,16 +363,16 @@ GSHOTPyramid::computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, Poin
             for(int x=0;x<pt_nb_x;++x){
                 //put keyPts in the middle of the box
                 PointType p = PointType();
-                p.x = min.x + (x+filterSizes.third/2.0)*grid_reso;
-                p.y = min.y + (y+filterSizes.second/2.0)*grid_reso;
-                p.z = min.z + (z+filterSizes.first/2.0)*grid_reso;
+                p.x = min.x + (x+filterSizes(2)/2.0)*grid_reso;
+                p.y = min.y + (y+filterSizes(1)/2.0)*grid_reso;
+                p.z = min.z + (z+filterSizes(0)/2.0)*grid_reso;
 
                 Vector4f ptStart( min.x + x*grid_reso,
                                   min.y + y*grid_reso,
                                   min.z + z*grid_reso, 1);
-                Vector4f ptEnd( ptStart(0) + filterSizes.third*grid_reso,
-                                ptStart(1) + filterSizes.second*grid_reso,
-                                ptStart(2) + filterSizes.first*grid_reso, 1);
+                Vector4f ptEnd( ptStart(0) + filterSizes(2)*grid_reso,
+                                ptStart(1) + filterSizes(1)*grid_reso,
+                                ptStart(2) + filterSizes(0)*grid_reso, 1);
                 std::vector<int> pt_indices;
                 pcl::getPointsInBox(*cloud, ptStart, ptEnd, pt_indices);
 

@@ -117,9 +117,9 @@ public:
 //            cout<<"Intersector:: reconstruct cHull done"<<endl;
 
             intersectionVolume = cHull.getTotalVolume();
-            cout<<"Intersector:: intersectionCloud->size() : "<<intersectionCloud->size()<<endl;
-            cout<<"Intersector:: intersectionVolume : "<<intersectionVolume<<endl;
-            cout<<"Intersector:: cubeVolume : "<<cubeVolume<<endl;
+//            cout<<"Intersector:: intersectionCloud->size() : "<<intersectionCloud->size()<<endl;
+//            cout<<"Intersector:: intersectionVolume : "<<intersectionVolume<<endl;
+//            cout<<"Intersector:: cubeVolume : "<<cubeVolume<<endl;
 
 //            for(int i=0; i<intersectionCloud->size();++i){
 //                cout<<"Pt["<<i<<"] : "<<intersectionCloud->points[i].x<<" / "
@@ -134,21 +134,21 @@ public:
             if (intersectionVolume > cubeVolume * threshold_ && cubeVolume) {
                 if (score)
                     *score = intersectionVolume / cubeVolume;
-                cout<<"Intersector::done"<<endl;
+//                cout<<"Intersector::done"<<endl;
 
                 return true;
             }
         }
         else {
-            const float unionVolume = refVolume_ + cubeVolume - intersectionVolume;
-            std::cout<<"intersectionVolume : "<<intersectionVolume<<std::endl;
-            std::cout<<"unionVolume * threshold_ : "<<unionVolume * threshold_<<std::endl;
-            std::cout<<"unionVolume : "<<unionVolume<<std::endl;
+//            const float unionVolume = refVolume_ + cubeVolume - intersectionVolume;
+//            std::cout<<"refVolume_ : "<<refVolume_<<std::endl;
+//            std::cout<<"unionVolume * threshold_ : "<<unionVolume * threshold_<<std::endl;
+//            std::cout<<"unionVolume : "<<unionVolume<<std::endl;
 
-            if (intersectionVolume > unionVolume * threshold_ && unionVolume) {
+            if (intersectionVolume > refVolume_ * threshold_ && refVolume_) {
                 if (score)
-                    *score = intersectionVolume / unionVolume;
-//                cout<<"Intersector::done"<<endl;
+                    *score = intersectionVolume / refVolume_;
+//                cout<<"Intersector::score : "<<*score<<endl;
 
                 return true;
             }
