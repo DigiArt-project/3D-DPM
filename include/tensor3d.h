@@ -160,7 +160,7 @@ public:
                             }
                         }
                     }
-                    res()(z, y, x) /= filterNorm /** tensorNorm*/;
+                    res()(z, y, x) /= (filterNorm * tensorNorm);
 //                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
                 }
             }

@@ -224,6 +224,8 @@ void GSHOTPyramid::convolve(const Level & filter, vector<vector<Tensor3DF > >& c
 
     for (int i = 0; i < levels_.size(); ++i){
         convolutions[i].resize(levels_[i].size());
+//        cout<<"GSHOTPyramid::convolve at lvl : "<< i << endl;
+
     #pragma omp parallel for //for each box
         for (int j = 0; j < levels_[i].size(); ++j){
             Convolve(levels_[i][j], filter, convolutions[i][j]);
@@ -236,10 +238,10 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
     // Nothing to do if x is smaller than y
     if ((level().dimension(0) < filter().dimension(0)) || (level().dimension(1) < filter().dimension(1) )
             || (level().dimension(2) < filter().dimension(2) )) {
-        cout<<"GSHOTPyramid::convolve error : level size is smaller than filter" << endl;
-        cout<<"GSHOTPyramid::convolve error : " <<level().dimension(0)<<" < "<<filter().dimension(0)
-           <<" / " << level().dimension(1)<<" < "<<filter().dimension(1)
-          <<" / " << level().dimension(2)<<" < "<<filter().dimension(2)<< endl;
+//        cout<<"GSHOTPyramid::convolve error : level size is smaller than filter" << endl;
+//        cout<<"GSHOTPyramid::convolve error : " <<level().dimension(0)<<" < "<<filter().dimension(0)
+//           <<" / " << level().dimension(1)<<" < "<<filter().dimension(1)
+//          <<" / " << level().dimension(2)<<" < "<<filter().dimension(2)<< endl;
         return;
     }
 
@@ -249,6 +251,8 @@ void GSHOTPyramid::Convolve(const Level & level, const Level & filter, Tensor3DF
 //    convolution = level.khi2Convolve(filter);
 
 //    convolution = level.EMD(filter);
+
+//    cout<<"GSHOTPyramid::convolve results.size() : "<< convolution.size() << endl;
 
 
 //    cout<<"GSHOTPyramid::convolve results.depths() : "<< convolution.depths() << endl;

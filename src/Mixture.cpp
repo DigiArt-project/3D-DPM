@@ -223,12 +223,13 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 	return loss;
 }
 
-void Mixture::initializeParts(int nbParts/*, triple<int, int, int> partSize*/)
+void Mixture::initializeParts(int nbParts)
 {
     for (int i = 0; i < models_.size(); ++i) {
-        Vector3i partSize(models_[i].rootSize()(0)*2*0.8/(nbParts),
-                          models_[i].rootSize()(1)*2*0.8/(nbParts),
-                          models_[i].rootSize()(2)*2*0.8/(nbParts));
+//        Vector3i partSize(models_[i].rootSize()(0)*2*0.9283/pow(nbParts, 0.33),
+//                          models_[i].rootSize()(1)*2*0.9283/pow(nbParts, 0.33),
+//                          models_[i].rootSize()(2)*2*0.9283/pow(nbParts, 0.33));
+        Vector3i partSize(6, 5, 4);
         cout<<"initParts : "<<partSize<<endl;
         models_[i].initializeParts(nbParts, partSize);
 	}

@@ -196,8 +196,8 @@ public:
 
         int nbParts = 2;
         double C = 0.002, J = 2;
-        float boxOverlap = 0.5;
-        int interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 2000;
+        float boxOverlap = 0.7;
+        int interval = 1, nbIterations = 1, nbDatamine = 1, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
 
@@ -275,6 +275,7 @@ public:
         for (int i = 0; i < sizes.size(); ++i)
             sizes[i] = mixture.models()[i].rootSize();
 
+        float maxScore = -1000;
 
         // For each scale
         for (int lvl = 0; lvl < scores.size(); ++lvl) {
@@ -324,6 +325,8 @@ public:
 
 //                    cout<<"test:: scores = "<<score<<endl;
 
+                    if( score > maxScore) maxScore = score;
+
                     if (score >= threshold) {
 
                         Rectangle bndbox = pyramid.rectangles_[lvl][box];
@@ -341,6 +344,7 @@ public:
             }
         }
 
+        cout<<"test:: maxScore : "<<maxScore<<endl;
         cout<<"test:: detections.size = "<<detections.size()<<endl;
         // Non maxima suppression
         std::sort(detections.begin(), detections.end(), AscendingOrder());
@@ -404,21 +408,26 @@ public:
                     const int xp = positions[argmax][j][lvl][box]()(z, y, x)(2);
                     const int lvlp = positions[argmax][j][lvl][box]()(z, y, x)(3);
 
-//                    cout<<"test: part position : "<<zp<<" "<<yp<<" "<<xp<<" "<<lvlp<<endl;
+                    cout<<"test: part position : "<<zp<<" "<<yp<<" "<<xp<<" "<<lvlp<<endl;
 
                     Eigen::Vector3f origin(0,0,0);
                     Eigen::Vector3f boxSize(
                                 mixture.models()[argmax].partSize()(0) * pyramid.resolutions()[lvlp],
                                 mixture.models()[argmax].partSize()(1) * pyramid.resolutions()[lvlp],
                                 mixture.models()[argmax].partSize()(2) * pyramid.resolutions()[lvlp]);
+                    Eigen::Vector3f center(-boxSize(0)/2.0,-boxSize(1)/2.0,-boxSize(2)/2.0);
 
                     /////////
                     Matrix4f trans = pyramid.rectangles_[lvl][box].transform();
-                    trans.topRightCorner(3, 1) += Vector3f(xp * pyramid.resolutions()[lvlp],
-                                                           yp * pyramid.resolutions()[lvlp],
-                                                           zp * pyramid.resolutions()[lvlp]);
+                    Matrix3f rotation = trans.topLeftCorner (3, 3);
 
-                    cout<<"trans part : "<<Vector3f(xp * pyramid.resolutions()[lvlp],
+                    Vector3f translation(xp * pyramid.resolutions()[lvlp], yp * pyramid.resolutions()[lvlp],
+                                         zp * pyramid.resolutions()[lvlp]);
+
+
+                    trans.topRightCorner(3, 1) = center - rotation * center + translation;
+
+                    cout<<"translation part : "<<Vector3f(xp * pyramid.resolutions()[lvlp],
                                                     yp * pyramid.resolutions()[lvlp],
                                                     zp * pyramid.resolutions()[lvlp]).transpose()<<endl;
                     /////////
@@ -1200,6 +1209,39 @@ public:
 
     }
 
+    void checkDT3D(){
+        Tensor3DF score(6,3,1);
+        score().setZero();
+        score()(3,1,0) = 0.7;
+        score()(0,0,0) = -1;
+        score()(3,2,0) = -0.6;
+        score()(2,1,0) = 0.7;
+        score()(3,1,0) = 1;
+        score()(5,1,0) = -0.6;
+        score()(2,0,0) = 0.99;
+        cout << "score : "<<endl<<score()<<endl;
+
+//        score() <<  0.2, -0.3, 0.1,   0, 0.5, -0.4,
+//                   -0.2,  0.5, 0.8,   1, 0.2,  0.6,
+//                    0,    0.7, 0.1, 0.4, 0.1, -0.9;
+        Model::Positions positions;
+        Model::Part part;
+        part.deformation << -0.01, 0.0, -0.01, 0.0, -0.01, 0.0, -0.01, 0.0;
+        Tensor3DF tmp1;
+        Tensor3DF tmp2;
+        Model::DT3D( score, part, tmp1, tmp2, &positions);
+        cout << "new score : "<<endl<<score()<<endl;
+        cout << "positions : "<<endl;
+        for( int i = 0; i<score.depths(); ++i){
+            for( int j = 0; j<score.rows(); ++j){
+                cout <<positions()(i,j,0).transpose()<<"    ";
+            }
+            cout<<endl;
+        }
+        cout<<endl;
+
+    }
+
     float sceneResolution;
     Viewer viewer;
 };
@@ -1211,7 +1253,7 @@ int main(){
 
 
     Test test;
-
+//    test.checkDT3D();
 //    PointCloudPtr cloud( new PointCloudT);
 //    if (readPointCloud("/home/ubuntu/3DDataset/3DDPM/chair/2rotChair.pcd", cloud) == -1) {
 //        cout<<"test::couldnt open pcd file"<<endl;
@@ -1244,10 +1286,11 @@ int main(){
 
     ///train and test not working if run in serie because of PointCloudPtr in Rectangle
     /// change it to PointCloudT if you want to solve it
-    test.train("/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+    test.train("/media/ubuntu/DATA/3DDataset/sceneNNTrain/");
 
-    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/021/021.ply",//145
-//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/234/234.ply",//43
+//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/021/021.ply",//145
+    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/234/234.ply",//43
+//    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/014/014.ply",//
 //    test.test( "/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply",//403
                "tmp.txt");
 

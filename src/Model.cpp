@@ -225,112 +225,112 @@ void Model::initializeParts(int nbParts, Eigen::Vector3i partSize/*, GSHOTPyrami
         energy.blockLink(argZ, argY, argX, partSize(0), partSize(1), partSize(2)).setZero();
     }
 ////////////
-    // Retry 10 times from randomized starting points
-    double bestCover = 0.0;
-    vector<Part> best(parts_); // The best so far is the current one
+//    // Retry 10 times from randomized starting points
+//    double bestCover = 0.0;
+//    vector<Part> best(parts_); // The best so far is the current one
 
-    for (int i = 0; i < 10; ++i) {
-        vector<Part> tmp(parts_); // Try from the current one
-//        cout << "size tmp "<<tmp.size()<<endl;
-        // Remove a part at random and look for the best place to put it
-        for (int j = 0; j < 100 * nbParts; ++j) {
-            // Recompute the energy
-            for (int z = 0; z < root2x.depths(); ++z) {
-                for (int y = 0; y < root2x.rows(); ++y) {
-                    for (int x = 0; x < root2x.cols(); ++x) {
-                        energy()(z, y, x) = 0;
+//    for (int i = 0; i < 10; ++i) {
+//        vector<Part> tmp(parts_); // Try from the current one
+////        cout << "size tmp "<<tmp.size()<<endl;
+//        // Remove a part at random and look for the best place to put it
+//        for (int j = 0; j < 100 * nbParts; ++j) {
+//            // Recompute the energy
+//            for (int z = 0; z < root2x.depths(); ++z) {
+//                for (int y = 0; y < root2x.rows(); ++y) {
+//                    for (int x = 0; x < root2x.cols(); ++x) {
+//                        energy()(z, y, x) = 0;
 
-                        for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                            energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
-                    }
-                }
-            }
+//                        for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+//                            energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
+//                    }
+//                }
+//            }
 
-            // Select a part at random
-            const int part = rand() % nbParts;
+//            // Select a part at random
+//            const int part = rand() % nbParts;
 
-            // Zero out the energy covered by the other parts
-            for (int k = 0; k < nbParts; ++k){
-                if (k != part){
-//                    cout<<"Model::initializeParts set energyy Zero at = "<< tmp[k+1].offset <<endl;
-                    energy.blockLink(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize(0),
-                                 partSize(1), partSize(2)).setZero();
+//            // Zero out the energy covered by the other parts
+//            for (int k = 0; k < nbParts; ++k){
+//                if (k != part){
+////                    cout<<"Model::initializeParts set energyy Zero at = "<< tmp[k+1].offset <<endl;
+//                    energy.blockLink(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2), partSize(0),
+//                                 partSize(1), partSize(2)).setZero();
 
-//                    const double e = energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2),
-//                            partSize.first,partSize.second,partSize.third).sum();
-//                    cout<<"Model::initializeParts energy at "<<tmp[k + 1].offset(0)<<" / "<<
-//                       tmp[k + 1].offset(1)<<" / "<<tmp[k + 1].offset(2)<<" = "<< e <<endl;
+////                    const double e = energy.block(tmp[k + 1].offset(0), tmp[k + 1].offset(1), tmp[k + 1].offset(2),
+////                            partSize.first,partSize.second,partSize.third).sum();
+////                    cout<<"Model::initializeParts energy at "<<tmp[k + 1].offset(0)<<" / "<<
+////                       tmp[k + 1].offset(1)<<" / "<<tmp[k + 1].offset(2)<<" = "<< e <<endl;
 
-                }
-            }
+//                }
+//            }
 
-            // Find the region of maximum energy
-            double maxEnergy = 0.0;
-            int argX = 0;
-            int argY = 0;
-            int argZ = 0;
+//            // Find the region of maximum energy
+//            double maxEnergy = 0.0;
+//            int argX = 0;
+//            int argY = 0;
+//            int argZ = 0;
 
-            for (int z = 0; z <= energy.depths() - partSize(0); ++z) {
-                for (int y = 0; y <= energy.rows() - partSize(1); ++y) {
-                    for (int x = 0; x <= energy.cols() - partSize(2); ++x) {
-                        const double e = energy.block(z, y, x,partSize(0), partSize(1), partSize(2)).sum();
-//                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<endl;
+//            for (int z = 0; z <= energy.depths() - partSize(0); ++z) {
+//                for (int y = 0; y <= energy.rows() - partSize(1); ++y) {
+//                    for (int x = 0; x <= energy.cols() - partSize(2); ++x) {
+//                        const double e = energy.block(z, y, x,partSize(0), partSize(1), partSize(2)).sum();
+////                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<endl;
 
-                        if (e > maxEnergy) {
-                            maxEnergy = e;
-                            argX = x;
-                            argY = y;
-                            argZ = z;
-                        }
-//                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<" / "<<maxEnergy<<endl;
-                    }
-                }
-            }
+//                        if (e > maxEnergy) {
+//                            maxEnergy = e;
+//                            argX = x;
+//                            argY = y;
+//                            argZ = z;
+//                        }
+////                        cout<<"Model::initializeParts energy at "<<z<<" / "<<y<<" / "<<x<<" = "<< e <<" / "<<maxEnergy<<endl;
+//                    }
+//                }
+//            }
 
-            // Initialize the part
-            tmp[part + 1].filter = root2x.block(argZ, argY, argX, partSize(0), partSize(1), partSize(2));
-            tmp[part + 1].offset(0) = argZ;
-            tmp[part + 1].offset(1) = argY;
-            tmp[part + 1].offset(2) = argX;
+//            // Initialize the part
+//            tmp[part + 1].filter = root2x.block(argZ, argY, argX, partSize(0), partSize(1), partSize(2));
+//            tmp[part + 1].offset(0) = argZ;
+//            tmp[part + 1].offset(1) = argY;
+//            tmp[part + 1].offset(2) = argX;
 
-            cout<<"Model::initializeParts init part 2 : offset["<<part+1<<"] = "<< tmp[part+1].offset <<endl;
+//            cout<<"Model::initializeParts init part 2 : offset["<<part+1<<"] = "<< tmp[part+1].offset <<endl;
 
-        }
+//        }
 
-        // Compute the energy covered by this part arrangement
-        double cover = 0.0;
+//        // Compute the energy covered by this part arrangement
+//        double cover = 0.0;
 
-        // Recompute the energy
-        for (int z = 0; z < root2x.depths(); ++z) {
-            for (int y = 0; y < root2x.rows(); ++y) {
-                for (int x = 0; x < root2x.cols(); ++x) {
-                    energy()(z, y, x) = 0;
+//        // Recompute the energy
+//        for (int z = 0; z < root2x.depths(); ++z) {
+//            for (int y = 0; y < root2x.rows(); ++y) {
+//                for (int x = 0; x < root2x.cols(); ++x) {
+//                    energy()(z, y, x) = 0;
 
-                    for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
-                        energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
-                }
-            }
-        }
+//                    for (int i = 0; i < GSHOTPyramid::DescriptorSize; ++i)
+//                        energy()(z, y, x) += root2x()(z, y, x).coeff(i) * root2x()(z, y, x).coeff(i);
+//                }
+//            }
+//        }
 
-        for (int j = 0; j < nbParts; ++j) {
-//            cout << energy.size() <<endl;
-            // Add the energy of the part
-            cover += energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
-                                  partSize(0), partSize(1), partSize(2)).sum();
+//        for (int j = 0; j < nbParts; ++j) {
+////            cout << energy.size() <<endl;
+//            // Add the energy of the part
+//            cover += energy.block(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
+//                                  partSize(0), partSize(1), partSize(2)).sum();
 
-            // Set the energy of the part to zero
-            energy.blockLink(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
-                    partSize(0), partSize(1), partSize(2)).setZero();
-        }
+//            // Set the energy of the part to zero
+//            energy.blockLink(tmp[j + 1].offset(0), tmp[j + 1].offset(1), tmp[j + 1].offset(2),
+//                    partSize(0), partSize(1), partSize(2)).setZero();
+//        }
 
-        if (cover > bestCover) {
-            bestCover = cover;
-            best.swap(tmp);
-        }
-    }
+//        if (cover > bestCover) {
+//            bestCover = cover;
+//            best.swap(tmp);
+//        }
+//    }
 
-    //error seg
-    parts_.swap(best);
+//    //error seg
+//    parts_.swap(best);
 //////////////
 
     // Initialize the deformations
@@ -606,12 +606,12 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
     //            sum = (*convolutions)[i+1][lvl - interval].sum();
     //            cout<<"Model::conv sum for part "<<i+1<<" after DT3D : "<<sum<<endl;
 
-    //            if((*convolutions)[i+1][lvl - interval].size() > 0){
-    //                stringstream name;
-    //                name << "conv" << i+1 << ".txt";
-    //                ofstream out(name.str().c_str());
-    //                out << (*convolutions)[i+1][lvl - interval]();
-    //            }
+                if((*convolutions)[i+1][lvl - interval][box].size() > 0 && box == 403){
+                    stringstream name;
+                    name << "conv" << i+1 << ".txt";
+                    ofstream out(name.str().c_str());
+                    out << (*convolutions)[i+1][lvl - interval][box]();
+                }
 
                 // Add the distance transforms of the part one octave below
                 for (int z = 0; z < (*convolutions)[0][lvl][box].depths(); ++z) {//lvl=1
@@ -632,10 +632,11 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
                                 if (positions){
                                     (*positions)[i][lvl][box]()(z, y, x) <<
-                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(0) - parts_[i + 1].offset(0),
-                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(1) - parts_[i + 1].offset(1),
-                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(2) - parts_[i + 1].offset(2),
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(0) /*- parts_[i + 1].offset(0)*/,
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(1) /*- parts_[i + 1].offset(1)*/,
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(2) /*- parts_[i + 1].offset(2)*/,
                                         lvl - interval;
+//                                    cout<<"Model::(*positions)[i][lvl - interval][box]()(zr, yr, xr) "<<(*positions)[i][lvl - interval][box]()(zr, yr, xr)<<endl;
                                 }
                             }
                             else {
@@ -656,7 +657,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
             }
 //            cout<<"Model::conv score end : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
-            (*convolutions)[0][lvl][box]()(0,0,0) /=  nbFilters;
+//            (*convolutions)[0][lvl][box]()(0,0,0) /=  nbFilters;
 //            cout<<"Model::conv score final : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
 
         }
@@ -690,6 +691,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
                 Tensor3DF biasTensor( scores[i][box].depths(), scores[i][box].rows(), scores[i][box].cols());
                 biasTensor().setConstant( bias_);
                 scores[i][box]() += biasTensor();
+                scores[i][box]()(0,0,0) /=  nbFilters;
             }
         }
     }
@@ -857,10 +859,10 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
 
 
     for (int q = 1; q < n;) {
-//        const Scalar s = (x[q * incx] - xvk) * t[q - v[k]] + (q + v[k]) - b / a;
+        const Scalar s = (f[q * incf] - fvk) * t[q - v[k]] + (q + v[k]) - b / a;
         // result good only if b = 0
-        const Scalar s = (f[q * incf] - fvk) * t[q - v[k]] / 2.0 + (q*q - v[k]*v[k]) / (2*(q - v[k])) - off
-                - b * (q - v[k]) / a;
+//        const Scalar s = (f[q * incf] - fvk) * t[q - v[k]] / 2.0 + (q*q - v[k]*v[k]) / (2*(q - v[k])) - off
+//                - b * (q - v[k]) / a;
 //        const Scalar s = (x[q * incx] - xvk) * t[q - v[k]] + (q + v[k]) - off;
 
         if (s <= z[k]) {
@@ -878,37 +880,36 @@ static void dt1d(const Scalar * f, int n, Scalar a, Scalar b, Scalar * z, int * 
     }
 
     z[k + 1] = numeric_limits<Scalar>::infinity();
-//    cout<<"Model::DT1D k max : "<<k+1<<endl;
 
     if (y && m) {
         for (int q = 0, k = 0; q < n; ++q) {
-            while (z[k + 1] </* 2 **/ q)
+            while (z[k + 1] < 2 * q)
                 ++k;
 
-//            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
-//            m[q * incm] = v[k];
-            if(q >= start && q <= end)
-                y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
-            else
-                y[q * incy] = 0;//f[v[k] * incf];
-            m[q * incm] = v[k] ;
+            y[q * incy] = f[v[k] * incf] + (a * (q - v[k]) + b) * (q - v[k]);
+            m[q * incm] = v[k];
+//            if(q >= start && q <= end)
+//                y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
+//            else
+//                y[q * incy] = 0;//f[v[k] * incf];
+//            m[q * incm] = v[k] ;
         }
     }
     else if (y) {
         for (int q = 0, k = 0; q < n; ++q) {
-            while (z[k + 1] </* 2 **/ q)
+            while (z[k + 1] < 2 * q)
                 ++k;
 
-//            y[q * incy] = x[v[k] * incx] + (a * (q - v[k]) + b) * (q - v[k]);
-            if(q >= start && q <= end)
-                y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
-            else
-                y[q * incy] = 0;//f[v[k] * incf];
+            y[q * incy] = f[v[k] * incf] + (a * (q - v[k]) + b) * (q - v[k]);
+//            if(q >= start && q <= end)
+//                y[q * incy] = f[v[k] * incf] + (a * (q - v[k] + off) + b) * (q - v[k] + off);
+//            else
+//                y[q * incy] = 0;//f[v[k] * incf];
         }
     }
     else {
         for (int q = 0, k = 0; q < n; ++q) {
-            while (z[k + 1] < /*2 **/ q)
+            while (z[k + 1] < 2 * q)
                 ++k;
 
 //            m[q * incm] = v[k];
@@ -955,6 +956,7 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 
     if (positions){
         (*positions)().resize(depths, rows, cols);
+//        (*positions)().setZero();
     }
 
     tmp1().resize(depths, rows, cols);
@@ -969,7 +971,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
     t[0] = numeric_limits<GSHOTPyramid::Scalar>::infinity();
 
     for (int x = 1; x < cols; ++x){
-//        t[x] = 1 / (part.deformation(0) * x);
         t[x] = 1 / (part.deformation(0) * x);
     }
     //dt1d(const Scalar * x, int n, Scalar a, Scalar b, Scalar * z, int * v, Scalar * y,
@@ -978,74 +979,88 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
     // Filter the rows in tmp
     for (int z = 0; z < depths; ++z){
         for (int y = 0; y < rows; ++y){
-//            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
-//                                 part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
-//                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
-//                                 &t[0], 1, 1, 4);
             dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
-                                 0, &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
+                                 part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
                                  positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
-                                 &t[0], 1, 1, 4, part.offset[2], weightCols);
+                                 &t[0], 1, 1, 4);
+//            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
+//                                 0, &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
+//                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
+//                                 &t[0], 1, 1, 4, part.offset[2], weightCols);
         }
     }
 
 
     for (int y = 1; y < rows; ++y){
-//        t[y] = 1 / (part.deformation(2) * y);
         t[y] = 1 / (part.deformation(2) * y);
     }
 
     // Filter the columns back to the original matrix
     for (int z = 0; z < depths; ++z){
         for (int x = 0; x < cols; ++x){
-//            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), part.deformation(3),
-//                                 &distance[0], &index[0],
-//                                 tmp2().data() + x + z*cols*rows,
-//                                 positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
-//                                 cols, cols, 4 * cols);
-            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), 0,
+            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), part.deformation(3),
                                  &distance[0], &index[0],
                                  tmp2().data() + x + z*cols*rows,
                                  positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
-                                 cols, cols, 4 * cols, part.offset[1], weightRows);
+                                 cols, cols, 4 * cols);
+//            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), 0,
+//                                 &distance[0], &index[0],
+//                                 tmp2().data() + x + z*cols*rows,
+//                                 positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
+//                                 cols, cols, 4 * cols, part.offset[1], weightRows);
         }
     }
 
+    //   Re-index the best x positions now that the best y changed
+//    if (positions) {
+//        for (int z = 0; z < depths; ++z)
+//            for (int y = 0; y < rows; ++y)
+//                for (int x = 0; x < cols; ++x)
+//                    tmp1()(z, y, x) = (*positions)()(z, y, x)(2);
+
+//        for (int z = 0; z < depths; ++z)
+//            for (int y = 0; y < rows; ++y)
+//                for (int x = 0; x < cols; ++x){
+//                    (*positions)()(z, y, x)(2) = tmp1()( (*positions)()(z, y, x)(0), (*positions)()(z, y, x)(1), x);
+//                }
+
+//    }
+
     for (int z = 1; z < depths; ++z){
-//        t[z] = 1 / (part.deformation(4) * z);
         t[z] = 1 / (part.deformation(4) * z);
     }
 
     // Filter the columns back to the original matrix
     for (int y = 0; y < rows; ++y){
         for (int x = 0; x < cols; ++x){
-//            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), part.deformation(5),
-//                                 &distance[0], &index[0],
-//                                 tensor().data() + x + y*cols,//or 0
-//                                 positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
-//                                 cols * rows, cols * rows, 4 * cols * rows);
-            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), 0,
+            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), part.deformation(5),
                                  &distance[0], &index[0],
                                  tensor().data() + x + y*cols,//or 0
                                  positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
-                                 cols * rows, cols * rows, 4 * cols * rows, part.offset[0], weightDepths);
+                                 cols * rows, cols * rows, 4 * cols * rows);
+//            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), 0,
+//                                 &distance[0], &index[0],
+//                                 tensor().data() + x + y*cols,//or 0
+//                                 positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
+//                                 cols * rows, cols * rows, 4 * cols * rows, part.offset[0], weightDepths);
         }
     }
 
-//  //   Re-index the best x positions now that the best y changed
-    // Re-index the best z positions now that the best x and y changed
+//    // Re-index the best z positions now that the best x and y changed
     if (positions) {
         for (int z = 0; z < depths; ++z)
             for (int y = 0; y < rows; ++y)
-                for (int x = 0; x < cols; ++x)
-                    tmp2()(z, y, x) = (*positions)()(z, y, x)(0);
+                for (int x = 0; x < cols; ++x){
+                    tmp1()(z, y, x) = (*positions)()(z, y, x)(2);
+                    tmp2()(z, y, x) = (*positions)()(z, y, x)(1);
+                }
 
         for (int z = 0; z < depths; ++z)
             for (int y = 0; y < rows; ++y)
                 for (int x = 0; x < cols; ++x){
 
-
-                    (*positions)()(z, y, x)(0) = tmp2()(z, (*positions)()(z, y, x)(1), (*positions)()(z, y, x)(2));
+                    (*positions)()(z, y, x)(2) = tmp1()( (*positions)()(z, y, x)(0), (*positions)()(z, y, x)(1), x);
+                    (*positions)()(z, y, x)(1) = tmp2()((*positions)()(z, y, x)(0), y, (*positions)()(z, y, x)(2));
                 }
 
     }
