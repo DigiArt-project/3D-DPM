@@ -90,7 +90,7 @@ namespace FFLD
         
         /// Constructs an empty pyramid. An empty pyramid has no level.
         GSHOTPyramid();
-        
+
         // Copy constructor
         GSHOTPyramid(const GSHOTPyramid&);
         

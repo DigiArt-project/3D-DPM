@@ -185,7 +185,7 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
                 cerr<<"Xml local pose is not correct : "<< localPose.size() <<endl;
                 return;
             }
-            localPose_.push_back( Eigen::Vector4f(localPose[0], localPose[1], localPose[2], localPose[3]));
+            localPose_.push_back( Eigen::Vector3f(localPose[0], localPose[1], localPose[2]/*, localPose[3]*/));
         }
         cur = cur->next;
     }
@@ -256,7 +256,7 @@ void Scene::setObjects(const vector<Object> &objects)
 	objects_ = objects;
 }
 
-const std::vector<Eigen::Vector4f> & Scene::localPose() const{
+const std::vector<Eigen::Vector3f> & Scene::localPose() const{
     return localPose_;
 }
 

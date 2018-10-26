@@ -45,7 +45,7 @@ cached_(false), zero_(true)
 	}
 	
 	// Compute the root filters' sizes using Felzenszwalb's heuristic
-    const vector<Vector3i> sizes = FilterSizes(nbComponents, scenes, name, interval);
+    const vector<Vector3i> sizes = {Vector3i(6,3,5)};//FilterSizes(nbComponents, scenes, name, interval);
 	
 	// Early return in case the root filters' sizes could not be determined
     if (sizes.size() != nbComponents){
@@ -226,12 +226,14 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, Eigen::Ve
 void Mixture::initializeParts(int nbParts)
 {
     for (int i = 0; i < models_.size(); ++i) {
-//        Vector3i partSize(models_[i].rootSize()(0)*2*0.9283/pow(nbParts, 0.33),
-//                          models_[i].rootSize()(1)*2*0.9283/pow(nbParts, 0.33),
-//                          models_[i].rootSize()(2)*2*0.9283/pow(nbParts, 0.33));
-        Vector3i partSize(6, 5, 4);
-        cout<<"initParts : "<<partSize<<endl;
-        models_[i].initializeParts(nbParts, partSize);
+        if( nbParts){
+            Vector3i partSize(models_[i].rootSize()(0)*2*0.9283/pow(nbParts, 0.33),
+                              models_[i].rootSize()(1)*2*0.9283/pow(nbParts, 0.33),
+                              models_[i].rootSize()(2)*2*0.9283/pow(nbParts, 0.33));
+    //        Vector3i partSize(6, 5, 4);
+            cout<<"initParts : "<<partSize<<endl;
+            models_[i].initializeParts(nbParts, partSize);
+        }
 	}
 	
 	// The filters definitely changed
@@ -577,7 +579,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name, E
 {
     cout<<"Mix::negLatentSearch ..."<<endl;
     // Sample at most (maxNegatives - negatives.size()) negatives with a score above -1.0
-    if (scenes.empty() || (pad.x() < 1) || (pad.y() < 1) || (pad.z() < 1) || (interval < 1) || (maxNegatives <= 0) ||
+    if (scenes.empty() || (interval < 1) || (maxNegatives <= 0) ||
             (negatives.size() >= maxNegatives)) {
         negatives.clear();
         cerr << "NegLatentSearch::Invalid training paramters" << endl;

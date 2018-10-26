@@ -537,7 +537,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 		
     cout<<"Model::convolve ..."<<endl;
 
-//#pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < nbFilters; ++i){
 
             pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
@@ -632,9 +632,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
                                 if (positions){
                                     (*positions)[i][lvl][box]()(z, y, x) <<
-                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(0) /*- parts_[i + 1].offset(0)*/,
-                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(1) /*- parts_[i + 1].offset(1)*/,
-                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(2) /*- parts_[i + 1].offset(2)*/,
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(0),
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(1),
+                                        (*positions)[i][lvl - interval][box]()(zr, yr, xr)(2),
                                         lvl - interval;
 //                                    cout<<"Model::(*positions)[i][lvl - interval][box]()(zr, yr, xr) "<<(*positions)[i][lvl - interval][box]()(zr, yr, xr)<<endl;
                                 }
@@ -691,7 +691,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
                 Tensor3DF biasTensor( scores[i][box].depths(), scores[i][box].rows(), scores[i][box].cols());
                 biasTensor().setConstant( bias_);
                 scores[i][box]() += biasTensor();
-                scores[i][box]()(0,0,0) /=  nbFilters;
+//                scores[i][box]()(0,0,0) /=  nbFilters;
             }
         }
     }
@@ -1011,20 +1011,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
         }
     }
 
-    //   Re-index the best x positions now that the best y changed
-//    if (positions) {
-//        for (int z = 0; z < depths; ++z)
-//            for (int y = 0; y < rows; ++y)
-//                for (int x = 0; x < cols; ++x)
-//                    tmp1()(z, y, x) = (*positions)()(z, y, x)(2);
-
-//        for (int z = 0; z < depths; ++z)
-//            for (int y = 0; y < rows; ++y)
-//                for (int x = 0; x < cols; ++x){
-//                    (*positions)()(z, y, x)(2) = tmp1()( (*positions)()(z, y, x)(0), (*positions)()(z, y, x)(1), x);
-//                }
-
-//    }
 
     for (int z = 1; z < depths; ++z){
         t[z] = 1 / (part.deformation(4) * z);

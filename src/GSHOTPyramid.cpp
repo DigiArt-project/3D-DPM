@@ -14,8 +14,15 @@ GSHOTPyramid::GSHOTPyramid() : pad_( Vector3i(0, 0, 0)), interval_(0)
 {
 }
 
+GSHOTPyramid::GSHOTPyramid(const GSHOTPyramid& pyr) : pad_( pyr.pad()), interval_(pyr.interval()),
+    filterSizes_(pyr.filterSizes_), levels_(pyr.levels()), resolutions_(pyr.resolutions()),
+    keypoints_(pyr.keypoints_), rectangles_(pyr.rectangles_),topology_(pyr.topology_),
+    sceneOffset_(pyr.sceneOffset_),globalKeyPts(pyr.globalKeyPts),
+    globalDescriptors(pyr.globalDescriptors)
+{
+}
+
 GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Vector3i filterSizes,
-//                           originalOrientation,
                            int interval, float starting_resolution, int thresh,
                            int nbOctave):
     interval_(0), filterSizes_(filterSizes)
@@ -68,7 +75,8 @@ GSHOTPyramid::GSHOTPyramid(const PointCloudPtr input, Vector3i filterSizes,
 //    float orientationFrom[9] = {1,0,0,0,1,0,0,0,1};
 //    float orientationFrom[9] = {-0.118525, 0.931382, 0.344209, -0.992036, -0.125949, -0.000797627, 0.0426101, -0.341563, 0.938893};//{1,0,0,0,1,0,0,0,1};
 //    float orientationFrom[9] = {-0.132104, -0.589017, 0.79725, -0.0987371, 0.808118, 0.580686, -0.986306, -0.00200695, -0.164914};
-//chair    float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
+    //chair
+//        float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
     //bed using min filterSize for GSHOT, works good when direction is correct but can be easily wrong
 //    float orientationFrom[9] = {-0.131707, -0.139466, 0.981429, 0.941407, 0.292508, 0.167903, -0.310492, 0.946038, 0.0927687};
     //bed using mean filterSize for GSHOT, orientation more robust but less accurate
@@ -222,11 +230,11 @@ void GSHOTPyramid::convolve(const Level & filter, vector<vector<Tensor3DF > >& c
 
     convolutions.resize(levels_.size());
 
+#pragma omp parallel for //for each box
     for (int i = 0; i < levels_.size(); ++i){
         convolutions[i].resize(levels_[i].size());
 //        cout<<"GSHOTPyramid::convolve at lvl : "<< i << endl;
-
-    #pragma omp parallel for //for each box
+#pragma omp parallel for //for each box
         for (int j = 0; j < levels_[i].size(); ++j){
             Convolve(levels_[i][j], filter, convolutions[i][j]);
         }
@@ -284,6 +292,27 @@ Matrix4f GSHOTPyramid::getNormalizeTransform(float* orientationFrom, float* orie
             r1(j,i) = finiteOrientation[j+i*3];
         }
     }
+
+//    if( principalOrientation != Vector3f(0,0,0)){
+//        if(principalOrientation.dot(Vector3f(1,0,0)) > 0.9){
+//            principalOrientation = Vector3f(1,0,0);
+//        }else if(principalOrientation.dot(Vector3f(0,1,0)) > 0.9){
+//            principalOrientation = Vector3f(0,1,0);
+//        }else if(principalOrientation.dot(Vector3f(0,0,1)) > 0.9){
+//            principalOrientation = Vector3f(0,0,1);
+//        }else{
+//            cout<<"principalOrientation wasnt distcretized : "<<principalOrientation<<endl;
+//        }
+
+//        Vector3f u(r1.col(2));//axe de rotation
+//        Matrix3f ux;
+//        ux << 0, -u(2), u(1),
+//              u(2), 0, -u(0),
+//              -u(1), u(0), 0;
+//        float theta = r1.col(0).dot(principalOrientation);
+//        Matrix3f rot = cos(theta) * Matrix3f::Identity() + sin(theta) * ux + (1-cos(theta)) * u * u.transpose();
+//        r1 = rot * r1;
+//    }
 
 //    cout<<"r0 : "<<endl<<r0<<endl;
 //    cout<<"r1 : "<<endl<<r1<<endl;

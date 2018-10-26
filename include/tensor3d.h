@@ -104,6 +104,79 @@ public:
         return false;
     }
 
+
+    //Level
+    Tensor3D<Scalar> RBFconvolve( Tensor3D< Type> filter) const{
+//        cout<<"tensor3D::convolve ..."<<endl;
+
+        Tensor3D<Scalar> res( depths() - filter.depths() + 1,
+                              rows() - filter.rows() + 1,
+                              cols() - filter.cols() + 1);
+
+
+
+        res().setConstant( 0);
+
+//        Scalar filterNorm = filter.lvlSquaredNorm();
+
+// Uncomment if you want to normalize the convolution score
+//        Type filterMean = filter.sum() / Scalar(filter.size());
+
+#pragma omp parallel for //num_threads(omp_get_max_threads())
+        for (int z = 0; z < res.depths(); ++z) {
+#pragma omp parallel for
+            for (int y = 0; y < res.rows(); ++y) {
+#pragma omp parallel for
+                for (int x = 0; x < res.cols(); ++x) {
+
+//                    Type tensorMean = agglomerateBlock(z, y, x, filter.depths(), filter.rows(), filter.cols())()(0,0,0) /
+//                            Scalar(filter.size());
+
+                    Scalar tensorNorm = block(z,y,x,filter.depths(), filter.rows(), filter.cols()).lvlSquaredNorm();
+                    if(!tensorNorm) tensorNorm = 1;
+
+//                    Type squaredNormTensor;
+//                    Type squaredNormFilter;
+//                    squaredNormTensor.setConstant( 0);
+//                    squaredNormFilter.setConstant( 0);
+//                    Scalar aux( 0);
+
+                    for (int dz = 0; dz < filter.depths(); ++dz) {
+                        for (int dy = 0; dy < filter.rows(); ++dy) {
+                            for (int dx = 0; dx < filter.cols(); ++dx) {
+
+                                Type normTensor = tensor(z+dz, y+dy, x+dx) /*- tensorMean*/;
+                                Type normFilter = filter()(dz, dy, dx) /*- filterMean*/;
+
+//                                Type sum = filter.sum();
+//                                for(int i=0; i<352; ++i){
+//                                    if (sum(i) !=0) normFi/*- tensorMean*/lter(i) /= sum(i);
+//                                    else normFilter(i) = 0;
+//                                }
+//                                squaredNormTensor += normTensor * normTensor;
+//                                squaredNormFilter += normFilter * normFilter;
+//                                aux += normTensor.matrix().dot(normFilter.matrix()) * normTensor.matrix().dot(normFilter.matrix());
+                                Type diff = normTensor - normFilter;
+                                Scalar norm = 0;
+                                for(int i=0; i<352; ++i){
+                                    norm += diff(i) * diff(i);
+                                }
+                                float gamma = 10;
+
+                                res()(z, y, x) += exp(-gamma * norm);
+
+                            }
+                        }
+                    }
+//                    res()(z, y, x) /= (filterNorm /** tensorNorm*/);
+//                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
+                }
+            }
+        }
+        return res;
+    }
+
+
     //Level
     Tensor3D<Scalar> convolve( Tensor3D< Type> filter) const{
 //        cout<<"tensor3D::convolve ..."<<endl;
@@ -160,7 +233,7 @@ public:
                             }
                         }
                     }
-                    res()(z, y, x) /= (filterNorm * tensorNorm);
+                    res()(z, y, x) /= (filterNorm /** tensorNorm*/);
 //                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
                 }
             }

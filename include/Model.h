@@ -19,6 +19,7 @@
 #define FFLD_MODEL_H
 #include <tuple>
 #include "GSHOTPyramid.h"
+#include <omp.h>
 
 
 
