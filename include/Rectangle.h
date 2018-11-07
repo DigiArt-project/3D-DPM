@@ -94,7 +94,7 @@ public:
     float volume() const;
     
     /// compare volume
-    bool operator<(const Rectangle & rect);
+    bool operator<(const Rectangle & rect) const;
 
 protected:
 

@@ -53,7 +53,7 @@ public:
 	/// @param[in] truncated Whether the object is annotated as being truncated.
 	/// @param[in] difficult Whether the object is annotated as being difficult.
 	/// @param[in] bndbox Bounding box of the object.
-	Object(Name name, Pose pose, bool truncated, bool difficult, Rectangle bndbox);
+    Object(Name name, Pose pose, bool truncated, bool difficult, Rectangle bndbox, Eigen::Vector3i rgb);
 	
 	/// Returns whether the object is empty.
 	/// An empty object has name 'unknown', pose 'unspecified', and all other parameters set to
@@ -89,6 +89,12 @@ public:
 	
 	/// Sets the bounding box of the object.
 	void setBndbox(Rectangle bndbox);
+
+    /// Returns the bounding box of the object.
+    Eigen::Vector3i color() const;
+
+    /// Sets the bounding box of the object.
+    void setColor(Eigen::Vector3i rgb);
 	
 private:
 	Name name_;
@@ -96,6 +102,7 @@ private:
 	bool truncated_;
 	bool difficult_;
 	Rectangle bndbox_;
+    Eigen::Vector3i rgb_;
 };
 
 /// Serializes an object to a stream.

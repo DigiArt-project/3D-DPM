@@ -145,7 +145,7 @@ float Rectangle::volume() const
     return volume_;
 }
 
-bool Rectangle::operator<(const Rectangle & rect){
+bool Rectangle::operator<(const Rectangle & rect) const{
     return volume() < rect.volume() && !( rect.volume() < volume());
 }
 

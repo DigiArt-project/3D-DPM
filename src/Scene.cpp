@@ -102,12 +102,13 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
             xmlChar *obboxChar;
             xmlChar *aabboxChar;
             xmlChar *localPoseChar;
+            xmlChar *colorChar;
             Object::Name objName;
 
 
             className = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("text"));
-            if( !xmlStrcmp(className, reinterpret_cast<const xmlChar *>("bed"))){
-                cout<<"Scene:: found a chair"<<endl;
+            if( !xmlStrcmp(className, reinterpret_cast<const xmlChar *>("chair"))){
+//                cout<<"Scene:: found a chair"<<endl;
                 objName = Object::CHAIR;
             } else{
                 objName = Object::AEROPLANE;
@@ -115,13 +116,16 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
             obboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("obbox"));
             aabboxChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("aabbox"));
             localPoseChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("local_pose"));
+            colorChar = xmlGetProp(cur, reinterpret_cast<const xmlChar *>("color"));
 
             vector<float> obbox;
             vector<float> aabbox;
             vector<float> localPose;
+            vector<int> color;
             string obboxStr = (char *) obboxChar;
             string aabboxStr = (char *) aabboxChar;
             string localPoseStr = (char *) localPoseChar;
+            string colorStr = (char *) colorChar;
 
 
             size_t first = 0, last = 0;
@@ -157,6 +161,22 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
                 cerr<<"Xml aa bounding box is not correct : "<< aabbox.size() <<endl;
                 return;
             }
+
+            first = 0, last = 0;
+            while ( ( (last = colorStr.find(" ", first)) != string::npos)){
+                color.push_back( stof( colorStr.substr( first, last - first)));
+                ++last;
+                first = last;
+            }
+            color.push_back( stof( colorStr.substr( first, colorStr.length() - first)));
+
+            if( color.size() != 3){
+                cerr<<"Xml color is not correct : "<< color.size() <<endl;
+                return;
+            }
+
+            Eigen::Vector3i rgb(color[0], color[1], color[2]);
+
             Eigen::Vector3f minPt(aabbox[2], aabbox[1], aabbox[0]);
             Eigen::Vector3f maxPt(aabbox[5], aabbox[4], aabbox[3]);
             Eigen::Vector3f aaBoxSizes(maxPt(0)-minPt(0), maxPt(1)-minPt(1), maxPt(2)-minPt(2));
@@ -165,9 +185,9 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
             Rectangle aabndbox( minPt, aaBoxSizes);
 
 
-            if(objName == Object::CHAIR) cout<<"Scene:: absolute chair bndbox : "<<aabndbox<<endl;
+//            if(objName == Object::CHAIR) cout<<"Scene:: absolute chair bndbox : "<<aabndbox<<endl;
 
-            Object obj( objName, Object::FRONTAL, false, false, aabndbox);
+            Object obj( objName, Object::FRONTAL, false, false, aabndbox, rgb);
 //            Object obj( objName, Object::FRONTAL, false, false, obndbox);
 
 
@@ -195,46 +215,6 @@ Scene::Scene(const string & xmlName, const string & pcFileName, const float reso
 }
 
 
-
-
-//Eigen::Vector3i Scene::origin() const{
-//    return origin_;
-//}
-
-//void Scene::setOrigin(Eigen::Vector3i origin){
-//    origin_ = origin;
-//}
-
-
-//int Scene::width() const
-//{
-//	return width_;
-//}
-
-//void Scene::setWidth(int width)
-//{
-//	width_ = width;
-//}
-
-//int Scene::height() const
-//{
-//	return height_;
-//}
-
-//void Scene::setHeight(int height)
-//{
-//	height_ = height;
-//}
-
-//int Scene::depth() const
-//{
-//	return depth_;
-//}
-
-//void Scene::setDepth(int depth)
-//{
-//	depth_ = depth;
-//}
 
 const string & Scene::filename() const
 {

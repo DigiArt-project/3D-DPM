@@ -395,7 +395,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
 
-//TODO parallelize
+    #pragma omp parallel for
     for (int i = 0; i < nbParts; ++i) {
         // Position of the part
         if ((lvl >= (*positions)[i].size()) || (x >= (*positions)[i][lvl][box].cols()) ||
@@ -535,9 +535,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 	else {
 		tmpConvolutions.resize(nbFilters);
 		
-    cout<<"Model::convolve ..."<<endl;
+        cout<<"Model::convolve ..."<<endl;
 
-#pragma omp parallel for
+        #pragma omp parallel for
         for (int i = 0; i < nbFilters; ++i){
 
             pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
@@ -571,8 +571,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
 
     float sum = 0.0;
-	
+
     // For each root level in reverse order
+    #pragma omp parallel for
     for (int lvl = nbLevels - 1; lvl >= interval; --lvl) {
 
 //        if((*convolutions)[0][lvl - interval].size() > 0){
@@ -581,10 +582,12 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 //            ofstream out(name.str().c_str());
 //            out << (*convolutions)[0][lvl]();
 //        }
+        #pragma omp parallel for
         for (int box = 0; box < pyramid.levels()[lvl].size(); ++box){
 //            cout<<"Model::conv score start : "<<(*convolutions)[0][lvl][box]()(0,0,0)<<endl;
 
             // For each part
+            #pragma omp parallel for
             for (int i = 0; i < nbParts; ++i) {
 
 
@@ -666,7 +669,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
     scores.swap((*convolutions)[0]);
 
+    #pragma omp parallel for
     for (int i = 0; i < interval; ++i) {
+        #pragma omp parallel for
         for (int box = 0; box < pyramid.levels()[0].size(); ++box){
 
             scores[i][box] = Tensor3DF();
@@ -683,8 +688,9 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 
 //     Add the bias if necessary
     if (bias_) {
-//#pragma omp parallel for
+        #pragma omp parallel for
         for (int i = interval; i < nbLevels; ++i){
+            #pragma omp parallel for
             for (int box = 0; box < pyramid.levels()[0].size(); ++box){
 
     //			scores[i].array() += bias_;
@@ -955,12 +961,12 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 //    const int weightCols   = cols;
 
     if (positions){
-        (*positions)().resize(depths, rows, cols);
+        (*positions)().resize(Eigen::array<long int, 3>{{depths, rows, cols}});
 //        (*positions)().setZero();
     }
 
-    tmp1().resize(depths, rows, cols);
-    tmp2().resize(depths, rows, cols);
+    tmp1().resize(Eigen::array<long int, 3>{{depths, rows, cols}});
+    tmp2().resize(Eigen::array<long int, 3>{{depths, rows, cols}});
 
     // Temporary vectors
     int maxi = max(depths,max(rows, cols));

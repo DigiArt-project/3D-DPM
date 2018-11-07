@@ -24,7 +24,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
-#include<pcl/io/ply_io.h>
+#include <pcl/io/ply_io.h>
 
 //Other
 #include "typedefs.h"
@@ -99,19 +99,14 @@ namespace FFLD
         /// @param[in] pad Amount of horizontal, vertical and depth zero padding (in cells).
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
-        GSHOTPyramid(const PointCloudPtr input, Eigen::Vector3i filterSizes, int interval = 1,
-                     float starting_resolution = 0.05, int thresh = 0, int nbOctave = 2);
 
-        /// Constructs a pyramid from a given point cloud data.
-        /// @param[in] input The PointCloud data
-        /// @param[in] octave Amount of Octaves in the pyramid (An octave can have muliples subsections/intervals)
-        /// @param[in] interval Number of intervals in each octave/Nuber of levels per octave in the pyramid
-        /// @param[in] starting_resolution Starting resolution for the point cloud. So that we can pre sample the point cloud,
-        /// in order to reduce computation and define a standard.
-        /// @param[in] starting_kp_grid_reso Resolution keypoint
-        /// @note TODO Need to take a container of parameters instead of the descr_rad to generalize to different descriptors.
-        GSHOTPyramid(PointCloudPtr input,  int octaves, int interval,
-                     float starting_resolution, float starting_kp_grid_reso, float descr_rad);
+        GSHOTPyramid(Eigen::Vector3i filterSizes, int interval = 1,
+                     float starting_resolution = 0.1, int nbOctave = 2);
+
+
+        void createPyramid(const PointCloudPtr input, int thresh = 400);
+
+        PointCloudPtr createPyramid(const PointCloudPtr input, vector<Eigen::Vector3i> colors, int thresh = 400);
         
         // Destructor
 //        ~GSHOTPyramid();
@@ -178,6 +173,7 @@ namespace FFLD
 
         Eigen::Vector3i pad_;
         int interval_;
+        int nbOctave_;
         // Represent a vector of 3D scene of descriptors computed at different resolution
         //from 0 (original resolution) to n (lowest resolution, last octave)
         std::vector<std::vector<Level> > levels_;

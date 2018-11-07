@@ -26,8 +26,8 @@ Object::Object() : name_(UNKNOWN), pose_(UNSPECIFIED), truncated_(false), diffic
 {
 }
 
-Object::Object(Name name, Pose pose, bool truncated, bool difficult, Rectangle bndbox) :
-name_(name), pose_(pose), truncated_(truncated), difficult_(difficult), bndbox_(bndbox)
+Object::Object(Name name, Pose pose, bool truncated, bool difficult, Rectangle bndbox, Eigen::Vector3i rgb) :
+name_(name), pose_(pose), truncated_(truncated), difficult_(difficult), bndbox_(bndbox), rgb_(rgb)
 {
 }
 
@@ -85,6 +85,14 @@ Rectangle Object::bndbox() const
 void Object::setBndbox(Rectangle bndbox)
 {
 	bndbox_ = bndbox;
+}
+
+Eigen::Vector3i Object::color() const{
+    return rgb_;
+}
+
+void Object::setColor(Eigen::Vector3i rgb){
+    rgb_ = rgb;
 }
 
 ostream & FFLD::operator<<(ostream & os, const Object & obj)

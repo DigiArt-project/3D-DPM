@@ -64,7 +64,7 @@ public:
     Test()
     {
 
-        sceneResolution = 0.2;//0.09/2.0;
+        sceneResolution = 0.2/4.0;//0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
     }
@@ -224,7 +224,7 @@ public:
 
         int nbParts = 2;
         double C = 0.1, J = 1;
-        float boxOverlap = 0.7;
+        float boxOverlap = 0.5;
         int interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 2000;
         int nbComponents = 1; //nb of object poses without symetry
 
@@ -420,7 +420,7 @@ public:
 
         int interval = 1;
         float threshold=-10, overlap=0.5;
-        float overlapValidation = 0.75;
+        float overlapValidation = 0.5;
         ifstream in( modelName);
 
         if (!in.is_open()) {
@@ -451,23 +451,24 @@ public:
             }
 
 
-            GSHOTPyramid pyramid(cloud, mixture.models()[0].rootSize(), interval, sceneResolution);
+            GSHOTPyramid pyramid(mixture.models()[0].rootSize(), interval, sceneResolution);
+            pyramid.createPyramid(cloud);
 
-    //        PointCloudPtr test (new PointCloudT(1,1,PointType()));
-    //        int boxNb = 145;//5+3*12+5*12*7;//700;449//403;145;43
-    //        test->points[0] = pyramid.globalKeyPts->points[boxNb];
-    //        viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
-    //        viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
-    //        cout<<"lrf : ";
-    //        for(int i=0;i<9;++i){
-    //            cout<<pyramid.globalDescriptors->points[boxNb].rf[i]<<" ";
-    //        }
-    //        cout<<endl;
-    //        viewer.addPC( pyramid.globalKeyPts, 2, Eigen::Vector3i(255, 255, 255));
-    //        viewer.displayAxis(pyramid.globalDescriptors->points[boxNb].rf, pcl::PointXYZ(
-    //                               pyramid.globalKeyPts->points[boxNb].x,
-    //                               pyramid.globalKeyPts->points[boxNb].y,
-    //                               pyramid.globalKeyPts->points[boxNb].z), 1, 3);
+            PointCloudPtr test (new PointCloudT(1,1,PointType()));
+            int boxNb = 0;//5+3*12+5*12*7;//700;449//403;145;43
+            test->points[0] = pyramid.globalKeyPts->points[boxNb];
+            viewer.addPC( test, 7, Eigen::Vector3i(255, 0, 0));
+            viewer.addPC( pyramid.keypoints_[1][boxNb], 5, Eigen::Vector3i(255, 255, 0));
+            cout<<"lrf : ";
+            for(int i=0;i<9;++i){
+                cout<<pyramid.globalDescriptors->points[boxNb].rf[i]<<" ";
+            }
+            cout<<endl;
+            viewer.addPC( pyramid.globalKeyPts, 2, Eigen::Vector3i(255, 255, 255));
+            viewer.displayAxis(pyramid.globalDescriptors->points[boxNb].rf, pcl::PointXYZ(
+                                   pyramid.globalKeyPts->points[boxNb].x,
+                                   pyramid.globalKeyPts->points[boxNb].y,
+                                   pyramid.globalKeyPts->points[boxNb].z), 1, 3);
     //403
     //        Rectangle gt(Vector3f(-0.366322, -0.026236, 1.4847),
     //                     Vector3f(2.1372, 0.970795, 1.95954));
@@ -501,7 +502,7 @@ public:
                     ++cpt;
                     double score = 0;
                     for( int d=0; d<detections.size(); ++d){
-                        if( detections[d].box==43){
+                        if( detections[d].box==700){
                             cout<<"detection at right pos at box : "<<detections[d].box
                                       <<" with score : "<< detections[d].score<<endl;
                             trueDetections.push_back(detections[d]);
@@ -531,7 +532,7 @@ public:
                 PointCloudPtr subspace(new PointCloudT());
                 pcl::UniformSampling<PointType> sampling;
                 sampling.setInputCloud(cloud);
-                sampling.setRadiusSearch (sceneResolution);
+                sampling.setRadiusSearch (0.1);
                 sampling.filter(*subspace);
                 viewer.addPC( subspace, 3);
             }
@@ -1198,6 +1199,20 @@ public:
 
     }
 
+    void displayCube( float orientationTo[], Vector3f boxOrigin, Vector3f translation){
+        float orientationFrom[9] = {-0.194105, -0.910017, 0.366323,
+                                    -0.0461106, -0.364549, -0.930042,
+                                    0.979896, -0.197417, 0.0287994};
+
+        Vector3f origin(0,0,0);
+        Vector3f size(8,11,8);
+        Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
+                                                          orientationTo,
+                                                          boxOrigin, translation);
+        Rectangle rec(origin, size, transform);
+        viewer.displayCubeLine(rec);
+    }
+
     float sceneResolution;
     Viewer viewer;
 };
@@ -1228,11 +1243,50 @@ int main(){
            "/media/ubuntu/DATA/3DDataset/sceneNN+/021/021.ply", test.sceneResolution);
     Scene scene014( "/media/ubuntu/DATA/3DDataset/sceneNN+/014/014.xml",
            "/media/ubuntu/DATA/3DDataset/sceneNN+/014/014.ply", test.sceneResolution);
+    Scene scene036( "/media/ubuntu/DATA/3DDataset/sceneNN+/036/036.xml",
+           "/media/ubuntu/DATA/3DDataset/sceneNN+/036/036.ply", test.sceneResolution);
+    Scene scene011( "/media/ubuntu/DATA/3DDataset/sceneNN+/011/011.xml",
+           "/media/ubuntu/DATA/3DDataset/sceneNN+/011/011.ply", test.sceneResolution);    
 
+//    test.train( {scene005,scene011});
+    PointCloudPtr cloud( new PointCloudT);
 
-    test.train( trainScenes);
+    if( readPointCloud("/media/ubuntu/DATA/3DDataset/sceneNN+/005/005.ply", cloud) == -1) {
+        cout<<"couldnt open pcd file"<<endl;
+    }
 
-    test.test( {scene234}, "tmp.txt");
+    PointCloudPtr subspace(new PointCloudT());
+    pcl::UniformSampling<PointType> sampling;
+    sampling.setInputCloud(cloud);
+    sampling.setRadiusSearch (0.1);
+    sampling.filter(*subspace);
+    viewer.addPC( subspace, 3);
+
+    test.viewer.addPC(subspace);
+    float[9] orientationTo = {};
+    Vector3f boxOrigin();
+    Vector3f translation();
+    test.displayCube(orientationTo, boxOrigin, translation);
+
+//    GSHOTPyramid pyramid(Vector3i(2,3,2), 1, test.sceneResolution);
+//    test.viewer.addPC( pyramid.createPyramid(cloud, {Vector3i(56, 190, 211),Vector3i(174, 76, 53)}));
+//    test.viewer.addPC( pyramid.globalKeyPts, 2, Eigen::Vector3i(255, 255, 255));
+
+//    int box1 = 700 + 0;
+//    test.viewer.displayAxis(pyramid.globalDescriptors->points[box1].rf,
+//            pcl::PointXYZ( pyramid.globalKeyPts->points[box1].x,
+//                           pyramid.globalKeyPts->points[box1].y,
+//                           pyramid.globalKeyPts->points[box1].z));
+//    int var = 0;//5+3*12+5*12*7//-3-2*22+1*24*13;
+//    int box2 = 449 + var;
+//    test.viewer.displayAxis(pyramid.globalDescriptors->points[box2].rf,
+//            pcl::PointXYZ( pyramid.globalKeyPts->points[box2].x,
+//                           pyramid.globalKeyPts->points[box2].y,
+//                           pyramid.globalKeyPts->points[box2].z));
+
+//    cout<<"pyramid.topology_ "<<var<<endl;
+
+//    test.test( {scene005}, "tmp.txt");
 //    test.test( testScenes, "tmp.txt");
 
 
