@@ -100,14 +100,18 @@ namespace FFLD
         /// @param[in] interval Number of levels per octave in the pyramid.
         /// @note The amount of padding and the interval should be at least 1.
 
-        GSHOTPyramid(Eigen::Vector3i filterSizes, int interval = 1,
-                     float starting_resolution = 0.1, int nbOctave = 2);
+        GSHOTPyramid(Eigen::Vector3i filterSizes, int nbParts = 1, int interval = 1,
+                     float starting_resolution = 0.2/1.0, int nbOctave = 2);
 
 
-        void createPyramid(const PointCloudPtr input, int thresh = 400);
+        void createFullPyramid(const PointCloudPtr input, int densityThreshold = 0);
 
-        PointCloudPtr createPyramid(const PointCloudPtr input, vector<Eigen::Vector3i> colors, int thresh = 400);
-        
+        PointCloudPtr createPosPyramid(const PointCloudPtr input, vector<Eigen::Vector3i> colors,
+                                    int densityThreshold = 0);
+
+        PointCloudPtr createFilteredPyramid(const PointCloudPtr input, Level rootFilter,
+                                            float accuracyThreshold = 0.5, int densityThreshold = 0);
+
         // Destructor
 //        ~GSHOTPyramid();
 
@@ -161,6 +165,9 @@ namespace FFLD
         PointCloudPtr computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, PointType min, PointType max,
                                               Eigen::Vector3i filterSizes, int thresh);
 
+        PointCloudPtr computeKeyptsWithThresh(PointCloudPtr cloud, float grid_reso, PointType min, PointType max,
+                                              Eigen::Vector3i filterSizes, Level filter, int thresh);
+
         // Method creating the keypoint grid using the min/max values of the input
         /*static */PointCloudPtr
         compute_keypoints(float grid_reso, PointType min, PointType max, int index);
@@ -174,15 +181,16 @@ namespace FFLD
         Eigen::Vector3i pad_;
         int interval_;
         int nbOctave_;
+        int nbParts_;
         // Represent a vector of 3D scene of descriptors computed at different resolution
         //from 0 (original resolution) to n (lowest resolution, last octave)
-        std::vector<std::vector<Level> > levels_;
+        std::vector<std::vector<Level> > levels_;//[lvl][box]
 
         std::vector<float> resolutions_;
 
 
         // The corresponding positions of boxes descriptors in the space for each level
-        std::vector<std::vector<PointCloudPtr > > keypoints_;//[lvl][box]
+        std::vector<std::vector<PointCloudPtr > > keyPts_;//[lvl][box]
         std::vector<std::vector<Rectangle> > rectangles_;//[lvl][box]
 
         PointCloudPtr globalKeyPts;

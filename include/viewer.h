@@ -38,6 +38,16 @@ public:
         ++id;
     }
 
+    void addSphere(const PointType &center, double radius, Eigen::Vector3i color = Eigen::Vector3i(255, 0, 0),
+                   string name = ""){
+        string str = name.append(std::to_string(id)).append(":l1");
+        viewer->addSphere( center, radius, color(0), color(1), color(2), str);
+        viewer->setShapeRenderingProperties
+        (pcl::visualization::PCL_VISUALIZER_REPRESENTATION,
+        pcl::visualization::PCL_VISUALIZER_REPRESENTATION_WIREFRAME, str);
+        ++id;
+    }
+
     void displayCubeLine(const Rectangle& rec, Eigen::Vector3i color = Eigen::Vector3i(255, 0, 0), string name = ""){
 
         viewer->addLine(rec.cloud(0), rec.cloud(1),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l1"));

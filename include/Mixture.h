@@ -75,14 +75,14 @@ public:
 	/// @param[in] overlap Minimum overlap in latent positive search.
 	/// @returns The final SVM loss.
 	/// @note The magic constants come from Felzenszwalb's implementation.
-    double train(const std::vector<Scene> & scenes, Object::Name name, Eigen::Vector3i pad = Eigen::Vector3i( 12, 12, 12),
-				 int interval = 5, int nbRelabel = 5, int nbDatamine = 10, int maxNegatives = 24000,
+    double train(const std::vector<Scene> & scenes, Object::Name name, int nbParts,
+                 int interval = 5, int nbRelabel = 5, int nbDatamine = 10, int maxNegatives = 24000,
                  double C = 0.002, double J = 2.0, double overlap = 0.4);
 	
 	/// Initializes the specidied number of parts from the root of each model.
 	/// @param[in] nbParts Number of parts (without the root).
 	/// @param[in] partSize Size of each part (<tt>rows x cols</tt>).
-    void initializeParts(int nbParts/*, triple<int, int, int> partSize*//*, GSHOTPyramid::Level root2x*/);
+    void initializeParts(int nbParts, GSHOTPyramid::Level parts);
 	
 	/// Returns the scores of the convolutions + distance transforms of the models with a
 	/// pyramid of features (useful to compute the SVM margins).
@@ -102,14 +102,14 @@ public:
     static Eigen::Matrix3f getRotation(Eigen::Vector4f orientationFrom, Eigen::Vector4f orientationTo);
 
     // Extracts all the positives
-	void posLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
-                         Eigen::Vector3i pad, int interval, double overlap,
-                         std::vector<std::pair<Model, int> > & positives) /*const*/;
+    void posLatentSearch(const vector<Scene> & scenes, Object::Name name,
+                         int interval, double overlap,
+                         vector<pair<Model, int> > & positives,
+                         vector<GSHOTPyramid::Level> &positivesParts) /*const*/;
 
 	// Bootstraps negatives with a non zero loss
-	void negLatentSearch(const std::vector<Scene> & scenes, Object::Name name,
-                         Eigen::Vector3i pad, int interval, int maxNegatives,
-						 std::vector<std::pair<Model, int> > & negatives) const;
+    void negLatentSearch(const std::vector<Scene> & scenes, Object::Name name, int interval, int maxNegatives,
+                         std::vector<std::pair<Model, int> > & negatives) const;
 	
 	// Trains the mixture from positive and negative samples with fixed latent variables
     double trainSVM(const std::vector<std::pair<Model, int> > & positives,

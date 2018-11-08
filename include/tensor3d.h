@@ -194,11 +194,11 @@ public:
 // Uncomment if you want to normalize the convolution score
 //        Type filterMean = filter.sum() / Scalar(filter.size());
 
-#pragma omp parallel for //num_threads(omp_get_max_threads())
+        #pragma omp parallel for //num_threads(omp_get_max_threads())
         for (int z = 0; z < res.depths(); ++z) {
-#pragma omp parallel for
+            #pragma omp parallel for
             for (int y = 0; y < res.rows(); ++y) {
-#pragma omp parallel for
+                #pragma omp parallel for
                 for (int x = 0; x < res.cols(); ++x) {
 
 //                    Type tensorMean = agglomerateBlock(z, y, x, filter.depths(), filter.rows(), filter.cols())()(0,0,0) /
@@ -233,7 +233,7 @@ public:
                             }
                         }
                     }
-                    res()(z, y, x) /= (filterNorm /** tensorNorm*/);
+//                    res()(z, y, x) /= (filterNorm * tensorNorm);
 //                    res()(z, y, x) /= sqrt(squaredNormTensor.matrix().sum() * squaredNormFilter.matrix().sum());
                 }
             }
@@ -310,11 +310,11 @@ public:
             cost_mat.push_back(cost_mat_row);
         }
 
-#pragma omp parallel for
+        #pragma omp parallel for
         for (int z = 0; z < res.depths(); ++z) {
-#pragma omp parallel for
+            #pragma omp parallel for
             for (int y = 0; y < res.rows(); ++y) {
-#pragma omp parallel for
+                #pragma omp parallel for
                 for (int x = 0; x < res.cols(); ++x) {
 
                     vector<double> desc_lvl(352);
@@ -327,7 +327,8 @@ public:
                         }
                     }
 
-                    res()(z, y, x) = emd_hat_gd_metric<double>()(desc_lvl, desc_filter, cost_mat, ground_metric_threshold);
+                    res()(z, y, x) = emd_hat_gd_metric<double>()(desc_lvl, desc_filter, cost_mat,
+                                                                 ground_metric_threshold);
 
                 }
             }
@@ -419,6 +420,22 @@ public:
             }
         }
         return res;
+    }
+
+    //Level
+    void operator+=( const Tensor3D< Type>& t){
+        #pragma omp parallel for /*num_threads(omp_get_max_threads())*/
+        for (int z = 0; z < depths(); ++z) {
+            #pragma omp parallel for
+            for (int y = 0; y < rows(); ++y) {
+                #pragma omp parallel for
+                for (int x = 0; x < cols(); ++x) {
+                    for (int j = 0; j < 352; ++j) {
+                        tensor(z, y, x)(j) += t()(z, y, x)(j);
+                    }
+                }
+            }
+        }
     }
 
 

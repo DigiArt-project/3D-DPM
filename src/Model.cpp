@@ -114,7 +114,7 @@ Vector3i Model::partSize() const
         return Eigen::Vector3i(0, 0, 0);
 }
 
-void Model::initializeParts(int nbParts, Eigen::Vector3i partSize/*, GSHOTPyramid::Level root2x*/)
+void Model::initializeParts(int nbParts, Eigen::Vector3i partSize, GSHOTPyramid::Level root2x)
 {
     cout<<"Model::initializeParts ..." <<endl;
 
@@ -125,47 +125,47 @@ void Model::initializeParts(int nbParts, Eigen::Vector3i partSize/*, GSHOTPyrami
     }
 
 
-    GSHOTPyramid::Level root = parts_[0].filter;
+//    GSHOTPyramid::Level root = parts_[0].filter;
 
-    GSHOTPyramid::Level root2x( 2*root.depths()-1, 2*root.rows()-1, 2*root.cols()-1);
-    GSHOTPyramid::Cell nullCell;
-    nullCell.setZero( GSHOTPyramid::DescriptorSize);
-    root2x().setConstant(nullCell);
+//    GSHOTPyramid::Level root2x( 2*root.depths()-1, 2*root.rows()-1, 2*root.cols()-1);
+//    GSHOTPyramid::Cell nullCell;
+//    nullCell.setZero( GSHOTPyramid::DescriptorSize);
+//    root2x().setConstant(nullCell);
 
-    //Trilinear interpolation
-    float xd = 0.5;
-    float yd = 0.5;
-    float zd = 0.5;
-    for (int z = 0; z < root.depths()-1; ++z) {//TODO remove -1 ?
-        int zf = z+1;
-        for (int y = 0; y < root.rows()-1; ++y) {
-            int yf = y+1;
-            for (int x = 0; x < root.cols()-1; ++x) {
+//    //Trilinear interpolation
+//    float xd = 0.5;
+//    float yd = 0.5;
+//    float zd = 0.5;
+//    for (int z = 0; z < root.depths()-1; ++z) {//TODO remove -1 ?
+//        int zf = z+1;
+//        for (int y = 0; y < root.rows()-1; ++y) {
+//            int yf = y+1;
+//            for (int x = 0; x < root.cols()-1; ++x) {
 
-                int xf = x+1;
+//                int xf = x+1;
 
-                GSHOTPyramid::Cell c00 = root()(z, y, x) * (1-xd) + root()(z, y, xf) * xd;
-                GSHOTPyramid::Cell c01 = root()(z, yf, x) * (1-xd) + root()(z, yf, xf) * xd;
-                GSHOTPyramid::Cell c10 = root()(zf, y, x) * (1-xd) + root()(zf, y, xf) * xd;
-                GSHOTPyramid::Cell c11 = root()(zf, yf, x) * (1-xd) + root()(zf, yf, xf) * xd;
+//                GSHOTPyramid::Cell c00 = root()(z, y, x) * (1-xd) + root()(z, y, xf) * xd;
+//                GSHOTPyramid::Cell c01 = root()(z, yf, x) * (1-xd) + root()(z, yf, xf) * xd;
+//                GSHOTPyramid::Cell c10 = root()(zf, y, x) * (1-xd) + root()(zf, y, xf) * xd;
+//                GSHOTPyramid::Cell c11 = root()(zf, yf, x) * (1-xd) + root()(zf, yf, xf) * xd;
 
-                GSHOTPyramid::Cell c0 = c00 * (1-yd) + c01 * yd;
-                GSHOTPyramid::Cell c1 = c10 * (1-yd) + c11 * yd;
+//                GSHOTPyramid::Cell c0 = c00 * (1-yd) + c01 * yd;
+//                GSHOTPyramid::Cell c1 = c10 * (1-yd) + c11 * yd;
 
-                GSHOTPyramid::Cell c = c0 * (1-zd) + c1 * zd;
+//                GSHOTPyramid::Cell c = c0 * (1-zd) + c1 * zd;
 
-                root2x()(2*z+1, 2*y+1, 2*x+1) = c;
-            }
-        }
-    }
+//                root2x()(2*z+1, 2*y+1, 2*x+1) = c;
+//            }
+//        }
+//    }
 
-    for (int z = 0; z < root.depths()/*-1*/; ++z) {
-        for (int y = 0; y < root.rows()/*-1*/; ++y) {
-            for (int x = 0; x < root.cols()/*-1*/; ++x) {
-                root2x()(2*z, 2*y, 2*x) = root()(z, y, x);
-            }
-        }
-    }
+//    for (int z = 0; z < root.depths()/*-1*/; ++z) {
+//        for (int y = 0; y < root.rows()/*-1*/; ++y) {
+//            for (int x = 0; x < root.cols()/*-1*/; ++x) {
+//                root2x()(2*z, 2*y, 2*x) = root()(z, y, x);
+//            }
+//        }
+//    }
 
 
 
@@ -357,9 +357,9 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y
 
     // Invalid parameters
     if (empty() || (x < 0) || (y < 0) || (z < 0) || (lvl >= nbLevels) ||
-        (x + rootSize()(2) > pyramid.levels()[lvl][box].cols()) ||//////TODO (rootSize-1)*....
-        (y + rootSize()(1) > pyramid.levels()[lvl][box].rows()) ||
-        (z + rootSize()(0) > pyramid.levels()[lvl][box].depths()) ||
+//        (x + rootSize()(2) > pyramid.levels()[lvl][box].cols()) ||//////TODO (rootSize-1)*....
+//        (y + rootSize()(1) > pyramid.levels()[lvl][box].rows()) ||
+//        (z + rootSize()(0) > pyramid.levels()[lvl][box].depths()) ||
         (nbParts && (!positions || (positions->size() != nbParts)))) {
         sample = Model();
         cerr << "Attempting to initialize an empty sample 1" << endl;
@@ -390,12 +390,12 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y
 //    sample.parts_[0].filter() = pyramid.levels()[lvl]().slice(offsets, extents).reshape(three_dims);
 
 
-    sample.parts_[0].filter = pyramid.levels()[lvl][box].block(z, y, x, rootSize()(0),
-                                                          rootSize()(1), rootSize()(2));
+    sample.parts_[0].filter = pyramid.levels()[lvl][box]/*.block(z, y, x, rootSize()(0),
+                                                          rootSize()(1), rootSize()(2))*/;
     sample.parts_[0].offset.setZero();
     sample.parts_[0].deformation.setZero();
 
-    #pragma omp parallel for
+//    #pragma omp parallel for
     for (int i = 0; i < nbParts; ++i) {
         // Position of the part
         if ((lvl >= (*positions)[i].size()) || (x >= (*positions)[i][lvl][box].cols()) ||
@@ -537,7 +537,7 @@ void Model::convolve(const GSHOTPyramid & pyramid, vector<vector<Tensor3DF> > &s
 		
         cout<<"Model::convolve ..."<<endl;
 
-        #pragma omp parallel for
+//        #pragma omp parallel for
         for (int i = 0; i < nbFilters; ++i){
 
             pyramid.convolve(parts_[i].filter, tmpConvolutions[i]);
@@ -709,7 +709,8 @@ double Model::dot(const Model & sample) const
     double d = bias_ * sample.bias_;
 
     if (parts_.size() != sample.parts_.size()){
-        cout<<"Model::dot bug1"<< endl;
+        cerr<<"Model::dot bug1 : "<<parts_.size()<<" / "
+           <<sample.parts_.size()<< endl;
         return numeric_limits<double>::quiet_NaN();
     }
 
@@ -717,7 +718,9 @@ double Model::dot(const Model & sample) const
         if ((parts_[i].filter.depths() != sample.parts_[i].filter.depths()) ||
             (parts_[i].filter.rows() != sample.parts_[i].filter.rows()) ||
             (parts_[i].filter.cols() != sample.parts_[i].filter.cols())){
-            cout<<"Model::dot bug2"<< endl;
+            cerr<<"Model::dot bug2 : "<<parts_[i].filter.size()<<" / "
+               <<sample.parts_[i].filter.size()<< endl;
+
             return numeric_limits<double>::quiet_NaN();
         }
 
