@@ -108,12 +108,14 @@ public:
         float intersectionVolume = 0;
         const float cubeVolume = rectVolume;
         if( intersectionCloud->size() > 3){
+            try{
             pcl::ConvexHull<PointType> cHull;
             pcl::PointCloud<PointType> cHullCloud;
             cHull.setInputCloud(intersectionCloud);
             cHull.setComputeAreaVolume(true);
             cHull.setDimension(3);
             cHull.reconstruct (cHullCloud);
+
 //            cout<<"Intersector:: reconstruct cHull done"<<endl;
 
             intersectionVolume = cHull.getTotalVolume();
@@ -126,6 +128,9 @@ public:
 //                   <<intersectionCloud->points[i].y<<" / "
 //                  <<intersectionCloud->points[i].z<<endl;
 //            }
+            }catch(...){
+
+            }
         }
 
         *intersectionCloud_ = *intersectionCloud;

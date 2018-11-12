@@ -437,6 +437,7 @@ PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Lev
     for(int i=0;i<levels_.size();++i){
         levels_[i].resize( globalKeyPts->size());
     }
+    cout<<"FilteredPyr:: descRadius : "<<descRadius<<endl;
 
 
     int cpt0 = 0;
@@ -456,7 +457,7 @@ PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Lev
     globalKeyPts->resize(cpt0);
     globalDescriptors->resize(cpt0);
 
-    cout<<"FilteredPyr:: globalKeyPts size : "<<globalKeyPts->size()<<endl;
+    cout<<"FilteredPyr:: globalKeyPts size2 : "<<globalKeyPts->size()<<endl;
 
     for(int i=0;i<levels_.size();++i){
         levels_[i].resize( globalKeyPts->size());

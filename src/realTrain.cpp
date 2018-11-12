@@ -60,11 +60,27 @@ struct AscendingOrder{
 
 class Test{
 public:
+    int nbParts;
+    double C;//regularization
+    double J;//weight the positive samples
+    float boxOverlap;
+    float overlapValidation;
+    int interval, nbIterations, nbDatamine, maxNegSample;//616
+    int nbComponents; //nb of object poses without symetry
+    float threshold;
 
     Test()
     {
+        nbParts = 0;
+        C = 2;//regularization
+        J = 8;//weight the positive samples
+        boxOverlap = 0.8;
+        overlapValidation = 0;
+        interval = 1, nbIterations = 2, nbDatamine = 8, maxNegSample = 10*J;//110//7
+        nbComponents = 1; //nb of object poses without symetry
+        threshold=0;
 
-        sceneResolution = 0.2/1.0;//0.09/2.0;
+        sceneResolution = 0.2/2.0;//0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
 
     }
@@ -222,23 +238,10 @@ public:
 
     void train( vector<Scene> scenes){
 
-        int nbParts = 0;
-        double C = 0.5, J = 4;
-        float boxOverlap = 0.5;
-        int interval = 1, nbIterations = 1, nbDatamine = 10, maxNegSample = 2000;
-        int nbComponents = 1; //nb of object poses without symetry
-
-        //////OLD
-//        triple<int, int, int> chairSize(8,10,6);//8,10,6 in lvl 1
-//        triple<int, int, int> chairPartSize(8,10,6);//8,10,6 in lvl 0
-//        Model model( chairSize, 0);
-//        std::vector<Model> models = { model};
-//        Mixture mixture( models);
-        //////
         Mixture mixture( nbComponents, scenes, Object::CHAIR, interval);
 
 
-        mixture.train(scenes, Object::CHAIR, nbParts, interval, nbIterations,
+        mixture.train(scenes, Object::CHAIR, nbParts, interval, nbIterations/nbIterations,
                       nbDatamine, maxNegSample, C, J, boxOverlap);
 
         cout<<"test::trained Root"<<endl;
@@ -256,8 +259,10 @@ public:
 
     void drawDetections(vector<Detection> detections,
                         GSHOTPyramid pyramid, bool isTrue, int nb = 3){
-        nb = std::min((int)detections.size(), nb);
+//        nb = std::min((int)detections.size(), nb);
+        nb = detections.size();
 
+        double radius = 3*1/2.0*sceneResolution*2;
         for (int i = 0; i < nb/*detections.size()*/; ++i) {
 
             const int x = detections[i].x;
@@ -321,15 +326,15 @@ public:
 //                        sizes[argmaxes[lvl]()(z, y, x)](1) * pyramid.resolutions()[lvl],
 //                        sizes[argmaxes[lvl]()(z, y, x)](0) * pyramid.resolutions()[lvl]);
             Rectangle bbox( pyramid.rectangles_[lvl][box]);
-            double radius = 3/2.0*sceneResolution*2;
+
             if(!isTrue){
                 if( i < 1){
                     viewer.displayCubeLine(bbox, Vector3i(255,0,0));
                     viewer.addSphere(pyramid.globalKeyPts->points[box], radius, Vector3i(255,0,0));
 
                 }else{
-                    viewer.displayCubeLine(bbox, Vector3i(0,255,255));
-                    viewer.addSphere(pyramid.globalKeyPts->points[box], radius, Vector3i(0,255,255));
+                    viewer.displayCubeLine(bbox, Vector3i(nb,255,255));
+                    viewer.addSphere(pyramid.globalKeyPts->points[box], radius, Vector3i(nb,255,255));
                 }
             }else{
                 viewer.displayCubeLine(bbox, Vector3i(255,255,0));
@@ -399,6 +404,7 @@ public:
 
         cout<<"test::sort done"<<endl;
 
+        /////TODO: doesnt work
         if(detections.size() > 1){
             vector<Detection>::iterator it;
             for (it = detections.begin()+1; it != detections.end(); /*++it*/){
@@ -412,6 +418,7 @@ public:
                 }
             }
         }
+        //////
 
 //        for (int i = 1; i < detections.size(); ++i){
 //            detections.resize(remove_if(detections.begin() + i, detections.end(),
@@ -426,9 +433,6 @@ public:
 
     void test( vector<Scene> scenes, string modelName){
 
-        int interval = 1;
-        float threshold=-10, overlap=0.5;
-        float overlapValidation = 0.5;
         ifstream in( modelName);
 
         if (!in.is_open()) {
@@ -444,6 +448,7 @@ public:
             return;
         }
 
+        mixture.models()[0].boxSize_ = Vector3i(2,3,2)*2;
         vector<Detection> detections;
         vector<Detection> trueDetections;
 
@@ -459,9 +464,9 @@ public:
             }
 
             Vector3i rootSize(2,3,2);
-            GSHOTPyramid pyramid(rootSize*1,
+            GSHOTPyramid pyramid(mixture.models()[0].boxSize_,
                     mixture.models()[0].parts().size(), interval, sceneResolution);
-            pyramid.createFilteredPyramid(cloud, mixture.models()[0].parts()[0].filter, -10);
+            pyramid.createFilteredPyramid(cloud, mixture.models()[0].parts()[0].filter, 0, 30);
 
 //            PointCloudPtr test (new PointCloudT(1,1,PointType()));
 //            int boxNb = 0;//5+3*12+5*12*7;//700;449//403;145;43
@@ -500,7 +505,7 @@ public:
     //        viewer.displayCubeLine(found, Vector3i(0,255,255));
 
 
-            detections = detect(mixture, interval, pyramid, threshold, overlap, Object::CHAIR);
+            detections = detect(mixture, interval, pyramid, threshold, boxOverlap, Object::CHAIR);
 
 
             for (int j = 0; j < scenes[i].objects().size(); ++j){
@@ -538,7 +543,7 @@ public:
 
                 drawDetections(detections, pyramid, false, 5);
                 cout<<"trueDetections ..."<<endl;
-//                drawDetections(trueDetections, pyramid, true);
+                drawDetections(trueDetections, pyramid, true);
                 PointCloudPtr subspace(new PointCloudT());
                 pcl::UniformSampling<PointType> sampling;
                 sampling.setInputCloud(cloud);
@@ -1140,14 +1145,41 @@ public:
         if (readPointCloud(filePath + pcExtension, cloud) == -1) {
             cout<<"test::couldnt open pc file"<<endl;
         }
-        viewer.addPC(cloud);
+        PointCloudPtr subspace(new PointCloudT());
+        pcl::UniformSampling<PointType> sampling;
+        sampling.setInputCloud(cloud);
+        sampling.setRadiusSearch (sceneResolution*2);
+        sampling.filter(*subspace);
+        viewer.addPC(subspace);
 
         Scene scene( filePath + xmlExtension, filePath + pcExtension, sceneResolution);
 
         for (int j = 0; j < scene.objects().size(); ++j) {
             if (scene.objects()[j].name() == Object::CHAIR){
-                viewer.displayCubeLine( scene.objects()[j].bndbox());
+                viewer.displayCubeLine( scene.objects()[j].bndbox(), Vector3i(255, 0, 0));
             }
+        }
+
+        Mixture mixture( nbComponents, {scene}, Object::CHAIR, interval);
+
+        vector<pair<Model, int> > positives;
+        vector<GSHOTPyramid::Level> positiveParts;
+
+
+        vector<Rectangle> recs = mixture.posLatentSearch({scene}, Object::CHAIR, interval, boxOverlap,
+                                                         positives, positiveParts);
+
+        for (int j = 0; j < recs.size(); ++j) {
+            viewer.displayCubeLine( recs[j], Vector3i(255, 255, 0));//yellow
+        }
+
+        mixture.zero_ = false;
+
+        vector<Rectangle> recs2 = mixture.posLatentSearch({scene}, Object::CHAIR, interval, boxOverlap,
+                                                         positives, positiveParts);
+
+        for (int j = 0; j < recs2.size(); ++j) {
+            viewer.displayCubeLine( recs2[j], Vector3i(255, 0, 255));//purple
         }
 
     }
@@ -1257,11 +1289,23 @@ int main(){
            "/media/ubuntu/DATA/3DDataset/sceneNN+/014/014.ply", test.sceneResolution);
     Scene scene036( "/media/ubuntu/DATA/3DDataset/sceneNN+/036/036.xml",
            "/media/ubuntu/DATA/3DDataset/sceneNN+/036/036.ply", test.sceneResolution);
+    Scene scene038( "/media/ubuntu/DATA/3DDataset/sceneNN+/038/038.xml",
+           "/media/ubuntu/DATA/3DDataset/sceneNN+/038/038.ply", test.sceneResolution);
     Scene scene011( "/media/ubuntu/DATA/3DDataset/sceneNN+/011/011.xml",
            "/media/ubuntu/DATA/3DDataset/sceneNN+/011/011.ply", test.sceneResolution);    
+    Scene scene096( "/media/ubuntu/DATA/3DDataset/sceneNN+/096/096.xml",
+           "/media/ubuntu/DATA/3DDataset/sceneNN+/096/096.ply", test.sceneResolution);
 
-    test.train( trainScenes);
-    test.test( {scene036}, "tmp.txt");
+//    test.train( trainScenes);
+//    test.test( {scene005},
+    test.test( {scene096},
+//    test.test( {scene036},
+               "tmp.txt");
+//               "smallSceneNN+/chair_part0_it1_res2_C2_j8_Neg49.txt");
+
+//    test.checkBox("/media/ubuntu/DATA/3DDataset/sceneNN+/","005");
+
+
 //    test.test( testScenes, "tmp.txt");
 
 //    PointCloudPtr cloud( new PointCloudT);

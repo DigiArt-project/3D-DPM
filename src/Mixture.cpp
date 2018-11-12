@@ -47,11 +47,12 @@ cached_(false), zero_(true)
 	// Compute the root filters' sizes using Felzenszwalb's heuristic
     const vector<Vector3i> sizes = {Vector3i(1,1,1)};//FilterSizes(nbComponents, scenes, name, interval);//{Vector3i(6,3,5)};//{Vector3i(2,3,2)*2};
 	
-	// Early return in case the root filters' sizes could not be determined
-    if (sizes.size() != nbComponents){
-        cerr<<"Root filters sizes could not be determined"<<endl;
-        return;
-    }
+
+//	// Early return in case the root filters' sizes could not be determined
+//    if (sizes.size() != nbComponents){
+//        cerr<<"Root filters sizes could not be determined"<<endl;
+//        return;
+//    }
 	
 	// Initialize the models (with symmetry) to those sizes
     models_.resize( nbComponents);
@@ -60,6 +61,8 @@ cached_(false), zero_(true)
         models_[i] = Model(sizes[i]);
         cout<<"Mixture:: model size set to : "<<sizes[i]<<endl;        
 	}
+
+    models_[0].boxSize_ = FilterSizes(nbComponents, scenes, name, interval);
 
 }
 
@@ -201,16 +204,7 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, int nbPar
 
             cout<< "model score vs positive : "<<positives[0].first.parts()[0].filter.dot(
                         models_[0].parts()[0].filter)<<endl;
-            ///initParts
-            if(zero_ && positiveParts.size()){
-                GSHOTPyramid::Level meanParts = positiveParts[0];
-                for(int i = 1; i < positiveParts.size();++i){
-                    meanParts += positiveParts[i];
-                }
-                initializeParts(nbParts, meanParts);
-//                cout<<"parts size : "<<models_[0].parts()
-            }
-            ///
+
 
 
             // Save the latest model so as to be able to look at it while training
@@ -226,8 +220,19 @@ double Mixture::train(const vector<Scene> & scenes, Object::Name name, int nbPar
 			
             prevLoss = loss;
         }
+        ///initParts
+        if(zero_ && positiveParts.size()){
+            GSHOTPyramid::Level meanParts = positiveParts[0];
+            for(int i = 1; i < positiveParts.size();++i){
+                meanParts += positiveParts[i];
+            }
+            initializeParts(nbParts, meanParts);
+    //                cout<<"parts size : "<<models_[0].parts()
+        }
+        ///
 
 	}
+
     // The filters definitely changed
     cached_ = false;
     zero_ = false;
@@ -348,18 +353,21 @@ void Mixture::computeScores(const GSHOTPyramid & pyramid, vector<vector<Tensor3D
 
 }
 
-void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
+vector<Rectangle> Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
 							  int interval, double overlap,
                               vector<pair<Model, int> > & positives,
                               vector<GSHOTPyramid::Level> & positivesParts) /*const*/
 {
+    vector<Rectangle> recs;
+
     cout << "Mix::posLatentSearch ..." << endl;
     if (scenes.empty() || (interval < 1) || (overlap <= 0.0) ||
 		(overlap >= 1.0)) {
 		positives.clear();
 		cerr << "Invalid training paramters" << endl;
-		return;
+        return recs;
 	}
+
 	
 	positives.clear();
 	
@@ -380,12 +388,12 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
             if( readPointCloud(scenes[i].filename(), cloud) == -1) {
                 cout<<"couldnt open pcd file"<<endl;
                 positives.clear();
-                return;
+                return recs;
             }
 
 
             Vector3i rootSize(2,3,2);
-            GSHOTPyramid pyramid(rootSize*1, models_[0].parts().size(), interval, scenes[i].resolution());
+            GSHOTPyramid pyramid(models()[0].boxSize_, models_[0].parts().size(), interval, scenes[i].resolution());
 
 
     //        cout << "Mix::posLatentSearch create pyramid of " << pyramid.levels().size() << " levels" << endl;
@@ -397,7 +405,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
             vector<vector<vector<vector<Model::Positions> > > >positions;//positions[nbModels][nbLvl][nbPart][box]
 
             if (!zero_){
-                pyramid.createFilteredPyramid(cloud, models_[0].parts()[0].filter, -10);
+                pyramid.createFilteredPyramid(cloud, models_[0].parts()[0].filter, 0, 5);
                 //only remaines score for the last octave
                 computeScores(pyramid, scores, argmaxes, &positions);
             }else{
@@ -409,7 +417,7 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
             if (pyramid.empty()) {
                 cout<<"posLatentSearch::pyramid.empty"<<endl;
                 positives.clear();
-                return;
+                return recs;
             }
 
 
@@ -490,7 +498,6 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
                                     Rectangle bndbox = pyramid.rectangles_[lvl][box];
 //                                    cout << "Mix::posLatentSearch bbox : " << bndbox << endl;
 
-
                                     double inter = 0.0;
 
                                     if (intersector(bndbox.cloud(), bndbox.volume(), &inter)) {
@@ -511,8 +518,8 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
                             // Just take the model with the best score
                             else {
                                 Rectangle bndbox = pyramid.rectangles_[lvl][box];
-//                                cout << "Mix::posLatentSearch bbox : " << bndbox << endl;
 
+//                                cout << "Mix::posLatentSearch bbox : " << bndbox << endl;
                                 double inter = 0.0;
 
                                 if(intersector(bndbox.cloud(), bndbox.volume(), &inter)){
@@ -526,9 +533,9 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
         //                                    cout << "Mix::posLatentSearch intersection = " << intersection <<" / "<< maxInter<< endl;
                                 }
                             }
-
-                            if ((intersection >= maxInter && zero_) ||
+                            if ((intersection >= overlap && zero_) ||
                                     (!zero_ && scores[lvl][box]()(0,0,0) > maxScore && intersection >= overlap)) {
+//                            if ((intersection >= maxInter )) {
 //                            if ((intersection >= maxInter) && (zero_ || (scores[lvl][box]()(0,0,0) > maxScore))) {
                                 argModel = model;
                                 argBox = box;
@@ -543,6 +550,31 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
                                 }
 
                                 maxInter = intersection;
+
+                                cout << "Mix:PosLatentSearch found at : "
+                                     << pyramid.rectangles_[argLvl][argBox]
+                                     << " for box : " << argBox << endl;
+
+                                Model sample;
+
+                                cout << "Mix::posLatentSearch rf of positive sample : ";
+                                for(int i=0;i<9;++i){
+                                    cout<<pyramid.globalDescriptors->points[argBox].rf[i]<<" ";
+                                }
+                                cout<<endl;
+
+                                models_[argModel].initializeSample(pyramid, argBox, argZ, argY, argX, argLvl, sample,
+                                                                   zero_ ? 0 : &positions[argModel]);
+
+                                if (!sample.empty()){
+                                    positives.push_back(make_pair(sample, argModel));
+                                    recs.push_back(pyramid.rectangles_[argLvl][argBox]);
+                                    if(zero_){
+                                        positivesParts.push_back(pyramid.levels()[0][argBox]);
+                                    }
+                                }
+
+
                             }
                         }
 
@@ -553,35 +585,36 @@ void Mixture::posLatentSearch(const vector<Scene> & scenes, Object::Name name,
                 if (maxInter >= overlap) {
     //                cout << "Mix:PosLatentSearch found a positive sample at : "
     //                     << argZ << " " << argY << " " << argX << " / " << pyramid.resolutions()[argLvl] << endl;
-                    cout << "Mix:PosLatentSearch found at : "
-                         << pyramid.rectangles_[argLvl][argBox]
-                         << " for box : " << argBox << endl;
+//                    cout << "Mix:PosLatentSearch found at : "
+//                         << pyramid.rectangles_[argLvl][argBox]
+//                         << " for box : " << argBox << endl;
 
 
-                    Model sample;
+//                    Model sample;
 
-                    cout << "Mix::posLatentSearch rf of positive sample : ";
-                    for(int i=0;i<9;++i){
-                        cout<<pyramid.globalDescriptors->points[argBox].rf[i]<<" ";
-                    }
-                    cout<<endl;
+//                    cout << "Mix::posLatentSearch rf of positive sample : ";
+//                    for(int i=0;i<9;++i){
+//                        cout<<pyramid.globalDescriptors->points[argBox].rf[i]<<" ";
+//                    }
+//                    cout<<endl;
 
-                    models_[argModel].initializeSample(pyramid, argBox, argZ, argY, argX, argLvl, sample,
-                                                       zero_ ? 0 : &positions[argModel]);
+//                    models_[argModel].initializeSample(pyramid, argBox, argZ, argY, argX, argLvl, sample,
+//                                                       zero_ ? 0 : &positions[argModel]);
 
-                    if (!sample.empty()){
-                        positives.push_back(make_pair(sample, argModel));
-
-                        if(zero_){
-                            positivesParts.push_back(pyramid.levels()[0][argBox]);
-                        }
-                    }
+//                    if (!sample.empty()){
+//                        positives.push_back(make_pair(sample, argModel));
+//                        recs.push_back(pyramid.rectangles_[argLvl][argBox]);
+//                        if(zero_){
+//                            positivesParts.push_back(pyramid.levels()[0][argBox]);
+//                        }
+//                    }
 
                 }
             }
         }
     }
     cout << "pos latent search done" << endl;
+    return recs;
 }
 
 static inline bool operator==(const Model & a, const Model & b)
@@ -645,8 +678,8 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name,
         }
 
         Vector3i rootSize(2,3,2);
-        GSHOTPyramid pyramid(rootSize*1, models_[0].parts().size(), interval, scenes[i].resolution());
-        pyramid.createFullPyramid(cloud, 10);
+        GSHOTPyramid pyramid(models()[0].boxSize_, models_[0].parts().size(), interval, scenes[i].resolution());
+        pyramid.createFullPyramid(cloud, 20);
 
         if (pyramid.empty()) {
             cout<<"Mix::negLatentSearch pyramid empty"<<endl;
@@ -1107,13 +1140,13 @@ Matrix3f Mixture::getRotation(Vector4f orientationFrom, Vector4f orientationTo){
     return rotation;
 }
 
-vector<Vector3i> Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
+Vector3i Mixture::FilterSizes(int nbComponents, const vector<Scene> & scenes,
                                              Object::Name name, int interval)
 {
 	// Early return in case the filters or the dataset are empty
     if ((nbComponents <= 0) || scenes.empty()){
         cerr<<"nbComponents <= 0 or scenes.empty()"<<endl;
-        return vector<Vector3i>();
+        return Vector3i();
     }
 
     const float scale = 1 / pow(2.0, interval);
@@ -1157,7 +1190,7 @@ vector<Vector3i> Mixture::FilterSizes(int nbComponents, const vector<Scene> & sc
 	// Early return if there is no object
     if (rects.empty()){
         cerr<<"rects.empty()"<<endl;
-        return vector<Vector3i>();
+        return Vector3i();
     }
 	
 	// Sort the aspect ratio of all the samples
@@ -1166,7 +1199,7 @@ vector<Vector3i> Mixture::FilterSizes(int nbComponents, const vector<Scene> & sc
 	
 	// For each mixture model
     vector<int> references(nbComponents+1);
-    vector<Vector3i> sizes(nbComponents);
+    Vector3i sizes(0,0,0);
 
     for (int i = 0; i <= nbComponents; ++i){
         references[i] = rects.size() * i / nbComponents;
@@ -1176,19 +1209,19 @@ vector<Vector3i> Mixture::FilterSizes(int nbComponents, const vector<Scene> & sc
         cout<<"Mixture::FilterSizes ref : "<<references[i]<<endl;
     }
 	
-    for (int i = 0; i < nbComponents; ++i) {
+//    for (int i = 0; i < nbComponents; ++i) {
         Vector3f boxSize(0,0,0);
 
-        for (int j = references[i]; j < references[i+1]; ++j) {
+        for (int j = references[0]; j < references[1]; ++j) {
             boxSize += rects[j].size();
         }
 
         cout<<"Mixture::FilterSizes boxSize : "<<endl<<boxSize<<endl;
 
-        sizes[i](0) = ceil( boxSize(0) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
-        sizes[i](1) = ceil( boxSize(1) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
-        sizes[i](2) = ceil( boxSize(2) / (references[i+1]-references[i]) * scale / scenes[i].resolution());
-    }
+        sizes(0) = ceil( boxSize(0) / (references[1]-references[0]) * scale / scenes[0].resolution());
+        sizes(1) = ceil( boxSize(1) / (references[1]-references[0]) * scale / scenes[0].resolution());
+        sizes(2) = ceil( boxSize(2) / (references[1]-references[0]) * scale / scenes[0].resolution());
+//    }
 	
 	return sizes;
 }

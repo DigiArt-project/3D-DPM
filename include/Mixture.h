@@ -102,7 +102,7 @@ public:
     static Eigen::Matrix3f getRotation(Eigen::Vector4f orientationFrom, Eigen::Vector4f orientationTo);
 
     // Extracts all the positives
-    void posLatentSearch(const vector<Scene> & scenes, Object::Name name,
+    vector<Rectangle> posLatentSearch(const vector<Scene> & scenes, Object::Name name,
                          int interval, double overlap,
                          vector<pair<Model, int> > & positives,
                          vector<GSHOTPyramid::Level> &positivesParts) /*const*/;
@@ -123,7 +123,7 @@ public:
                   vector<vector<vector<vector<Model::Positions> > > > *positions = 0) const;
 	
 	// Computes the size of the roots of the models
-    static std::vector<Eigen::Vector3i> FilterSizes(int nbComponents,
+    static Eigen::Vector3i FilterSizes(int nbComponents,
 														 const std::vector<Scene> & scenes,
                                                          Object::Name name, int interval);
 	

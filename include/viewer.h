@@ -94,7 +94,7 @@ public:
     }
 
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
-    int id;
+    long long id;
 };
 
 }

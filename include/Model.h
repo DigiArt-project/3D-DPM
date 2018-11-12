@@ -155,7 +155,8 @@ public:
 	/// @param[out] positions Optimal position of each part for each root location.
     static void DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor3DF & tmp2,
                      Positions * positions = 0);
-	
+
+    Eigen::Vector3i boxSize_;
 private:
     float* orientation_;//9 values (3x3 axis)
 	std::vector<Part> parts_;
