@@ -104,12 +104,13 @@ namespace FFLD
                      float starting_resolution = 0.2/1.0, int nbOctave = 2);
 
 
-        void createFullPyramid(const PointCloudPtr input, int densityThreshold = 0);
+        void createFullPyramid(const PointCloudPtr input, PointType min, PointType max, int densityThreshold = 0);
 
         PointCloudPtr createPosPyramid(const PointCloudPtr input, vector<Eigen::Vector3i> colors,
                                     int densityThreshold = 0);
 
         PointCloudPtr createFilteredPyramid(const PointCloudPtr input, Level rootFilter,
+                                            PointType min, PointType max,
                                             float accuracyThreshold = 0.5, int densityThreshold = 0);
 
         // Destructor

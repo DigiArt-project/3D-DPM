@@ -65,6 +65,7 @@ public:
     double J;//weight the positive samples
     float boxOverlap;
     float overlapValidation;
+    float negOverlap;
     int interval, nbIterations, nbDatamine, maxNegSample;//616
     int nbComponents; //nb of object poses without symetry
     float threshold;
@@ -72,13 +73,26 @@ public:
     Test()
     {
         nbParts = 0;
+//        C = 0.5;//regularization
+//        J = 20;//weight the positive samples
         C = 2;//regularization
-        J = 8;//weight the positive samples
+        J = 1.5;//weight the positive samples//4 = ok
         boxOverlap = 0.8;
         overlapValidation = 0;
-        interval = 1, nbIterations = 2, nbDatamine = 8, maxNegSample = 10*J;//110//7
+        negOverlap = 0.5;
+        interval = 1, nbIterations = 3, nbDatamine = 10, maxNegSample = 231*8;//110//7//431
         nbComponents = 1; //nb of object poses without symetry
-        threshold=0;
+        threshold=0.5;
+
+//        nbParts = 0;
+//        C = 0.1;//regularization
+//        J = 10;//weight the positive samples
+//        boxOverlap = 0.8;
+//        overlapValidation = 0;
+//        negOverlap = 0.5;
+//        interval = 1, nbIterations = 4, nbDatamine = 10, maxNegSample = 2200;//221/231
+//        nbComponents = 1; //nb of object poses without symetry
+//        threshold=0.5;
 
         sceneResolution = 0.2/2.0;//0.09/2.0;
         cout<<"test::sceneResolution : "<<sceneResolution<<endl;
@@ -229,7 +243,7 @@ public:
         vector<Scene> scenes( sceneList.size());
 
         for( int i=0; i < sceneList.size(); ++i){
-            printf ("%s\n", sceneList[i].c_str());
+//            printf ("%s\n", sceneList[i].c_str());
             string filePath = dataFolder + sceneList[i] + "/" + sceneList[i];
             scenes[i] = Scene( filePath + xmlExtension, filePath + pcExtension, sceneResolution);
         }
@@ -242,7 +256,7 @@ public:
 
 
         mixture.train(scenes, Object::CHAIR, nbParts, interval, nbIterations/nbIterations,
-                      nbDatamine, maxNegSample, C, J, boxOverlap);
+                      nbDatamine/nbDatamine, maxNegSample, C, J, boxOverlap, negOverlap);
 
         cout<<"test::trained Root"<<endl;
 
@@ -251,7 +265,29 @@ public:
 //        cout<<"test::initializeParts"<<endl;
 
         mixture.train(scenes, Object::CHAIR, nbParts, interval,
-                      nbIterations, nbDatamine, maxNegSample, C, J, boxOverlap);
+                      nbIterations, nbDatamine, maxNegSample, C, J, boxOverlap, negOverlap);
+
+        cout<<"test::train finished"<<endl;
+
+    }
+
+    void keepTraining( vector<Scene> scenes, string mix){
+
+        ifstream in(mix.c_str(), ios::binary);
+
+        if (!in.is_open()) {
+            cerr << "\nInvalid model file " << mix << endl;
+        }
+
+        Mixture mixture;
+        in >> mixture;
+
+        if (mixture.empty()) {
+            cerr << "\nInvalid model file " << mix << endl;
+        }
+
+        mixture.train(scenes, Object::CHAIR, nbParts, interval,
+                      nbIterations, nbDatamine, maxNegSample, C, J, boxOverlap, negOverlap);
 
         cout<<"test::train finished"<<endl;
 
@@ -262,7 +298,8 @@ public:
 //        nb = std::min((int)detections.size(), nb);
         nb = detections.size();
 
-        double radius = 3*1/2.0*sceneResolution*2;
+        double radius = 4/2.0*sceneResolution*2;
+
         for (int i = 0; i < nb/*detections.size()*/; ++i) {
 
             const int x = detections[i].x;
@@ -405,19 +442,19 @@ public:
         cout<<"test::sort done"<<endl;
 
         /////TODO: doesnt work
-        if(detections.size() > 1){
-            vector<Detection>::iterator it;
-            for (it = detections.begin()+1; it != detections.end(); /*++it*/){
-//                cout<<"Detect size : "<<detections.size()<<endl;
-                Intersector inter((it-1)->cloud, (it-1)->volume, overlap, true);
-                if( inter(it->cloud, it->volume)){
-                    it = detections.erase(it);
-//                    cout<<"erase done"<<endl;
-                } else{
-                    ++it;
-                }
-            }
-        }
+//        if(detections.size() > 1){
+//            vector<Detection>::iterator it;
+//            for (it = detections.begin()+1; it != detections.end(); /*++it*/){
+////                cout<<"Detect size : "<<detections.size()<<endl;
+//                Intersector inter((it-1)->cloud, (it-1)->volume, overlap/*, true*/);
+//                if( inter(it->cloud, it->volume)){
+//                    it = detections.erase(it);
+////                    cout<<"erase done"<<endl;
+//                } else{
+//                    ++it;
+//                }
+//            }
+//        }
         //////
 
 //        for (int i = 1; i < detections.size(); ++i){
@@ -463,11 +500,21 @@ public:
                 cout<<"test::couldnt open pcd file"<<endl;
             }
 
-            Vector3i rootSize(2,3,2);
+
+            PointType minTmp;
+            PointType min;
+            PointType max;
+            pcl::getMinMax3D(*cloud, minTmp, max);
+
+            min.x = floor(minTmp.x/scenes[i].resolution())*scenes[i].resolution();
+            min.y = floor(minTmp.y/scenes[i].resolution())*scenes[i].resolution();
+            min.z = floor(minTmp.z/scenes[i].resolution())*scenes[i].resolution();
+
             GSHOTPyramid pyramid(mixture.models()[0].boxSize_,
                     mixture.models()[0].parts().size(), interval, sceneResolution);
-            pyramid.createFilteredPyramid(cloud, mixture.models()[0].parts()[0].filter, 0, 30);
-
+//            pyramid.createFilteredPyramid(cloud, mixture.models()[0].parts()[0].filter,
+//                    min, max, 0.35, 40);
+            pyramid.createFullPyramid(cloud, min, max, 40);
 //            PointCloudPtr test (new PointCloudT(1,1,PointType()));
 //            int boxNb = 0;//5+3*12+5*12*7;//700;449//403;145;43
 //            test->points[0] = pyramid.globalKeyPts->points[boxNb];
@@ -1271,8 +1318,8 @@ int main(){
 
     int start = getMilliCount();
 
-//    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/sceneNNTrain/");
-    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/sceneNNTrain/");
+//    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
 //    vector<Scene> testScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/sceneNNTest/");
     vector<Scene> testScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
@@ -1296,12 +1343,12 @@ int main(){
     Scene scene096( "/media/ubuntu/DATA/3DDataset/sceneNN+/096/096.xml",
            "/media/ubuntu/DATA/3DDataset/sceneNN+/096/096.ply", test.sceneResolution);
 
-//    test.train( trainScenes);
-//    test.test( {scene005},
-    test.test( {scene096},
+    test.train( trainScenes);
+    test.test( {scene005},
+//    test.test( {scene096},
 //    test.test( {scene036},
                "tmp.txt");
-//               "smallSceneNN+/chair_part0_it1_res2_C2_j8_Neg49.txt");
+//               "smallSceneNN+/chair_part0_multiPositif.txt");
 
 //    test.checkBox("/media/ubuntu/DATA/3DDataset/sceneNN+/","005");
 

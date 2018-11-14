@@ -149,10 +149,11 @@ public:
 //            std::cout<<"refVolume_ : "<<refVolume_<<std::endl;
 //            std::cout<<"unionVolume * threshold_ : "<<unionVolume * threshold_<<std::endl;
 //            std::cout<<"unionVolume : "<<unionVolume<<std::endl;
+            float vol = min(refVolume_, cubeVolume);
 
-            if (intersectionVolume > refVolume_ * threshold_ && refVolume_) {
+            if (intersectionVolume > vol * threshold_ && vol) {
                 if (score)
-                    *score = intersectionVolume / refVolume_;
+                    *score = intersectionVolume / vol;
 //                cout<<"Intersector::score : "<<*score<<endl;
 
                 return true;

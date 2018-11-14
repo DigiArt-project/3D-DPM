@@ -47,7 +47,8 @@ GSHOTPyramid::GSHOTPyramid(Vector3i filterSizes, int nbParts, int interval, floa
     }
 }
 
-void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, int densityThreshold){
+void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, PointType min,
+                                     PointType max, int densityThreshold){
     if (input->empty()) {
         cerr << "Attempting to create an empty pyramid" << endl;
         return;
@@ -58,27 +59,18 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, int densityThres
 //    cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 
 
-    PointType minTmp;
-    PointType min;
-    PointType max;
-    pcl::getMinMax3D(*input, minTmp, max);
 
-    //TODO : res/2 make it works only for interval = 1 see Mixture::posLatentSearch
-    sceneOffset_ = Vector3i(floor(minTmp.z/resolutions_[0]/2.0),
-                            floor(minTmp.y/resolutions_[0]/2.0),
-                            floor(minTmp.x/resolutions_[0]/2.0));
-
-    min.x = floor(minTmp.x/resolutions_[0])*resolutions_[0];
-    min.y = floor(minTmp.y/resolutions_[0])*resolutions_[0];
-    min.z = floor(minTmp.z/resolutions_[0])*resolutions_[0];
-
-    cout << "GSHOTPyr::constructor startRes : "<<resolutions_[0]<<endl;
+    cout << "GSHOTPyr::createFullPyramid startRes : "<<resolutions_[0]<<endl;
 
     PointCloudPtr subspace(new PointCloudT());
     pcl::UniformSampling<PointType> sampling;
     sampling.setInputCloud(input);
     sampling.setRadiusSearch (resolutions_[0]);
     sampling.filter(*subspace);
+
+    cout << "GSHOTPyr::createFullPyramid input->size() : "<<input->size()<<endl;
+    cout << "GSHOTPyr::createFullPyramid subspace->size() : "<<subspace->size()<<endl;
+
 
 //    float orientationFrom[9] = {0,0,1,1,0,0,0,1,0};
 //    float orientationFrom[9] = {0,1,0,0,0,1,1,0,0};
@@ -95,8 +87,12 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, int densityThres
 
     resolution = resolutions_[0] * 2;
 
-    float descRadius = std::max(filterSizes_(0), std::max(filterSizes_(1), filterSizes_(2)))*resolution/2.0;
+//    vector<int> sides = {filterSizes_(0), filterSizes_(1), filterSizes_(2)};
+//    sort( sides.begin(), sides.end());
+//    float descRadius = sqrt(sides[2]*sides[2]+sides[1]*sides[1])*resolution/2.0;
 
+
+    float descRadius = std::max(filterSizes_(0), std::max(filterSizes_(1), filterSizes_(2)))*resolution/2.0;
     globalKeyPts = computeKeyptsWithThresh(subspace, resolution, min, max, filterSizes_, densityThreshold);
     globalDescriptors = compute_descriptor(subspace, globalKeyPts,
 //                                           std::max(filterSizes(0), std::max(filterSizes(1), filterSizes(2)))*resolution);
@@ -124,7 +120,7 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, int densityThres
             keyPts_[i][j] = cloud;
         }
     }
-    cout << "GSHOTPyr::constructor globalKeyPts->size() : "<<globalKeyPts->size()<<endl;
+    cout << "GSHOTPyr::constructor globalKeyPts->size()2 : "<<globalKeyPts->size()<<endl;
 
     vector<PointCloudPtr> boxKeyPts(2);//[lvl]
     PointType boxStart = PointType();
@@ -211,175 +207,179 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, int densityThres
 PointCloudPtr GSHOTPyramid::createPosPyramid(const PointCloudPtr input, vector<Vector3i> colors,
                                                   int densityThreshold){
 
-    PointCloudPtr cloud (new PointCloudT( 0,1,PointType()));
+//    PointCloudPtr cloud (new PointCloudT( 0,1,PointType()));
 
-    for(int i = 0; i < input->size(); ++i){
-        for(int j = 0; j < colors.size(); ++j){
-            if( input->points[i].getRGBVector3i() == colors[j])
-            {
-                cloud->width    = cloud->points.size()+1;
-                cloud->height   = 1;
-                cloud->points.resize (cloud->width);
-                cloud->at(cloud->points.size()-1) = input->points[i];
-//                cout<<"GSHOT:: pos sample found : "<<subspace->points[i].getRGBVector3i().transpose()<<endl;
-            }
-        }
-    }
+//    for(int i = 0; i < input->size(); ++i){
+//        for(int j = 0; j < colors.size(); ++j){
+//            if( input->points[i].getRGBVector3i() == colors[j])
+//            {
+//                cloud->width    = cloud->points.size()+1;
+//                cloud->height   = 1;
+//                cloud->points.resize (cloud->width);
+//                cloud->at(cloud->points.size()-1) = input->points[i];
+////                cout<<"GSHOT:: pos sample found : "<<subspace->points[i].getRGBVector3i().transpose()<<endl;
+//            }
+//        }
+//    }
 
-    if (cloud->empty()) {
-        cerr << "Attempting to create an empty pyramid" << endl;
-        return PointCloudPtr();
-    }
-
-
-    float resolution;
-//    cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
+//    if (cloud->empty()) {
+//        cerr << "Attempting to create an empty pyramid" << endl;
+//        return PointCloudPtr();
+//    }
 
 
-    PointType minTmp;
-    PointType min;
-    PointType max;
-    pcl::getMinMax3D(*input, minTmp, max);
+//    float resolution;
+////    cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 
-    //TODO : res/2 make it works only for interval = 1 see Mixture::posLatentSearch
-    sceneOffset_ = Vector3i(floor(minTmp.z/resolutions_[0]/2.0),
-                            floor(minTmp.y/resolutions_[0]/2.0),
-                            floor(minTmp.x/resolutions_[0]/2.0));
 
-    min.x = floor(minTmp.x/resolutions_[0])*resolutions_[0];
-    min.y = floor(minTmp.y/resolutions_[0])*resolutions_[0];
-    min.z = floor(minTmp.z/resolutions_[0])*resolutions_[0];
+//    PointType minTmp;
+//    PointType min;
+//    PointType max;
+//    pcl::getMinMax3D(*input, minTmp, max);
+
+//    //TODO : res/2 make it works only for interval = 1 see Mixture::posLatentSearch
+//    sceneOffset_ = Vector3i(floor(minTmp.z/resolutions_[0]/2.0),
+//                            floor(minTmp.y/resolutions_[0]/2.0),
+//                            floor(minTmp.x/resolutions_[0]/2.0));
+
+//    min.x = floor(minTmp.x/resolutions_[0])*resolutions_[0];
+//    min.y = floor(minTmp.y/resolutions_[0])*resolutions_[0];
+//    min.z = floor(minTmp.z/resolutions_[0])*resolutions_[0];
 
     PointCloudPtr subspace(new PointCloudT());
-    pcl::UniformSampling<PointType> sampling;
-    sampling.setInputCloud(cloud);
-    sampling.setRadiusSearch (resolutions_[0]);
-    sampling.filter(*subspace);
+//    pcl::UniformSampling<PointType> sampling;
+//    sampling.setInputCloud(cloud);
+//    sampling.setRadiusSearch (resolutions_[0]);
+//    sampling.filter(*subspace);
 
-//    float orientationFrom[9] = {0,0,1,1,0,0,0,1,0};
-//    float orientationFrom[9] = {0,1,0,0,0,1,1,0,0};
-    //old chair
-//    float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
-    //chair
-//    float orientationFrom[9] = {0.0924528, 0.979956, -0.17646, -0.131712, 0.187698, 0.973356, 0.986967, -0.0667475, 0.146426};
-    float orientationFrom[9] = {-0.194105, -0.910017, 0.366323, -0.0461106, -0.364549, -0.930042, 0.979896, -0.197417, 0.0287994};
+////    float orientationFrom[9] = {0,0,1,1,0,0,0,1,0};
+////    float orientationFrom[9] = {0,1,0,0,0,1,1,0,0};
+//    //old chair
+////    float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
+//    //chair
+////    float orientationFrom[9] = {0.0924528, 0.979956, -0.17646, -0.131712, 0.187698, 0.973356, 0.986967, -0.0667475, 0.146426};
+//    float orientationFrom[9] = {-0.194105, -0.910017, 0.366323, -0.0461106, -0.364549, -0.930042, 0.979896, -0.197417, 0.0287994};
 
-        //bed using min filterSize for GSHOT, works good when direction is correct but can be easily wrong
-//    float orientationFrom[9] = {-0.131707, -0.139466, 0.981429, 0.941407, 0.292508, 0.167903, -0.310492, 0.946038, 0.0927687};
-    //bed using mean filterSize for GSHOT, orientation more robust but less accurate
-//    float orientationFrom[9] = {-0.330336, 0.0100554, 0.94381, 0.897447, 0.313065, 0.310774, -0.292348, 0.949679, -0.112441};
+//        //bed using min filterSize for GSHOT, works good when direction is correct but can be easily wrong
+////    float orientationFrom[9] = {-0.131707, -0.139466, 0.981429, 0.941407, 0.292508, 0.167903, -0.310492, 0.946038, 0.0927687};
+//    //bed using mean filterSize for GSHOT, orientation more robust but less accurate
+////    float orientationFrom[9] = {-0.330336, 0.0100554, 0.94381, 0.897447, 0.313065, 0.310774, -0.292348, 0.949679, -0.112441};
 
-    resolution = resolutions_[0] * 2;
-    float descRadius = std::max(filterSizes_(0), std::max(filterSizes_(1), filterSizes_(2)))*resolution/2.0;
-    globalKeyPts = computeKeyptsWithThresh(subspace, resolution, min, max, filterSizes_, densityThreshold);
-    globalDescriptors = compute_descriptor(subspace, globalKeyPts,
-                                           descRadius);
-//                                           std::min(filterSizes(0), std::min(filterSizes(1), filterSizes(2)))*resolution);
-//                                        filterSizes.sum()*resolution/3.0);
+//    resolution = resolutions_[0] * 2;
+////    vector<int> sides = {filterSizes_(0), filterSizes_(1), filterSizes_(2)};
+////    sort( sides.begin(), sides.end());
+////    float descRadius = sqrt(sides[2]*sides[2]+sides[1]*sides[1])*resolution/2.0;
 
-    for(int i=0;i<levels_.size();++i){
-        levels_[i].resize( globalKeyPts->size());
-    }
+//    float descRadius = std::max(filterSizes_(0), std::max(filterSizes_(1), filterSizes_(2)))*resolution/2.0;    globalKeyPts = computeKeyptsWithThresh(subspace, resolution, min, max, filterSizes_, densityThreshold);
+//    globalDescriptors = compute_descriptor(subspace, globalKeyPts,
+//                                           descRadius);
+////                                           std::min(filterSizes(0), std::min(filterSizes(1), filterSizes(2)))*resolution);
+////                                        filterSizes.sum()*resolution/3.0);
 
-    for(int i=0;i<globalDescriptors->size();++i){
-        Level level( 1,1,1);
-        for(int j=0;j<DescriptorSize;++j){
-            level()(0,0,0)(j) = globalDescriptors->points[i].descriptor[j];
-        }
-        levels_[1][i] = level;
-    }
+//    for(int i=0;i<levels_.size();++i){
+//        levels_[i].resize( globalKeyPts->size());
+//    }
 
-    for(int i=0;i<levels_.size();++i){
-        keyPts_[i].resize( globalKeyPts->size());
-        rectangles_[i].resize( globalKeyPts->size());
-        for(int j=0;j<levels_[i].size();++j){
-            PointCloudPtr cloud (new PointCloudT);
-            keyPts_[i][j] = cloud;
-        }
-    }
-    cout << "GSHOTPyr::constructor globalKeyPts->size() : "<<globalKeyPts->size()<<endl;
+//    for(int i=0;i<globalDescriptors->size();++i){
+//        Level level( 1,1,1);
+//        for(int j=0;j<DescriptorSize;++j){
+//            level()(0,0,0)(j) = globalDescriptors->points[i].descriptor[j];
+//        }
+//        levels_[1][i] = level;
+//    }
 
-    vector<PointCloudPtr> boxKeyPts(2);//[lvl]
-    PointType boxStart = PointType();
-    PointType boxEnd = PointType();
-    boxEnd.x = filterSizes_(2)*resolutions_[0] * 2;
-    boxEnd.y = filterSizes_(1)*resolutions_[0] * 2;
-    boxEnd.z = filterSizes_(0)*resolutions_[0] * 2;
-    PointCloudPtr tmp = compute_keypoints(resolutions_[0], boxStart, boxEnd, 0);
-    boxKeyPts[0] = tmp;
-    tmp = compute_keypoints(resolution, boxStart, boxEnd, 1);
-    boxKeyPts[1] = tmp;
+//    for(int i=0;i<levels_.size();++i){
+//        keyPts_[i].resize( globalKeyPts->size());
+//        rectangles_[i].resize( globalKeyPts->size());
+//        for(int j=0;j<levels_[i].size();++j){
+//            PointCloudPtr cloud (new PointCloudT);
+//            keyPts_[i][j] = cloud;
+//        }
+//    }
+//    cout << "GSHOTPyr::constructor globalKeyPts->size() : "<<globalKeyPts->size()<<endl;
 
-    Vector3f origin(0,0,0);
-    Vector3f recSize(filterSizes_(0) * resolutions_[0] * 2,
-                     filterSizes_(1) * resolutions_[0] * 2,
-                     filterSizes_(2) * resolutions_[0] * 2);
+//    vector<PointCloudPtr> boxKeyPts(2);//[lvl]
+//    PointType boxStart = PointType();
+//    PointType boxEnd = PointType();
+//    boxEnd.x = filterSizes_(2)*resolutions_[0] * 2;
+//    boxEnd.y = filterSizes_(1)*resolutions_[0] * 2;
+//    boxEnd.z = filterSizes_(0)*resolutions_[0] * 2;
+//    PointCloudPtr tmp = compute_keypoints(resolutions_[0], boxStart, boxEnd, 0);
+//    boxKeyPts[0] = tmp;
+//    tmp = compute_keypoints(resolution, boxStart, boxEnd, 1);
+//    boxKeyPts[1] = tmp;
 
-    Vector3f boxOrigin(
-                filterSizes_(2) * resolutions_[0] * 2 / 2.0,
-                filterSizes_(1) * resolutions_[0] * 2 / 2.0,
-                filterSizes_(0) * resolutions_[0] * 2 / 2.0);
-    int cpt = 0;
-    //for each boxes i
-    #pragma omp parallel for
-    for( int i = 0; i < globalDescriptors->size(); ++i){
+//    Vector3f origin(0,0,0);
+//    Vector3f recSize(filterSizes_(0) * resolutions_[0] * 2,
+//                     filterSizes_(1) * resolutions_[0] * 2,
+//                     filterSizes_(2) * resolutions_[0] * 2);
 
-
-        //translation from low front left anchor (0,0,0)
-        Vector3f translation(
-                    globalKeyPts->points[i].x - filterSizes_(2) * resolutions_[0] * 2 / 2.0,
-                    globalKeyPts->points[i].y - filterSizes_(1) * resolutions_[0] * 2 / 2.0,
-                    globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
-
-        //TODO check translation
-            Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
-                                                              globalDescriptors->points[i].rf,
-                                                              boxOrigin, translation);
-
-            int lvl = 0;
+//    Vector3f boxOrigin(
+//                filterSizes_(2) * resolutions_[0] * 2 / 2.0,
+//                filterSizes_(1) * resolutions_[0] * 2 / 2.0,
+//                filterSizes_(0) * resolutions_[0] * 2 / 2.0);
+//    int cpt = 0;
+//    //for each boxes i
+//    #pragma omp parallel for
+//    for( int i = 0; i < globalDescriptors->size(); ++i){
 
 
-            pcl::transformPointCloud (*boxKeyPts[lvl], *(keyPts_[lvl][i]), transform);
-            rectangles_[lvl][i] = Rectangle( origin, recSize, transform);
-            PointCloudPtr kpCloud (new PointCloudT( 1,1,PointType()));
-            kpCloud->points[0] = globalKeyPts->points[i];
-            keyPts_[1][i] = kpCloud;
-            rectangles_[1][i] = Rectangle( origin, recSize, transform);
-            //                    cout << "GSHOTPyr::constructor transformPointCloud done"<<endl;
-//                    cout<<"Keypts1 : "<<keypoints_[lvl][i]->points[0]<<endl;
-//                    cout<<"Keypts2 : "<<keypoints_[lvl][i]->points[1]<<endl;
+//        //translation from low front left anchor (0,0,0)
+//        Vector3f translation(
+//                    globalKeyPts->points[i].x - filterSizes_(2) * resolutions_[0] * 2 / 2.0,
+//                    globalKeyPts->points[i].y - filterSizes_(1) * resolutions_[0] * 2 / 2.0,
+//                    globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
 
-            DescriptorsPtr descriptors = compute_descriptor(subspace, keyPts_[lvl][i],
-                                                            descRadius/pow(nbParts_, 0.33));
+//        //TODO check translation
+//            Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
+//                                                              globalDescriptors->points[i].rf,
+//                                                              boxOrigin, translation);
 
-            Level level( topology_[lvl](0), topology_[lvl](1), topology_[lvl](2));
-            int kpt = 0;
-            for (int z = 0; z < level.depths(); ++z){
-                for (int y = 0; y < level.rows(); ++y){
-                    for (int x = 0; x < level.cols(); ++x){
-                        for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
-                            level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
-                        }
-                        ++kpt;
-                    }
-                }
-            }
-
-            //Once the first level is done, push it to the array of level
-            levels_[lvl][i] = level;
-//                    cout << "GSHOTPyr::constructor fillLevel done"<<endl;
+//            int lvl = 0;
 
 
-//            cout<<"Keypts : "<<keypoints_[1][i]->points[0]<<endl;
+//            pcl::transformPointCloud (*boxKeyPts[lvl], *(keyPts_[lvl][i]), transform);
+//            rectangles_[lvl][i] = Rectangle( origin, recSize, transform);
+//            PointCloudPtr kpCloud (new PointCloudT( 1,1,PointType()));
+//            kpCloud->points[0] = globalKeyPts->points[i];
+//            keyPts_[1][i] = kpCloud;
+//            rectangles_[1][i] = Rectangle( origin, recSize, transform);
+//            //                    cout << "GSHOTPyr::constructor transformPointCloud done"<<endl;
+////                    cout<<"Keypts1 : "<<keypoints_[lvl][i]->points[0]<<endl;
+////                    cout<<"Keypts2 : "<<keypoints_[lvl][i]->points[1]<<endl;
 
-        ++cpt;
-    }
-    cout << "GSHOTPyr::constructor done"<<endl;
+//            DescriptorsPtr descriptors = compute_descriptor(subspace, keyPts_[lvl][i],
+//                                                            descRadius/pow(nbParts_, 0.33));
+
+//            Level level( topology_[lvl](0), topology_[lvl](1), topology_[lvl](2));
+//            int kpt = 0;
+//            for (int z = 0; z < level.depths(); ++z){
+//                for (int y = 0; y < level.rows(); ++y){
+//                    for (int x = 0; x < level.cols(); ++x){
+//                        for( int k = 0; k < GSHOTPyramid::DescriptorSize; ++k){
+//                            level()(z, y, x)(k) = descriptors->points[kpt].descriptor[k];
+//                        }
+//                        ++kpt;
+//                    }
+//                }
+//            }
+
+//            //Once the first level is done, push it to the array of level
+//            levels_[lvl][i] = level;
+////                    cout << "GSHOTPyr::constructor fillLevel done"<<endl;
+
+
+////            cout<<"Keypts : "<<keypoints_[1][i]->points[0]<<endl;
+
+//        ++cpt;
+//    }
+//    cout << "GSHOTPyr::constructor done"<<endl;
 
     return subspace;
 }
 
 PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Level rootFilter,
+                                                  PointType min, PointType max,
                                                   float accuracyThreshold, int densityThreshold){
 
     if (input->empty()) {
@@ -391,20 +391,6 @@ PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Lev
     float resolution;
 //    cout << "GSHOTPyr::constructor starting_resolution : "<<starting_resolution<<endl;
 
-
-    PointType minTmp;
-    PointType min;
-    PointType max;
-    pcl::getMinMax3D(*input, minTmp, max);
-
-    //TODO : res/2 make it works only for interval = 1 see Mixture::posLatentSearch
-    sceneOffset_ = Vector3i(floor(minTmp.z/resolutions_[0]/2.0),
-                            floor(minTmp.y/resolutions_[0]/2.0),
-                            floor(minTmp.x/resolutions_[0]/2.0));
-
-    min.x = floor(minTmp.x/resolutions_[0])*resolutions_[0];
-    min.y = floor(minTmp.y/resolutions_[0])*resolutions_[0];
-    min.z = floor(minTmp.z/resolutions_[0])*resolutions_[0];
 
     PointCloudPtr subspace(new PointCloudT());
     pcl::UniformSampling<PointType> sampling;
@@ -426,6 +412,9 @@ PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Lev
 //    float orientationFrom[9] = {-0.330336, 0.0100554, 0.94381, 0.897447, 0.313065, 0.310774, -0.292348, 0.949679, -0.112441};
 
     resolution = resolutions_[0] * 2;
+//    vector<int> sides = {filterSizes_(0), filterSizes_(1), filterSizes_(2)};
+//    sort( sides.begin(), sides.end());
+//    float descRadius = sqrt(sides[2]*sides[2]+sides[1]*sides[1])*resolution/2.0;
 
     float descRadius = std::max(filterSizes_(0), std::max(filterSizes_(1), filterSizes_(2)))*resolution/2.0;
     globalKeyPts = computeKeyptsWithThresh(subspace, resolution, min, max, filterSizes_, densityThreshold);

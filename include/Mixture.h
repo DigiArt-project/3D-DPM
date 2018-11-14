@@ -25,6 +25,32 @@
 
 namespace FFLD
 {
+
+struct ScoreStruct{
+
+    ScoreStruct( float score, int lvl, int box, int z, int y, int x) :
+        score(score), lvl(lvl), box(box), z(z), y(), x(x)
+    {
+    }
+
+    bool operator<(const ScoreStruct & scoreStruct) const
+    {
+        return scoreStruct.score < score && !( score < scoreStruct.score);
+    }
+
+    float score;
+    int lvl;
+    int box;
+    int x,y,z;
+};
+
+struct NegSort{
+    bool operator()( const pair<Model, int> & negative1, const pair<Model, int> & negative2) const{
+        return negative2.first.parts()[0].deformation(7) < negative1.first.parts()[0].deformation(7)
+                && !( negative1.first.parts()[0].deformation(7) < negative2.first.parts()[0].deformation(7));
+    }
+};
+
 /// The Mixture class represents a mixture of deformable part-based models.
 class Mixture
 {
@@ -77,7 +103,7 @@ public:
 	/// @note The magic constants come from Felzenszwalb's implementation.
     double train(const std::vector<Scene> & scenes, Object::Name name, int nbParts,
                  int interval = 5, int nbRelabel = 5, int nbDatamine = 10, int maxNegatives = 24000,
-                 double C = 0.002, double J = 2.0, double overlap = 0.4);
+                 double C = 0.002, double J = 2.0, double overlap = 0.4, float negOverlap = 0.5);
 	
 	/// Initializes the specidied number of parts from the root of each model.
 	/// @param[in] nbParts Number of parts (without the root).
@@ -109,7 +135,7 @@ public:
 
 	// Bootstraps negatives with a non zero loss
     void negLatentSearch(const std::vector<Scene> & scenes, Object::Name name, int interval, int maxNegatives,
-                         std::vector<std::pair<Model, int> > & negatives) const;
+                         float overlap, std::vector<std::pair<Model, int> > & negatives) const;
 	
 	// Trains the mixture from positive and negative samples with fixed latent variables
     double trainSVM(const std::vector<std::pair<Model, int> > & positives,
