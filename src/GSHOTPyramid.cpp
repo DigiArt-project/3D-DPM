@@ -144,7 +144,7 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, PointType min,
                 filterSizes_(0) * resolutions_[0] * 2 / 2.0);
     int cpt = 0;
     //for each boxes i
-#pragma omp parallel for
+    #pragma omp parallel for
     for( int i = 0; i < globalDescriptors->size(); ++i){
 
 
@@ -155,7 +155,7 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, PointType min,
                     globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
 
         //TODO check translation
-            Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
+            Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
                                                               globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
 //        Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
@@ -494,7 +494,7 @@ PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Lev
                     globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
 
         //TODO check translation
-            Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
+            Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
                                                               globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
 //    //    #pragma omp parallel for

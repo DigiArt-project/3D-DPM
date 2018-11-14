@@ -395,29 +395,29 @@ vector<Rectangle> Mixture::posLatentSearch(const vector<Scene> & scenes, Object:
             PointCloudPtr finalCloud (new PointCloudT( 0,1,PointType()));
             cout << "Mix::posLatentSearch finalCloud.size : " << finalCloud->size() << endl;
 
-            if (!zero_){
-                for(int j = 0; j < colors.size(); ++j){
-                    const Rectangle& rec = scenes[i].objects()[j].bndbox();
-                    Vector4f ptStart( rec.origin(0)-rec.size(0)*(1-overlap),
-                                      rec.origin(1)-rec.size(1)*(1-overlap),
-                                      rec.origin(2)-rec.size(2)*(1-overlap), 1);
-                    Vector4f ptEnd( rec.origin(0)+(2-overlap)*rec.size(0),
-                                    rec.origin(1)+(2-overlap)*rec.size(1),
-                                    rec.origin(2)+(2-overlap)*rec.size(2), 1);
-                    std::vector<int> pt_indices;
-                    pcl::getPointsInBox(*cloud, ptStart, ptEnd, pt_indices);
+//            if (!zero_){
+//                for(int j = 0; j < colors.size(); ++j){
+//                    const Rectangle& rec = scenes[i].objects()[j].bndbox();
+//                    Vector4f ptStart( rec.origin(0)-rec.size(0)*(1-overlap),
+//                                      rec.origin(1)-rec.size(1)*(1-overlap),
+//                                      rec.origin(2)-rec.size(2)*(1-overlap), 1);
+//                    Vector4f ptEnd( rec.origin(0)+(2-overlap)*rec.size(0),
+//                                    rec.origin(1)+(2-overlap)*rec.size(1),
+//                                    rec.origin(2)+(2-overlap)*rec.size(2), 1);
+//                    std::vector<int> pt_indices;
+//                    pcl::getPointsInBox(*cloud, ptStart, ptEnd, pt_indices);
 
-                    int tmp = finalCloud->points.size();
-                    finalCloud->width    = tmp+pt_indices.size();
-                    finalCloud->height   = 1;
-                    finalCloud->points.resize (finalCloud->width);
-                    #pragma omp parallel for
-                    for(int k = 0; k < pt_indices.size(); ++k){
-                        finalCloud->points[tmp+k] = cloud->points[pt_indices[k]];
-                    }
-                }
+//                    int tmp = finalCloud->points.size();
+//                    finalCloud->width    = tmp+pt_indices.size();
+//                    finalCloud->height   = 1;
+//                    finalCloud->points.resize (finalCloud->width);
+//                    #pragma omp parallel for
+//                    for(int k = 0; k < pt_indices.size(); ++k){
+//                        finalCloud->points[tmp+k] = cloud->points[pt_indices[k]];
+//                    }
+//                }
 
-            }else{
+//            }else{
                 for(int k = 0; k < cloud->size(); ++k){
                     for(int j = 0; j < colors.size(); ++j){
                         if( cloud->points[k].getRGBVector3i() == colors[j])
@@ -429,7 +429,7 @@ vector<Rectangle> Mixture::posLatentSearch(const vector<Scene> & scenes, Object:
                         }
                     }
                 }
-            }
+//            }
 
 
             Vector3i rootSize(2,3,2);
@@ -884,7 +884,7 @@ void Mixture::negLatentSearch(const vector<Scene> & scenes, Object::Name name,
         if (negatives.size() > maxNegatives){
             sort( negatives.begin(), negatives.end(), NegSort());
             negatives.resize(maxNegatives);
-            if(negatives.back().first.parts()[0].deformation(7) > -0.5) return;
+            if(negatives.back().first.parts()[0].deformation(7) > -1) return;
         }
     }
 }

@@ -72,15 +72,13 @@ public:
 
     Test()
     {
-        nbParts = 0;
-//        C = 0.5;//regularization
-//        J = 20;//weight the positive samples
-        C = 2;//regularization
-        J = 1.5;//weight the positive samples//4 = ok
+        nbParts = 2;
+        C = 100;//regularization//100 ok
+        J = 8;//weight the positive samples//8 = ok
         boxOverlap = 0.8;
         overlapValidation = 0;
         negOverlap = 0.5;
-        interval = 1, nbIterations = 3, nbDatamine = 10, maxNegSample = 231*8;//110//7//431
+        interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 231*8;//110//7//431
         nbComponents = 1; //nb of object poses without symetry
         threshold=0.5;
 
@@ -398,11 +396,24 @@ public:
         // Cache the size of the models
         vector<Vector3i> sizes(mixture.models().size());
 
-        for (int i = 0; i < sizes.size(); ++i)
+        for (int i = 0; i < sizes.size(); ++i){
             sizes[i] = mixture.models()[i].rootSize();
+        }
 
         float maxScore = -1000;
         float minScore = 1000;
+
+        for (int lvl = 0; lvl < scores.size(); ++lvl) {
+            for (int box = 0; box < scores[lvl].size(); ++box) {
+                if(scores[lvl][box].size() > 0){
+                    const double score = scores[lvl][box]()(0,0,0);
+                    if( score > maxScore) maxScore = score;
+                    if( score < minScore) minScore = score;
+                }
+            }
+        }
+        cout<<"test:: maxScore : "<<maxScore<<endl;
+        cout<<"test:: minScore : "<<minScore<<endl;
         // For each scale
         for (int lvl = 0; lvl < scores.size(); ++lvl) {
             for (int box = 0; box < scores[lvl].size(); ++box) {
@@ -415,10 +426,7 @@ public:
 
 //                    cout<<"test:: scores = "<<score<<endl;
 
-                    if( score > maxScore) maxScore = score;
-                    if( score < minScore) minScore = score;
-
-                    if (score >= threshold) {
+                    if (score >= threshold*maxScore) {
 
                         Rectangle bndbox = pyramid.rectangles_[lvl][box];
 
@@ -432,8 +440,7 @@ public:
             }
         }
 
-        cout<<"test:: maxScore : "<<maxScore<<endl;
-        cout<<"test:: minScore : "<<minScore<<endl;
+
 
         cout<<"test:: detections.size = "<<detections.size()<<endl;
         // Non maxima suppression
@@ -1344,9 +1351,9 @@ int main(){
            "/media/ubuntu/DATA/3DDataset/sceneNN+/096/096.ply", test.sceneResolution);
 
     test.train( trainScenes);
-    test.test( {scene005},
+//    test.test( {scene005},
 //    test.test( {scene096},
-//    test.test( {scene036},
+    test.test( {scene036},
                "tmp.txt");
 //               "smallSceneNN+/chair_part0_multiPositif.txt");
 
