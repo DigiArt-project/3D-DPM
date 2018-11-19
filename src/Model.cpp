@@ -754,7 +754,7 @@ double Model::dot(const Model & sample) const
 double Model::norm() const{
 
     if( parts_.size() < 1){
-        return GSHOTPyramid::TensorMap(parts_[0].filter).squaredNorm();
+        return sqrt( GSHOTPyramid::TensorMap(parts_[0].filter).squaredNorm());
     } else{
         double n = GSHOTPyramid::TensorMap(parts_[0].filter).squaredNorm();
 

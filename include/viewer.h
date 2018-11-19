@@ -67,6 +67,10 @@ public:
         viewer->addLine(rec.cloud(3), rec.cloud(7),color(0), color(1), color(2), name.append(std::to_string(id)).append(":l12"));
 
         ++id;
+        PointCloudPtr cloud( new PointCloudT(1,1,PointType()));
+        cloud->points[0] = rec.cloud(0);
+        addPC(cloud, 7, color);
+
     }
 
     void displayAxis( float* rf, pcl::PointXYZ origin = pcl::PointXYZ(0,0,0), float ratio = 1, int ptSize = 1){

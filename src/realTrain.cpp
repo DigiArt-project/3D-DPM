@@ -73,14 +73,14 @@ public:
     Test()
     {
         nbParts = 2;
-        C = 100;//regularization//100 ok
-        J = 8;//weight the positive samples//8 = ok
+        C = 1000;//regularization//100 ok
+        J = 4;//weight the positive samples//8 = ok
         boxOverlap = 0.8;
         overlapValidation = 0;
         negOverlap = 0.5;
-        interval = 1, nbIterations = 1, nbDatamine = 3, maxNegSample = 231*8;//110//7//431
+        interval = 1, nbIterations = 1, nbDatamine = 5, maxNegSample = 1000;//110//17//231
         nbComponents = 1; //nb of object poses without symetry
-        threshold=0.5;
+        threshold=-0.8;
 
 //        nbParts = 0;
 //        C = 0.1;//regularization
@@ -1325,8 +1325,8 @@ int main(){
 
     int start = getMilliCount();
 
-    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/sceneNNTrain/");
-//    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
+//    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/sceneNNTrain/");
+    vector<Scene> trainScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
 
 //    vector<Scene> testScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/sceneNNTest/");
     vector<Scene> testScenes = test.getScenes( "/media/ubuntu/DATA/3DDataset/smallSceneNN+/");
@@ -1350,14 +1350,14 @@ int main(){
     Scene scene096( "/media/ubuntu/DATA/3DDataset/sceneNN+/096/096.xml",
            "/media/ubuntu/DATA/3DDataset/sceneNN+/096/096.ply", test.sceneResolution);
 
-    test.train( trainScenes);
+//    test.train( trainScenes);
 //    test.test( {scene005},
 //    test.test( {scene096},
     test.test( {scene036},
                "tmp.txt");
 //               "smallSceneNN+/chair_part0_multiPositif.txt");
 
-//    test.checkBox("/media/ubuntu/DATA/3DDataset/sceneNN+/","005");
+//    test.checkBox("/media/ubuntu/DATA/3DDataset/sceneNN+/","049");
 
 
 //    test.test( testScenes, "tmp.txt");

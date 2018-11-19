@@ -73,10 +73,10 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, PointType min,
 
 
 //    float orientationFrom[9] = {0,0,1,1,0,0,0,1,0};
-//    float orientationFrom[9] = {0,1,0,0,0,1,1,0,0};
+    float orientationFrom[9] = {0,1,0,0,0,1,1,0,0};
     //old chair
 //        float orientationFrom[9] = {-0.199227, -0.865065, 0.460403, -0.599213, -0.264214, -0.755734, 0.775404, -0.426442, -0.46572};
-    float orientationFrom[9] = {-0.194105, -0.910017, 0.366323, -0.0461106, -0.364549, -0.930042, 0.979896, -0.197417, 0.0287994};
+//    float orientationFrom[9] = {-0.194105, -0.910017, 0.366323, -0.0461106, -0.364549, -0.930042, 0.979896, -0.197417, 0.0287994};
     //chair
 //    float orientationFrom[9] = {0.0924528, 0.979956, -0.17646, -0.131712, 0.187698, 0.973356, 0.986967, -0.0667475, 0.146426};
 
@@ -155,7 +155,7 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, PointType min,
                     globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
 
         //TODO check translation
-            Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
+            Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
                                                               globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
 //        Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
@@ -494,7 +494,7 @@ PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Lev
                     globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
 
         //TODO check translation
-            Eigen::Matrix4f transform = getNormalizeTransform(orientationFrom,
+            Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
                                                               globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
 //    //    #pragma omp parallel for
@@ -829,12 +829,13 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     DescriptorsPtr descriptors (new Descriptors());
     SurfaceNormalsPtr normals (new SurfaceNormals());
 
-    pcl::NormalEstimationOMP<PointType,NormalType> norm_est;
+    pcl::NormalEstimation<PointType,NormalType> norm_est;
     norm_est.setKSearch (8);
     norm_est.setInputCloud (input);
     norm_est.compute (*normals);
+//        cout<<"GSHOT:: keypoints size = "<<keypoints->size()<<endl;
 
-    pcl::SHOTEstimationOMP<PointType, NormalType, DescriptorType> descr_est;
+    pcl::SHOTEstimation<PointType, NormalType, DescriptorType> descr_est;
     descr_est.setRadiusSearch (descr_rad);
     descr_est.setInputCloud (keypoints);
     descr_est.setInputNormals (normals);
@@ -842,7 +843,6 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
     descr_est.compute (*descriptors);
 
 //    cout<<"GSHOT:: descriptors size = "<<descriptors->size()<<endl;
-//    cout<<"GSHOT:: keypoints size = "<<keypoints->size()<<endl;
 
     #pragma omp parallel for
     for (size_t i = 0; i < descriptors->size(); ++i){

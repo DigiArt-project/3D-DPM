@@ -586,7 +586,7 @@ vector<Rectangle> Mixture::posLatentSearch(const vector<Scene> & scenes, Object:
                             }
 //                            if ((intersection >= overlap && zero_) ||
 //                                    (!zero_ && scores[lvl][box]()(0,0,0) > maxScore && intersection >= overlap)) {
-                            if ((intersection >= maxInter )) {
+                            if ((intersection >= overlap )) {
 //                            if ((intersection >= maxInter) && (zero_ || (scores[lvl][box]()(0,0,0) > maxScore))) {
                                 argModel = model;
                                 argBox = box;
