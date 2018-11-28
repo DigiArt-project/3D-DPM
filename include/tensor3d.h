@@ -1,6 +1,3 @@
-// Written by Fisichella Thomas
-// Date 25/05/2018
-
 #ifndef TENSOR3D_H
 #define TENSOR3D_H
 //EIGEN

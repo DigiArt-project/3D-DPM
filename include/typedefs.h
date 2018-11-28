@@ -1,6 +1,3 @@
-// Written by Fisichella Thomas
-// Date 25/05/2018
-
 #ifndef typedefs_h
 #define typedefs_h
 
@@ -14,8 +11,11 @@ typedef pcl::PointCloud<RFType>::Ptr PointCloudRFPtr;
 
 // Define "PointCloud" to be a pcl::PointCloud of pcl::PointXYZRGB points
 typedef pcl::PointXYZRGB PointType;
+typedef pcl::PointXYZRGBNormal PointAll;
 typedef pcl::PointCloud<PointType> PointCloudT;
+typedef pcl::PointCloud<PointAll> PointCloudA;
 typedef pcl::PointCloud<PointType>::Ptr PointCloudPtr;
+typedef pcl::PointCloud<PointAll>::Ptr PointCloudAPtr;
 typedef pcl::PointCloud<PointType>::ConstPtr PointCloudConstPtr;
 //Vector of point cloud
 typedef std::vector<PointCloudPtr> cloudVectorT;

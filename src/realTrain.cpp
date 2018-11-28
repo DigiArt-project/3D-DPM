@@ -1,6 +1,3 @@
-// Written by Fisichella Thomas
-// Date 25/05/2018
-
 #include "Mixture.h"
 #include "Intersector.h"
 #include "Object.h"
@@ -80,7 +77,7 @@ public:
         negOverlap = 0.5;
         interval = 1, nbIterations = 1, nbDatamine = 5, maxNegSample = 1000;//110//17//231
         nbComponents = 1; //nb of object poses without symetry
-        threshold=-0.8;
+        threshold=0.5;
 
 //        nbParts = 0;
 //        C = 0.1;//regularization
@@ -1353,12 +1350,55 @@ int main(){
 //    test.train( trainScenes);
 //    test.test( {scene005},
 //    test.test( {scene096},
-    test.test( {scene036},
-               "tmp.txt");
+//    test.test( {scene036},
+//               "tmp.txt");
 //               "smallSceneNN+/chair_part0_multiPositif.txt");
 
 //    test.checkBox("/media/ubuntu/DATA/3DDataset/sceneNN+/","049");
 
+    PointCloudAPtr cloud( new PointCloudA);
+
+    if( readPointCloud("/media/ubuntu/DATA/3DDataset/sceneNN+/038/038.ply", cloud) == -1) {
+        cout<<"couldnt open pcd file"<<endl;
+    }
+
+    PointCloudAPtr finalCloud (new PointCloudA( 0,1,PointAll()));
+    for(int k = 0; k < cloud->size(); ++k){
+        if( cloud->points[k].getRGBVector3i() == Vector3i(121, 77, 245))
+        {
+            finalCloud->width    = finalCloud->points.size()+1;
+            finalCloud->height   = 1;
+            finalCloud->points.resize (finalCloud->width);
+            finalCloud->at(finalCloud->points.size()-1) = cloud->points[k];
+        }
+    }
+
+//    Vector4f ptStart( 1.7,-0.00194225,-1.83, 1);
+//    Vector4f ptEnd( ptStart(0)+0.681131,
+//                    ptStart(1)+1.05238225,
+//                    ptStart(2)+0.742005, 1);
+//    std::vector<int> pt_indices;
+//    pcl::getPointsInBox(*cloud, ptStart, ptEnd, pt_indices);
+
+//    int tmp = finalCloud->points.size();
+//    finalCloud->width    = tmp+pt_indices.size();
+//    finalCloud->height   = 1;
+//    finalCloud->points.resize (finalCloud->width);
+//    #pragma omp parallel for
+//    for(int k = 0; k < pt_indices.size(); ++k){
+//        finalCloud->points[tmp+k] = cloud->points[pt_indices[k]];
+//    }
+
+    PointAll min;
+    PointAll max;
+    pcl::getMinMax3D(*finalCloud, min, max);
+
+    cout<<"min : "<<min<<endl;
+    cout<<"max : "<<max<<endl;
+
+    pcl::io::savePLYFileASCII ("/media/ubuntu/DATA/3DDataset/perso/chair038_1.ply", *finalCloud);
+    test.viewer.addPC( cloud, 3);
+    test.viewer.addPC( finalCloud, 3, Vector3i(255, 0, 0));
 
 //    test.test( testScenes, "tmp.txt");
 

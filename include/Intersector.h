@@ -1,20 +1,3 @@
-//--------------------------------------------------------------------------------------------------
-// Written by Fisichella Thomas
-// Date 25/05/2018
-//
-// This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
-//
-// FFLDv2 is free software: you can redistribute it and/or modify it under the terms of the GNU
-// Affero General Public License version 3 as published by the Free Software Foundation.
-//
-// FFLDv2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-// the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
-// General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License along with FFLDv2. If
-// not, see <http://www.gnu.org/licenses/>.
-//--------------------------------------------------------------------------------------------------
-
 #ifndef FFLD_INTERSECTOR_H
 #define FFLD_INTERSECTOR_H
 
@@ -168,23 +151,6 @@ public:
 
 private:
 
-//    void getIntersectionPts( PointCloudPtr rectCloud, vector<int>& ptsIndicesRec,
-//                                      vector<int>& ptsIndicesRef) const{
-//        PointType minRec;
-//        PointType maxRec;
-//        pcl::getMinMax3D(*rectCloud, minRec, maxRec);
-//        PointType minRef;
-//        PointType maxRef;
-//        pcl::getMinMax3D(reference_.cloud(), minRef, maxRef);
-
-//        Eigen::Vector4f startRec( minRec.x, minRec.y, minRec.z, 1);
-//        Eigen::Vector4f endRec( maxRec.x, maxRec.y, maxRec.z, 1);
-//        Eigen::Vector4f startRef( minRef.x, minRef.y, minRef.z, 1);
-//        Eigen::Vector4f endRef( maxRef.x, maxRef.y, maxRef.z, 1);
-
-//        pcl::getPointsInBox(*rectCloud, startRef, endRef, ptsIndicesRec);
-//        pcl::getPointsInBox(reference_.cloud(), startRec, endRec, ptsIndicesRef);
-//    }
 
     vector<int> getAdjacentPts(int index) const{
         vector<int> adjacentPts(3);
@@ -215,65 +181,6 @@ private:
 //        cout<<endl;
         return adjacentPts;
     }
-
-//    vector<int> getFacePts( int index1, int index2, int index3) const{
-//        vector<int> res(4);
-//        res[0] = index1;//= 0 or 7
-//        res[1] = index2;
-//        res[2] = index3;
-////        if( index1 == 0){
-////            res[3] = index2+index3;
-//////            if( ( index2 == 1 && index3 == 2) || ( index2 == 2 && index3 == 1)){
-//////                res[3] = 3;
-//////            }
-//////            if( ( index2 == 1 && index3 == 4) || ( index2 == 4 && index3 == 1)){
-//////                res[3] = 5;
-//////            }
-//////            if( ( index2 == 4 && index3 == 2) || ( index2 == 2 && index3 == 4)){
-//////                res[3] = 6;
-//////            }
-////        } else{//index1 == 7
-////            res[3] = index2+index3-index1;
-////        }
-//        res[3] = index2+index3-index1;
-//        return res;
-//    }
-
-//    bool belongToFace( PointType p, PointCloudPtr cloud, int index1, int index2, int index3) const{
-//        vector<int> facePts = getFacePts( index1, index2, index3);
-//        Eigen::Vector3f center(0,0,0);
-//        Eigen::Vector3f val(0,0,0);
-
-//        cout<<"facePts : ";
-//        for( int i = 0; i < facePts.size(); ++i){
-//            cout<<facePts[i]<<" / ";
-//            center(0) += cloud->points[facePts[i]].x;
-//            center(1) += cloud->points[facePts[i]].y;
-//            center(2) += cloud->points[facePts[i]].z;
-//            val(0) += cloud->points[facePts[i]].x;
-//            val(1) += cloud->points[facePts[i]].y;
-//            val(2) += cloud->points[facePts[i]].z;
-//        }
-//        cout<<endl;
-//        cout<<"facePts : ";
-//        for( int i = 0; i < facePts.size(); ++i){
-//            cout<<cloud->points[facePts[i]]<<" / "<<endl;
-//        }
-//        cout<<endl;
-//        center /= facePts.size();
-//        float sum1 = abs(p.x - center(0)) + abs(p.y - center(1)) + abs(p.z - center(2));
-//        float sum2 = abs(center(0)) + abs(center(1)) + abs(center(2));
-
-//        cout<<"center : "<<endl<<center<<endl;
-//        cout<<"pt to add : "<<p<<endl;
-//        cout<<"sum1 : "<<sum1<<endl;
-//        cout<<"sum2 : "<<sum2<<endl;
-
-//        if( sum1 <= sum2){
-//            return true;
-//        }
-//        return false;
-//    }
 
     bool belongToCube( PointType p, PointCloudT cloud1, vector<Eigen::Vector3f> directions1,
                        int index1, vector<int> adjacentPts1, float epsilon = 0.001) const{

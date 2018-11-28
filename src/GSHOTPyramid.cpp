@@ -1,6 +1,3 @@
-// Written by Fisichella Thomas
-// Date 25/05/2018
-
 #include "GSHOTPyramid.h"
 
 using namespace Eigen;
@@ -154,7 +151,6 @@ void GSHOTPyramid::createFullPyramid(const PointCloudPtr input, PointType min,
                     globalKeyPts->points[i].y - filterSizes_(1) * resolutions_[0] * 2 / 2.0,
                     globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
 
-        //TODO check translation
             Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
                                                               globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
@@ -493,7 +489,6 @@ PointCloudPtr GSHOTPyramid::createFilteredPyramid(const PointCloudPtr input, Lev
                     globalKeyPts->points[i].y - filterSizes_(1) * resolutions_[0] * 2 / 2.0,
                     globalKeyPts->points[i].z - filterSizes_(0) * resolutions_[0] * 2 / 2.0);
 
-        //TODO check translation
             Eigen::Matrix4f transform = getNormalizeTransform(globalDescriptors->points[i].rf,//orientationFrom,
                                                               globalDescriptors->points[i].rf,
                                                               boxOrigin, translation);
@@ -726,23 +721,6 @@ Matrix4f GSHOTPyramid::getNormalizeTransform(float* orientationFrom, float* orie
 }
 
 
-std::vector<float> GSHOTPyramid::minMaxScaler(std::vector<float> data){
-    std::vector<float> result_min_max(data.size());
-
-    float sum = 0;
-    for (int i = 0; i < data.size(); i++){
-        sum += data.at(i);
-    }
-
-
-    for (int i = 0; i < data.size(); i++){
-        if( sum != 0) result_min_max[i] = data.at(i) /sum;
-    }
-
-    return result_min_max;
-}
-
-
 PointCloudPtr
 GSHOTPyramid::compute_keypoints(float grid_reso, PointType min, PointType max, int index){
 
@@ -846,11 +824,6 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
 
     #pragma omp parallel for
     for (size_t i = 0; i < descriptors->size(); ++i){
-//        std::vector<float> data_tmp(DescriptorSize);
-
-//        if (pcl_isnan(descriptors->points[i].descriptor[0])){
-//            descriptors->points[i].descriptor[0] = 0;
-//        }
         #pragma omp parallel for
         for (size_t j = 0; j < DescriptorSize; ++j){
 
@@ -858,18 +831,7 @@ GSHOTPyramid::compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, f
                 descriptors->points[i].descriptor[j] = 0;
             }
 
-//            data_tmp[j] = descriptors->points[i].descriptor[j];
         }
-//        //normalize descriptor
-//        std::vector<float> value_descriptor_scaled = minMaxScaler(data_tmp);
-
-////        float sum = 0;
-//        for (size_t j = 0; j < DescriptorSize; ++j){
-//            descriptors->points[i].descriptor[j] = value_descriptor_scaled.at(j);
-////            sum += descriptors->points[i].descriptor[j];
-//        }
-////        cout<<"GSHOTPyramid::sum of the descriptor normalized : "<< sum << endl;
-
     }
 
     return descriptors;
@@ -939,7 +901,34 @@ const vector<float> & GSHOTPyramid::resolutions() const{
 }
 
 //Read point cloud from a path
-/*static*/ int FFLD::readPointCloud(std::string object_path, PointCloudPtr point_cloud){
+int FFLD::readPointCloud(std::string object_path, PointCloudPtr point_cloud){
+    std::string extension = boost::filesystem::extension(object_path);
+    if (extension == ".pcd" || extension == ".PCD")
+    {
+        if (pcl::io::loadPCDFile(object_path.c_str() , *point_cloud) == -1)
+        {
+            std::cout << "\n Cloud reading failed." << std::endl;
+            return (-1);
+        }
+    }
+    else if (extension == ".ply" || extension == ".PLY")
+    {
+        if (pcl::io::loadPLYFile(object_path.c_str() , *point_cloud) == -1)
+        {
+            std::cout << "\n Cloud reading failed." << std::endl;
+            return (-1);
+        }
+    }
+    else
+    {
+        std::cout << "\n file extension is not correct." << std::endl;
+        return -1;
+    }
+    return 1;
+}
+
+//Read point cloud from a path
+int FFLD::readPointCloud(std::string object_path, PointCloudAPtr point_cloud){
     std::string extension = boost::filesystem::extension(object_path);
     if (extension == ".pcd" || extension == ".PCD")
     {

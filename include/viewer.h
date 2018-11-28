@@ -1,6 +1,3 @@
-// Written by Fisichella Thomas
-// Date 25/05/2018
-
 #ifndef VIEWER
 #define VIEWER
 
@@ -31,6 +28,15 @@ public:
 
     void addPC( PointCloudPtr cloud, int ptSize = 3, Eigen::Vector3i color = Eigen::Vector3i(0, 255, 0)){
         pcl::visualization::PointCloudColorHandlerCustom<PointType> single_color(cloud, color(0), color(1), color(2));
+        string name = "cloud";
+        name.append(std::to_string(id));
+        viewer->addPointCloud( cloud, single_color, name.c_str(), 0);
+        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, ptSize, name.c_str());
+        ++id;
+    }
+
+    void addPC( PointCloudAPtr cloud, int ptSize = 3, Eigen::Vector3i color = Eigen::Vector3i(0, 255, 0)){
+        pcl::visualization::PointCloudColorHandlerCustom<PointAll> single_color(cloud, color(0), color(1), color(2));
         string name = "cloud";
         name.append(std::to_string(id));
         viewer->addPointCloud( cloud, single_color, name.c_str(), 0);

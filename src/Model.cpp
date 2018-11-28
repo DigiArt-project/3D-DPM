@@ -1,20 +1,3 @@
-//--------------------------------------------------------------------------------------------------
-// Written by Fisichella Thomas
-// Date 25/05/2018
-//
-// This file is part of FFLDv2 (the Fast Fourier Linear Detector version 2)
-//
-// FFLDv2 is free software: you can redistribute it and/or modify it under the terms of the GNU
-// Affero General Public License version 3 as published by the Free Software Foundation.
-//
-// FFLDv2 is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
-// the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
-// General Public License for more details.
-//
-// You should have received a copy of the GNU Affero General Public License along with FFLDv2. If
-// not, see <http://www.gnu.org/licenses/>.
-//--------------------------------------------------------------------------------------------------
-
 #include "Model.h"
 
 #include <algorithm>
@@ -454,15 +437,7 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y
 //        cout<<"Model::InitiSample filter part position = "<<position<<endl;
 
 		
-        //TODO!!!!
         // Compute the deformation gradient at the level of the part
-//        const double scale = 1;//pow(2.0, static_cast<double>(lvl - position(3)) / interval);
-//        const double xr = (x + (parts_[i + 1].offset(2) + partSize().third * 0.5) * 0.5 - pad.x()) *
-//                          scale + pad.x() - partSize().third * 0.5;
-//        const double yr = (y + (parts_[i + 1].offset(1) + partSize().second * 0.5) * 0.5 - pad.y()) *
-//                          scale + pad.y() - partSize().second * 0.5;
-//        const double zr = (z + (parts_[i + 1].offset(0) + partSize().first * 0.5) * 0.5 - pad.z()) *
-//                          scale + pad.z() - partSize().first * 0.5;
         const double scale = pow(2.0, static_cast<double>(lvl - position(3)) / interval);
         const double xr = (x + (parts_[i + 1].offset(2) + partSize()(2) * 0.5) * 0.5 /*- pad.x()*/) *
                           scale + /*pad.x()*/ - partSize()(2) * 0.5;
@@ -470,9 +445,9 @@ void Model::initializeSample(const GSHOTPyramid & pyramid, int box, int z, int y
                           scale + /*pad.y()*/ - partSize()(1) * 0.5;
         const double zr = (z + (parts_[i + 1].offset(0) + partSize()(0) * 0.5) * 0.5 /*- pad.z()*/) *
                           scale + /*pad.z()*/ - partSize()(0) * 0.5;
-        const double dx = xr - position(2)/**pyramid.resolutions()[lvl]*/;
-        const double dy = yr - position(1)/**pyramid.resolutions()[lvl]*/;
-        const double dz = zr - position(0)/**pyramid.resolutions()[lvl]*/;
+        const double dx = xr - position(2);
+        const double dy = yr - position(1);
+        const double dz = zr - position(0);
         const int dlvl = lvl - interval - position(3);
 		
         sample.parts_[i + 1].deformation(0) = dz * dz;
@@ -954,15 +929,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
 //    cout<<"Model::DT3D begin max : "<<copy.max()<<endl;
 //    cout<<"Model::DT3D begin min : "<<copy.min()<<endl;
 
-
-    ///TODO : doesnt matter ???
-    const int weightDepths = 5;
-    const int weightRows   = 5;
-    const int weightCols   = 5;
-//    const int weightDepths = depths;
-//    const int weightRows   = rows;
-//    const int weightCols   = cols;
-
     if (positions){
         (*positions)().resize(Eigen::array<long int, 3>{{depths, rows, cols}});
 //        (*positions)().setZero();
@@ -992,10 +958,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                                  part.deformation(1), &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
                                  positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
                                  &t[0], 1, 1, 4);
-//            dt1d<GSHOTPyramid::Scalar>(tensor().data() + y*cols + z*cols*rows, cols, part.deformation(0),
-//                                 0, &distance[0], &index[0], tmp1().data() + y*cols + z*cols*rows,
-//                                 positions ? ((*positions)().data() + y*cols + z*cols*rows)->data() + 2 : 0,
-//                                 &t[0], 1, 1, 4, part.offset[2], weightCols);
         }
     }
 
@@ -1012,11 +974,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                                  tmp2().data() + x + z*cols*rows,
                                  positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
                                  cols, cols, 4 * cols);
-//            dt1d<GSHOTPyramid::Scalar>(tmp1().data() + x + z*cols*rows, rows, part.deformation(2), 0,
-//                                 &distance[0], &index[0],
-//                                 tmp2().data() + x + z*cols*rows,
-//                                 positions ? ((*positions)().data() + x + z*cols*rows)->data() + 1 : 0, &t[0],
-//                                 cols, cols, 4 * cols, part.offset[1], weightRows);
         }
     }
 
@@ -1033,11 +990,6 @@ void Model::DT3D(Tensor3DF & tensor, const Part & part, Tensor3DF & tmp1, Tensor
                                  tensor().data() + x + y*cols,//or 0
                                  positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
                                  cols * rows, cols * rows, 4 * cols * rows);
-//            dt1d<GSHOTPyramid::Scalar>(tmp2().data() + x + y*cols, depths, part.deformation(4), 0,
-//                                 &distance[0], &index[0],
-//                                 tensor().data() + x + y*cols,//or 0
-//                                 positions ? ((*positions)().data() + x + y*cols)->data() : 0, &t[0],
-//                                 cols * rows, cols * rows, 4 * cols * rows, part.offset[0], weightDepths);
         }
     }
 

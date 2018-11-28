@@ -1,6 +1,3 @@
-// Written by Fisichella Thomas
-// Date 25/05/2018
-
 #ifndef FFLD_GSHOTPYRAMID_H
 #define FFLD_GSHOTPYRAMID_H
 
@@ -157,8 +154,6 @@ namespace FFLD
                                                      const Eigen::Vector3f origin,
                                                      const Eigen::Vector3f translation = Eigen::Vector3f(0,0,0));
         
-        std::vector<float> minMaxScaler(std::vector<float> data);
-
         // Method for computing feature spaces. May have different implementations depending on the descriptor used.
         DescriptorsPtr
         compute_descriptor(PointCloudPtr input, PointCloudPtr keypoints, float);
@@ -203,7 +198,8 @@ namespace FFLD
     };
     
     //Read point cloud from a path
-    /*static*/ int readPointCloud(std::string object_path, PointCloudPtr point_cloud);
+    int readPointCloud(std::string object_path, PointCloudPtr point_cloud);
+    int readPointCloud(std::string object_path, PointCloudAPtr point_cloud);
 
     /// Serializes a pyramid to a stream.
     std::ostream & operator<<(std::ostream & os, const GSHOTPyramid & pyramid);
