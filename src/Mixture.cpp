@@ -415,7 +415,6 @@ vector<Rectangle> Mixture::posLatentSearch(const vector<Scene> & scenes, Object:
 //            }
 
 
-            Vector3i rootSize(2,3,2);
             GSHOTPyramid pyramid(models()[0].boxSize_, models_[0].parts().size(), interval, scenes[i].resolution());
 
 

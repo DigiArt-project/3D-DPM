@@ -1,149 +1,80 @@
-                          Implementation of the papers
 
-                "Exact Acceleration of Linear Object Detectors"
-               12th European Conference on Computer Vision, 2012.
-
-             "Deformable Part Models with Individual Part Scaling"
-                  24th British Machine Vision Conference, 2013.
-
-      Copyright (c) 2013 Idiap Research Institute, <http://www.idiap.ch/>
-              Written by Charles Dubout <charles.dubout@idiap.ch>
-
+This work has been done during the European project: "DigiArt".
 
                                   INTRODUCTION
 
-The train executable can be used to train a deformable part-based model on a
-Pascal VOC dataset.
-The test executable can be used to run a deformable part-based model either on
-an image or on a Pascal VOC dataset.
+This code implement a linear Structural Latent SVM for 3D point clouds objects
+detection.
+The relevant parts positions are used as latent variable for the SVM. We use
+the SHOT descriptor to describe parts of the point cloud. In order to deal
+with non-uniform sparsity of the point clouds, the scene is uniformly
+discretized at a specified resolution (in GSHOTPyramid). Unfortunately, because
+of time constraints, the code is not finished and there are features in the
+code which may need to be rewritten.
+Currently, adding parts for the detection doesn't improve the detection score
+because the rotation estimations of the bounding boxes are not accurate enought.
+Therefore, the algorithm look for the parts at wrong places and make the score
+drops. In resume, the current program is not robust to rotation.
 
-The first time you run it it will be slow as the FFTW library will search for
-the best plans using runtime measurements. The resulting plans will then be
-saved to a file named wisdom.fftw and reused in the future.
+
+                                  How it works
+
+Training:
+        For all the "Scene" given, the "Mixture" identify and extract the
+        positives and negatives "Model" samples. Then, it feed them to the
+        Structural Latent SVM which use the LBFGS algorithm to create the
+        "Model" that discriminate the best the "Objects" you want to find from
+        the others.
+Test:
+        Compute the SVM score of the "Model" filter and all the corresponding
+        parts of the scene (see Convolve() function in GSHOTPyramid). The
+        scores are then compared to a threshold, and the bounding box of the
+        highest scores are then shown to the user on the point cloud scene.
 
 
-                              COMMAND LINE OPTIONS
-
-After building the train and test executables you can run them without any
-argument to get a list of all the possible parameters.
-
-  -m,--model <file>
-  Read the input model from <file> (default "" for train, "model.txt" for test)
-
-The models are stored in a text file format with the following grammar (an
-example can be found in the file bicycle.txt)
+The models are stored in a text file (tmp.txt by default) format with the
+following grammar:
 
 Mixture := nbModels Model*
 Model := nbParts bias Part*
-Part := nbRows nbCols nbFeatures xOffset yOffset zOffset a b c d e f value*
+Part := nbRows nbCols nbDepths nbFeatures xOffset yOffset zOffset deformations
+filter_values*
 
-Where nbModels is the number of mixture components (models); nbParts is the
-number of parts (including the root) in the model; bias is the offset to add to
-the scores of the model; nbRows, nbCols, nbFeatures are the dimensions of the
-part filter; xOffset, yOffset, zOffset are the offsets of the part relative to
-the root (anchor); a, b, c, d, e, f are the deformation coefficients
-(ax^2 + bx + cy^2 + dy + ez^2 + fz); values are the filter coefficients, stored
-in row-major order, and of size nbRows x nbCols x nbFeatures.
+nbModels is the number of mixture components (models). In our case, it will
+always be equal to 1 because the goal was to get rid of the several components
+by making the algorithm robust to rotation.
+nbParts is the number of parts (including the root) in the model.
+The bias is the offset to add to the scores of the model.
+nbRows, nbCols, nbDepths, nbFeatures are the dimensions of the part filter.
+xOffset, yOffset, zOffset are the offsets of the part relative to the root
+(anchor). Deformations represents the deformation coefficients.
+filter_values are the filter coefficients, stored
+in row-major order, and of size nbRows x nbCols x nbDepths x nbFeatures.
 
-In the current implementation nbFeatures must be 32, the number of HOG features
-(or 48 if FFLD was compiled with FFLD_HOGPYRAMID_EXTRA_FEATURES=ON).
-One can use the provided Matlab script 'convertmodel4.m' to convert to this
-format the models of P. Felzenszwalb, R. Girshick and D. McAllester.
-Discriminatively Trained Deformable Part Models, Release 4.
-http://people.cs.uchicago.edu/~pff/latent-release4/.
-One can use the provided Matlab script 'convertmodel5.m' to convert to this
-format the models of P. Felzenszwalb, R. Girshick and D. McAllester.
-Discriminatively Trained Deformable Part Models, Release 5.
-http://people.cs.uchicago.edu/~rbg/latent-release5/.
+The code is structured as follows:
 
-  -n,--name <arg>
-  Name of the object to train or detect (default "person")
+    - main.cpp : File used to train and test the DPM 3D.
+    - createscene.cpp : File used to artificially create scenes from different point
+      clouds.
+    - typedefs.h : All typedef definitions.
+    - viewer.h : Wrapper around PCLVisualizer.
 
-  -r,--results <file>
-  Write the trained model or the detection results to <file> (default
-  "model.txt" for train, "" for test)
-
-The test executable can outputs the list of all the detections into a file, in
-the format of the Pascal VOC challenge (one line by detection, and for each
-detection the scene id, the score and the bounding box: xmin, ymin, xmax, ymax).
-
-  -i,--images <folder>
-  Draw the detections to <folder> (default none)
-
-The test executable can also output images with the detections drawn. In that
-case it might be useful to set a higher detection threshold so as to only draw
-detection with a high enough score.
-
-  -z,--nb-negatives <arg>
-  Maximum number of negative images to consider (default all)
-
-It might be useful to run the detector only on a reduced number of negative
-(background) Pascal VOC scenes in order to save time while training or
-evaluating the performance of a detector.
-
-  -p,--padding <arg>
-  Amount of zero padding in HOG cells (default 6)
-
-Must be greater or equal to half the greatest filter dimension.
-
-  -e,--interval <arg>
-  Number of levels per octave in the HOG pyramid (default 5)
-
-  -t,--threshold <arg>
-  Minimum detection threshold (default -10)
-
-To set a negative threshold you need to use the option as in -t=-1
-
-  -v,--overlap <arg>
-  Minimum overlap in in latent positive search and non maxima suppression
-  (default 0.7 for train, 0.5 for test)
-
-  -x,--nb-components <arg>
-  Number of mixture components (without symmetry, default 3).
-
-  -l,--relabel <arg>
-  Maximum number of training iterations (default 8, half if the model has no
-  part).
-
-  -d,--datamine <arg>
-  Maximum number of data-mining iterations within each training iteration
-  (default 10).
-
-  -c,--C <arg>
-  SVM regularization constant (default 0.002).
-
-  -j,--J <arg>
-  SVM positive regularization constant boost (default 2).
-
-  -s,--seed <arg>
-  Random seed (default time(NULL)).
+    - GSHOTPyramid: Constructs a pyramid from the PointCloud of a Scene.
+    - Model: The Model class can represent both a deformable part-based model or
+      a training sample with fixed latent variables (parts' positions).
+    - Mixture: The Mixture class is made for assembling all the other classes in
+      order to train and use the models used for detection.
+    - LBFGS: Limited-memory BFGS (L-BFGS) algorithm implementation as described by
+      Nocedal.
+    - Scene: The Scene class consist of a (filename to a) pointcloud file and the
+      list of objects present in it.
+    - Object: The Object class represents an object in a Scene. It stores all the
+      information regarding the object like its bounding box.
+    - Rectangle: The Rectangle class defines a bounding box.
+    - Tensor3D: The Tensor3D class defines a set of functions used by 3D tensors.
+    - Intersector: Functor used to test for the intersection of two Rectangles.
 
 
-                                    EXAMPLES
 
-To train or evaluate a model on a Pascal VOC dataset you must pass to the
-executable the corresponding image set file. It will look for the Pascal
-annotations in the folder 'Annotations' two levels below ("../../Annotations/")
-and for the jpeg images in the folder 'JPEGImages' two levels below
-("../../JPEGImages/").
-
-A complete example for train could be
-
-  ./train --name bicycle --result bicycle.txt --nb-negatives 200 VOC2007/ImageSets/Main/bicycle_trainval.txt
-  ./train --model bicycle.txt --name bicycle --result bicycle.txt --nb-negatives 2000 --relabel 1 VOC2007/ImageSets/Main/bicycle_trainval.txt
-
-Which takes ~1 hour to complete on my laptop.
-
-While a complete example for test could be
-
-  ./test --model ../models/bicycle_2d.txt --images . --threshold=-0.5 VOC2007/ImageSets/Main/bicycle_test.txt
-
-Which takes ~15 minutes to complete on my laptop.
-
-
-                                     MODELS
-
-The "models" subfolder contains 2D and 3D models trained by this version of
-FFLD. The *_init.txt files are the starting points for both kinds of DPM.
-Also note that during training after every iterations the latest model is
-continuously saved in the file "tmp.txt".
+Author : Fisichella Thomas
+Date : 28/11/2018
