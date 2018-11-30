@@ -1,7 +1,6 @@
 *.jpg
 *.jpeg
 build
-CMakeLists.txt
 *.files
 *.includes
 dpm3d.*
